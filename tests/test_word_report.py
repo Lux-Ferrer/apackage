@@ -208,17 +208,8 @@ def _sample_body():
 
 
 def sample_column_widths():
-    """样例的**原始**列宽 = 规格列宽，但把已声明的偏离列还原成样例值。
-
-    楼层列与读数列是对样例的有意偏离（见 report_layout.json 的 columns._widthOverrides），
-    所以"样例侧"的期望要用这个函数而不是直接用 SPEC。
-    """
-    widths = list(wr.GRID_COLS)
-    overrides = SPEC["columns"]["_widthOverrides"]
-    widths[wr.COLUMN_INDEX["floor"]] = overrides["floor"]["sampleTwips"]
-    for column in overrides["reading"]["columns"]:
-        widths[column] = overrides["reading"]["sampleTwips"]
-    return widths
+    """样例的**原始**列宽（由生效列宽按 columns._widthOverrides 还原）。"""
+    return wr.sample_reference_widths()
 
 
 def _text(element):
@@ -239,7 +230,7 @@ def test_layout_spec_matches_sample():
     assert tbl_pr.find(W + "jc").get(W + "val") == SPEC["table"]["align"]
     assert tbl_pr.find(W + "tblLayout").get(W + "type") == SPEC["table"]["layout"]
     col_widths = [int(g.get(W + "w")) for g in tbl.find(W + "tblGrid").findall(W + "gridCol")]
-    assert col_widths == sample_column_widths()
+    assert col_widths == list(sample_column_widths())
     assert sum(col_widths) == wr.TABLE_WIDTH_TWIPS == 8800
     assert sum(wr.GRID_COLS) == wr.TABLE_WIDTH_TWIPS          # 生效列宽同样守恒
 
@@ -337,31 +328,41 @@ def test_layout_spec_file_is_language_neutral():
 
 
 def test_floor_column_fits_four_chinese_characters():
-    """楼层列按「4 个汉字」设定（2026-09-24 决定）：10pt 下 1 汉字 = 200 twips。
+    """楼层列按「4 个汉字 + 20% 余量」设定（2026-09-24 决定）。
 
     样例的 492 twips 连案例里的「二十三层」都放不下（实测 800 twips、折 3 行）。
     """
+    cjk_twips = wr.INHERITED_TABLE_PT * 20               # 10pt 下 1 个汉字 = 200 twips
     usable = wr.GRID_COLS[wr.COLUMN_INDEX["floor"]] - 2 * wr.CELL_MARGIN_HORIZONTAL
-    assert usable >= 4 * wr.INHERITED_TABLE_PT * 20
+    assert usable >= 4 * cjk_twips                       # 装得下 4 个汉字
+    assert usable - 4 * cjk_twips == cjk_twips * 0.2     # 并留 20% 一个汉字的余量（40 twips）
 
-    from tools.analyze_text_fit import make_measurer        # 用真实字体验证，而非只比算式
+    from tools.analyze_text_fit import make_measurer     # 用真实字体验证，而非只比算式
     assert make_measurer()("二十三层", wr.INHERITED_TABLE_PT) <= usable
 
 
 def test_width_overrides_are_declared_with_sample_values():
     """对样例的列宽偏离必须全部声明在 _widthOverrides 里，且如实记录样例原值。"""
     overrides = SPEC["columns"]["_widthOverrides"]
+    for key in ("floor", "face", "reading"):
+        assert overrides[key]["sampleTwips"] > 0
     assert overrides["floor"]["sampleTwips"] == 492
     assert overrides["floor"]["widthTwips"] == wr.GRID_COLS[wr.COLUMN_INDEX["floor"]]
-    assert overrides["reading"]["sampleTwips"] == 760
+    assert overrides["face"]["sampleTwips"] == 480
+    assert overrides["face"]["widthTwips"] == wr.GRID_COLS[wr.COLUMN_INDEX["face"]]
     assert len(overrides["reading"]["columns"]) == 6
     for column in overrides["reading"]["columns"]:
         assert wr.GRID_COLS[column] == overrides["reading"]["widthTwips"]
-    # 只有这 7 列偏离样例
-    assert sample_column_widths() != list(wr.GRID_COLS)
-    differing = [index for index, (old, new) in enumerate(zip(sample_column_widths(), wr.GRID_COLS))
-                 if old != new]
-    assert differing == [wr.COLUMN_INDEX["floor"]] + list(overrides["reading"]["columns"])
+
+    # 偏离列恰好是已声明的那些；其余列必须与样例一致
+    expected = ([wr.COLUMN_INDEX["floor"], wr.COLUMN_INDEX["face"]]
+                + list(overrides["reading"]["columns"]))
+    differing = [index for index, (old, new)
+                 in enumerate(zip(wr.sample_reference_widths(), wr.GRID_COLS)) if old != new]
+    assert differing == expected
+    for column in (wr.COLUMN_INDEX["position"], wr.COLUMN_INDEX["size"],
+                   wr.COLUMN_INDEX["requirement"]):
+        assert wr.GRID_COLS[column] == wr.sample_reference_widths()[column]
 
 
 # --------------------------------------------------------------------------

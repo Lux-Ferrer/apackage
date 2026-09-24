@@ -33,8 +33,11 @@ def test_extracted_width_deviation_matches_declared_overrides():
     differing = [index for index, (old, new) in enumerate(zip(sample_widths, wr.GRID_COLS))
                  if old != new]
     overrides = wr.SPEC["columns"]["_widthOverrides"]
-    assert differing == [wr.COLUMN_INDEX["floor"]] + list(overrides["reading"]["columns"])
+    expected = ([wr.COLUMN_INDEX["floor"], wr.COLUMN_INDEX["face"]]
+                + list(overrides["reading"]["columns"]))
+    assert differing == expected
     assert sample_widths[wr.COLUMN_INDEX["floor"]] == overrides["floor"]["sampleTwips"]
+    assert sample_widths[wr.COLUMN_INDEX["face"]] == overrides["face"]["sampleTwips"]
 
 
 def test_extractor_handles_both_detection_tables():

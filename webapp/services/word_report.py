@@ -47,6 +47,29 @@ def load_spec(path=None) -> dict:
 
 SPEC = load_spec()
 
+
+def sample_reference_widths(spec=None) -> tuple:
+    """由**生效列宽**还原出样例的原始列宽。
+
+    生效列宽里含对样例的有意偏离（见 ``columns._widthOverrides``）。测试与对拍工具
+    需要"样例侧"的期望值时用本函数，避免在各处重复抄写样例原值。
+    """
+    spec = spec or SPEC
+    widths = list(spec["columns"]["widths"])
+    overrides = spec["columns"].get("_widthOverrides", {})
+    for key, override in overrides.items():
+        if not isinstance(override, dict):
+            continue                                   # 跳过 rule 之类的说明项
+        columns = override.get("columns")
+        if columns:
+            for column in columns:
+                widths[column] = override["sampleTwips"]
+            continue
+        index = spec["columns"]["index"].get(key)
+        if index is not None:
+            widths[index] = override["sampleTwips"]
+    return tuple(widths)
+
 # —— 页面 ——
 PAGE_WIDTH_TWIPS = SPEC["page"]["widthTwips"]
 PAGE_HEIGHT_TWIPS = SPEC["page"]["heightTwips"]
