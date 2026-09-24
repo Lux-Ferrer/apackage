@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}首页 - 建筑幕墙检测报告工具{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>模块进度</h1>
+    <p class="sub">M0 底座已完成：代码拆包、数据库 schema、Word A4 报告底座。</p>
+
+    <table class="grid">
+        <thead>
+            <tr><th>模块</th><th>状态</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for name, status, endpoint, ready in modules %}
+            <tr>
+                <td>{{ name }}</td>
+                <td><span class="badge {{ 'ok' if ready else 'todo' }}">{{ status }}</span></td>
+                <td class="right">
+                    {% if ready %}
+                        <a class="btn small" href="{{ url_for(endpoint) }}">进入</a>
+                    {% else %}
+                        <span class="muted">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>本期不做（已确认范围外）</h2>
+    <p class="sub">膜厚检测 · 玻璃面板尺寸及厚度检测 · 速记 · 统计 · 登录 · 结构安全评定</p>
+</div>
+{% endblock %}

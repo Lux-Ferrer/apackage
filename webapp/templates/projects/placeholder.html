@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}项目 - 建筑幕墙检测报告工具{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>项目管理</h1>
+    <p class="sub">M1 待开发</p>
+
+    <p>本模块将实现：</p>
+    <ul class="plain">
+        <li>项目增删改查（项目编号唯一、列表显示记录数、删除二次确认）</li>
+        <li>立柱 / 横梁检测记录录入（楼层、构件位置、尺寸结果、1~6 个检测面 × 5 个厚度值）</li>
+        <li>前端实时计算每个检测面的最小值</li>
+        <li>编辑记录时模板类型不可切换</li>
+    </ul>
+
+    <p class="muted">
+        数据表已就绪：
+        <code>projects</code> · <code>measurement_records</code> · <code>thickness_readings</code>
+    </p>
+</div>
+{% endblock %}

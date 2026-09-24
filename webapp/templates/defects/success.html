@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}保存成功 - 建筑幕墙检测报告工具{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>报告已保存</h1>
+    <table class="grid">
+        <tbody>
+            <tr><th>报告编号</th><td>#{{ defect['id'] }}</td></tr>
+            <tr><th>缺陷类型</th><td>{{ defect['defect_type'] }}</td></tr>
+            <tr><th>工程部位</th><td>{{ defect['project_part'] }}</td></tr>
+            <tr>
+                <th>隐患等级</th>
+                <td>
+                    <span class="badge {{ {'高': 'high', '中': 'medium', '低': 'low'}[defect['risk_level']] }}">
+                        {{ defect['risk_level'] }}
+                    </span>
+                </td>
+            </tr>
+            <tr><th>整改方案</th><td class="pre">{{ defect['rectification_plan'] }}</td></tr>
+            <tr><th>报告人</th><td>{{ defect['reporter_name'] }}（{{ defect['reporter_department'] }}）</td></tr>
+            <tr><th>提交时间</th><td>{{ defect['created_at'] }}</td></tr>
+        </tbody>
+    </table>
+
+    <div class="actions">
+        <a class="btn" href="{{ url_for('defects.export', defect_id=defect['id']) }}">导出 Word 报告</a>
+        <a class="link" href="{{ url_for('defects.new') }}">再填写一条</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 运行时数据
+defects.db
+defects.db.bak
+reports/*.docx
+!reports/.gitkeep
+uploads/defects/*
+!uploads/defects/.gitkeep
+
+# 测试与工具
+.pytest_cache/
+.coverage
+
+# 与本应用无关的过程性文件（PDF 拆分任务产物、截图等），保留在磁盘但不入库
+_work/
+*.bmp
+Sign*.pdf
+sign2.pdf
+Sign_p2.docx
+*_signed.pdf

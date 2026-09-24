@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}缺陷检测填报 - 建筑幕墙检测报告工具{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>缺陷检测填报</h1>
+    <p class="sub">提交后写入本地 SQLite，可导出 Word 报告（M3 将补齐图片与项目绑定）</p>
+
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+    <form method="post" action="{{ url_for('defects.create') }}">
+        <div class="field">
+            <label for="defect_type">缺陷类型 <span class="required">*</span></label>
+            <select id="defect_type" name="defect_type" required onchange="toggleCustomDefect()">
+                {% for item in defect_types %}
+                <option value="{{ item }}" {% if form.get('defect_type') == item %}selected{% endif %}>{{ item }}</option>
+                {% endfor %}
+            </select>
+            <input type="text" id="custom_defect_type" name="custom_defect_type" maxlength="100"
+                   placeholder="请输入自定义缺陷类型" style="display:none; margin-top:8px;"
+                   value="{{ form.get('custom_defect_type', '') }}">
+        </div>
+
+        <div class="field">
+            <label for="project_part">工程部位 <span class="required">*</span></label>
+            <input type="text" id="project_part" name="project_part" required maxlength="200"
+                   placeholder="如：东立面三层 1# 立柱" value="{{ form.get('project_part', '') }}">
+        </div>
+
+        <div class="field">
+            <label>隐患等级 <span class="required">*</span></label>
+            <div class="radio-row">
+                {% for level in risk_levels %}
+                <label>
+                    <input type="radio" name="risk_level" value="{{ level }}"
+                           {% if form.get('risk_level') == level or (not form.get('risk_level') and level == default_risk_level) %}checked{% endif %}>
+                    {{ level }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="field">
+            <label for="rectification_plan">整改方案 <span class="required">*</span></label>
+            <textarea id="rectification_plan" name="rectification_plan" required rows="5"
+                      placeholder="填写整改措施……">{{ form.get('rectification_plan', '') }}</textarea>
+        </div>
+
+        <button type="submit">提交保存</button>
+    </form>
+</div>
+
+<script>
+    function toggleCustomDefect() {
+        const select = document.getElementById("defect_type");
+        const customBox = document.getElementById("custom_defect_type");
+        const isCustom = select.value === "{{ custom_option }}";
+        customBox.style.display = isCustom ? "block" : "none";
+        if (isCustom) customBox.focus();
+    }
+    toggleCustomDefect();
+</script>
+{% endblock %}
