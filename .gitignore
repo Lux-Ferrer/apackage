@@ -15,10 +15,9 @@ uploads/defects/*
 .pytest_cache/
 .coverage
 
-# 与本应用无关的过程性文件（PDF 拆分任务产物、截图等），保留在磁盘但不入库
+# 过程性文件（PDF 拆分中间产物、截图等）
 _work/
 *.bmp
-Sign*.pdf
-sign2.pdf
-Sign_p2.docx
-*_signed.pdf
+
+# 已归档的签署类文档（含签名与联系方式），默认不推送到 GitHub
+docs/management/signed/
