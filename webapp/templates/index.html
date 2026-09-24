@@ -4,7 +4,7 @@
 {% block content %}
 <div class="card">
     <h1>模块进度</h1>
-    <p class="sub">M0 底座已完成：代码拆包、数据库 schema、Word A4 报告底座。</p>
+    <p class="sub">M1 已完成：项目管理、立柱/横梁检测记录录入。</p>
 
     <table class="grid">
         <thead>
@@ -16,7 +16,7 @@
                 <td>{{ name }}</td>
                 <td><span class="badge {{ 'ok' if ready else 'todo' }}">{{ status }}</span></td>
                 <td class="right">
-                    {% if ready %}
+                    {% if ready and endpoint %}
                         <a class="btn small" href="{{ url_for(endpoint) }}">进入</a>
                     {% else %}
                         <span class="muted">—</span>
@@ -26,6 +26,16 @@
         {% endfor %}
         </tbody>
     </table>
+</div>
+
+<div class="card">
+    <h2>使用顺序</h2>
+    <ol class="plain">
+        <li>在「项目」里新建一个项目（项目编号 + 房屋名称必填）；</li>
+        <li>进入项目详情，点「添加检测记录」，选择立柱或横梁模板；</li>
+        <li>填写楼层、构件位置与每个检测面的 5 个厚度读数（最小值自动计算）；</li>
+        <li>同一项目可混合录入立柱与横梁记录。</li>
+    </ol>
 </div>
 
 <div class="card">

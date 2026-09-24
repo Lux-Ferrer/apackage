@@ -35,3 +35,10 @@ def conn(tmp_path):
     connection = db_module.connect(path)
     yield connection
     connection.close()
+
+
+@pytest.fixture
+def ctx(app):
+    """服务层测试用的应用上下文（db.get_db / db.transaction 需要它）。"""
+    with app.app_context():
+        yield

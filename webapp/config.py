@@ -66,6 +66,12 @@ TEMPLATE_NAMES = {
     TEMPLATE_BEAM: "幕墙横梁",
 }
 
+# 短名，用于项目详情/列表的紧凑展示
+TEMPLATE_SHORT_NAMES = {
+    TEMPLATE_COLUMN: "立柱",
+    TEMPLATE_BEAM: "横梁",
+}
+
 # Word 章节标题（实测自样例正文）
 TEMPLATE_TITLES = {
     TEMPLATE_COLUMN: "幕墙立柱截面尺寸检测结果",

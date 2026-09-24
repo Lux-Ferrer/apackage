@@ -24,11 +24,11 @@ def test_home_page(client):
     assert "模块进度" in response.get_data(as_text=True)
 
 
-def test_projects_placeholder(client):
-    """M1 未开发：占位页可达即可。"""
+def test_projects_page_reachable(client):
+    """M1 之后 /projects/ 已是真实列表页（此处为空态）。"""
     response = client.get("/projects/")
     assert response.status_code == 200
-    assert "M1 待开发" in response.get_data(as_text=True)
+    assert "还没有项目" in response.get_data(as_text=True)
 
 
 def test_form_page_lists_preset_defect_types(client):

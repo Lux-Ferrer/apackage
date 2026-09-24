@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% set editing = mode == 'edit' %}
+{% block title %}{{ '编辑检测记录' if editing else '新增检测记录' }} - 建筑幕墙检测报告工具{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="page-head">
+        <h1>{{ '编辑检测记录' if editing else '新增检测记录' }}</h1>
+        <a class="link" href="{{ url_for('projects.detail', project_id=project['id']) }}">← 返回项目详情</a>
+    </div>
+    <p class="sub">项目：{{ project['house_name'] }}（{{ project['project_no'] }}）</p>
+
+    {# 模板类型：编辑时只读展示，页面上不存在任何切换控件 #}
+    <div class="template-badge">
+        <span class="label">模板</span>
+        <strong>{{ template_title }}</strong>
+        {% if editing %}
+        <span class="muted">（模板类型不可切换）</span>
+        {% endif %}
+    </div>
+
+    {% if errors.get('faces') %}<div class="error">{{ errors.get('faces') }}</div>{% endif %}
+    {% if table_errors %}
+    <div class="error">
+        {% for field, message in table_errors %}<div>{{ message }}</div>{% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" id="record-form"
+          action="{% if editing %}{{ url_for('records.update', record_id=record['id']) }}{% else %}{{ url_for('records.create', project_id=project['id'], template=template_type) }}{% endif %}">
+
+        <h2 class="section-title">构件信息</h2>
+        <div class="field-row">
+            <div class="field">
+                <label for="floor">楼层 <span class="required">*</span></label>
+                <input type="text" id="floor" name="floor" maxlength="30" autocomplete="off"
+                       class="{% if errors.get('floor') %}input-error{% endif %}"
+                       value="{{ values['floor'] }}" placeholder="如：六层">
+                {% if errors.get('floor') %}<p class="field-error">{{ errors.get('floor') }}</p>{% endif %}
+            </div>
+
+            <div class="field">
+                <label for="member_position">构件位置 <span class="required">*</span></label>
+                <input type="text" id="member_position" name="member_position" maxlength="30" autocomplete="off"
+                       class="{% if errors.get('member_position') %}input-error{% endif %}"
+                       value="{{ values['member_position'] }}" placeholder="如：1">
+                {% if errors.get('member_position') %}<p class="field-error">{{ errors.get('member_position') }}</p>{% endif %}
+            </div>
+
+            <div class="field">
+                <label for="size_result">尺寸结果（mm）</label>
+                <input type="text" id="size_result" name="size_result" maxlength="30" autocomplete="off"
+                       class="{% if errors.get('size_result') %}input-error{% endif %}"
+                       value="{{ values['size_result'] }}" placeholder="如：63×164">
+                <p class="hint">填 x 或 * 会自动转成 ×（如 63x164 → 63×164）</p>
+            </div>
+        </div>
+
+        <div class="field">
+            <label for="requirement_index">{{ requirement_label }}</label>
+            <select id="requirement_index" name="requirement_index">
+                <option value="" {% if selected_requirement is none %}selected{% endif %}>（不填，报告中显示「无」）</option>
+                {% for option in requirement_options %}
+                <option value="{{ loop.index0 }}" {% if selected_requirement == loop.index0 %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+                {% if requirement_history %}
+                <option value="{{ keep_requirement }}" {% if selected_requirement == keep_requirement %}selected{% endif %}>（历史条文，当前预置项中已无）{{ requirement_history }}</option>
+                {% endif %}
+            </select>
+        </div>
+
+        <h2 class="section-title">
+            厚度检测
+            <span class="muted">（每个检测面 {{ value_count }} 个读数，最小值自动计算）</span>
+        </h2>
+
+        <table class="face-table" id="face-table"
+               data-value-count="{{ value_count }}" data-face-max="{{ face_max }}">
+            <thead>
+                <tr>
+                    <th class="col-face">检测面</th>
+                    {% for position in range(1, value_count + 1) %}<th>{{ position }}</th>{% endfor %}
+                    <th class="col-min">最小值</th>
+                    <th class="col-op"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr class="face-row">
+                    <td class="col-face">
+                        <input type="text" class="face-input{% if errors.get('face_' ~ row.index) %} input-error{% endif %}"
+                               name="face_{{ row.index }}" list="face-suggestions" maxlength="10"
+                               autocomplete="off" value="{{ row.face }}"
+                               placeholder="如 {{ face_suggestions[0] }}">
+                    </td>
+                    {% for position in range(1, value_count + 1) %}
+                    {% set field = 'value_' ~ row.index ~ '_' ~ position %}
+                    <td>
+                        <input type="text" inputmode="decimal" autocomplete="off"
+                               class="reading{% if errors.get(field) %} input-error{% endif %}"
+                               name="{{ field }}" value="{{ row.readings[position - 1] }}">
+                    </td>
+                    {% endfor %}
+                    <td class="col-min"><span class="min-value">{{ row.min_text or '—' }}</span></td>
+                    <td class="col-op">
+                        <button type="button" class="row-remove" title="删除这一行">✕</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="table-actions">
+            <button type="button" class="btn ghost small" id="add-face">+ 添加检测面</button>
+            <span class="hint" id="face-hint">最多 {{ face_max }} 个检测面</span>
+        </div>
+
+        <datalist id="face-suggestions">
+            {% for suggestion in face_suggestions %}<option value="{{ suggestion }}"></option>{% endfor %}
+        </datalist>
+
+        <div class="actions">
+            <button type="submit">保存</button>
+            <a class="link" href="{{ url_for('projects.detail', project_id=project['id']) }}">取消</a>
+        </div>
+    </form>
+</div>
+
+{# JS 复制这一行来新增检测面；__INDEX__ 会被替换成行下标 #}
+<template id="face-row-template">
+    <tr class="face-row">
+        <td class="col-face">
+            <input type="text" class="face-input" name="face___INDEX__" list="face-suggestions"
+                   maxlength="10" autocomplete="off" value="" placeholder="如 {{ face_suggestions[0] }}">
+        </td>
+        {% for position in range(1, value_count + 1) %}
+        <td>
+            <input type="text" inputmode="decimal" autocomplete="off"
+                   class="reading" name="value___INDEX___{{ position }}" value="">
+        </td>
+        {% endfor %}
+        <td class="col-min"><span class="min-value">—</span></td>
+        <td class="col-op"><button type="button" class="row-remove" title="删除这一行">✕</button></td>
+    </tr>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/record_form.js') }}"></script>
+{% endblock %}

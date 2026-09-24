@@ -1,16 +1,105 @@
 # -*- coding: utf-8 -*-
-"""项目管理与检测记录（M1 实现，当前为占位页）。"""
+"""项目管理：列表 / 新建 / 详情 / 编辑 / 删除。"""
 
 from __future__ import annotations
 
-from flask import Blueprint, render_template
+import sqlite3
 
-from .. import config
+from flask import (Blueprint, abort, flash, redirect, render_template, request,
+                   url_for)
+
+from ..services import measurements
+from ..services import projects as project_service
 
 bp = Blueprint("projects", __name__, url_prefix="/projects")
+
+FORM_FIELDS = ("project_no", "house_name", "house_address", "client_org", "test_date")
+
+
+def _project_or_404(project_id):
+    project = project_service.get(project_id)
+    if project is None:
+        abort(404)
+    return project
+
+
+def _render_form(form, errors, project=None):
+    return render_template("projects/form.html", form=form, errors=errors, project=project)
 
 
 @bp.get("/")
 def index():
-    """M1 占位：项目管理 CRUD 与立柱/横梁检测记录录入将在本模块实现。"""
-    return render_template("projects/placeholder.html", config=config)
+    return render_template("projects/list.html", projects=project_service.list_with_counts())
+
+
+@bp.get("/new")
+def new():
+    return _render_form({}, {})
+
+
+@bp.post("/")
+def create():
+    data, errors = project_service.parse_form(request.form)
+    if not errors:
+        try:
+            project_id = project_service.create(data)
+        except sqlite3.IntegrityError:
+            errors["project_no"] = "项目编号「%s」已存在，请换一个" % data["project_no"]
+        else:
+            flash("项目已创建：%s（%s）" % (data["house_name"], data["project_no"]))
+            return redirect(url_for("projects.detail", project_id=project_id))
+    return _render_form(request.form, errors), 400
+
+
+@bp.get("/<int:project_id>")
+def detail(project_id):
+    project = _project_or_404(project_id)
+    groups = measurements.grouped_by_template(project_id)
+    counts = {group["template_type"]: group["count"] for group in groups}
+
+    return render_template(
+        "projects/detail.html",
+        project=project,
+        groups=groups,
+        counts=counts,
+        counts_text=measurements.describe_counts(counts),
+        defects=project_service.list_defects(project_id),
+        delete_message=project_service.build_delete_message(
+            project, project_service.delete_impact(project_id)
+        ),
+    )
+
+
+@bp.get("/<int:project_id>/edit")
+def edit(project_id):
+    project = _project_or_404(project_id)
+    form = {field: project[field] for field in FORM_FIELDS}
+    return _render_form(form, {}, project)
+
+
+@bp.post("/<int:project_id>/update")
+def update(project_id):
+    project = _project_or_404(project_id)
+    data, errors = project_service.parse_form(request.form)
+    if not errors:
+        try:
+            project_service.update(project_id, data)
+        except sqlite3.IntegrityError:
+            errors["project_no"] = "项目编号「%s」已被其他项目使用" % data["project_no"]
+        except LookupError:
+            abort(404)
+        else:
+            flash("项目已更新")
+            return redirect(url_for("projects.detail", project_id=project_id))
+    return _render_form(request.form, errors, project), 400
+
+
+@bp.post("/<int:project_id>/delete")
+def delete(project_id):
+    project = _project_or_404(project_id)
+    try:
+        project_service.delete(project_id)
+    except LookupError:
+        abort(404)
+    flash("项目已删除：%s（%s）" % (project["house_name"], project["project_no"]))
+    return redirect(url_for("projects.index"))

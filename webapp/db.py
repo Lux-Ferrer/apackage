@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
 
 from flask import current_app, g
@@ -99,3 +100,29 @@ def execute(sql: str, params=()) -> int:
     cur = conn.execute(sql, params)
     conn.commit()
     return cur.lastrowid
+
+
+@contextmanager
+def transaction():
+    """把一组写操作收成一个原子事务。
+
+    python sqlite3 默认隔离级别下，块内第一条 DML 会自动开启事务；这里用
+    ``commit`` / ``rollback`` 明确收口：
+
+    - 块内抛异常（含 ``IntegrityError`` 等约束冲突）→ 整体 ``rollback`` 并重新抛出；
+    - 正常结束 → ``commit``。
+
+    用法::
+
+        with db.transaction() as conn:
+            record_id = conn.execute(...).lastrowid
+            conn.execute(...)          # 失败则上面那条 INSERT 一并回滚
+    """
+    conn = get_db()
+    try:
+        yield conn
+    except Exception:
+        conn.rollback()
+        raise
+    else:
+        conn.commit()

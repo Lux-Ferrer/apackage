@@ -8,18 +8,18 @@ Existing Curtain Wall Inspection Data Recording and Report Generation Tool —�
 
 ## 当前状态
 
-**M0（代码底座）已完成** —— 2026-09-22
+**M1（项目管理 + 检测记录录入）已完成** —— 2026-09-23
 
 | 里程碑 | 内容 | 状态 |
 | --- | --- | --- |
 | M0 | 拆包、数据库 schema、Word A4 报告底座 | ✅ 完成 |
-| M1 | 项目管理 + 立柱/横梁检测记录录入 | ⏳ 待开发 |
+| M1 | 项目管理 CRUD + 立柱/横梁检测记录录入 | ✅ 完成 |
 | M2 | 项目级 Word 导出（立柱/横梁表，与样例对拍） | ⏳ 待开发 |
 | M3 | 缺陷报告完善（图片/规范/建议/绑定项目）+ 附页导出 | ⏳ 待开发 |
 | M4 | 报告管理 | ⏳ 待开发 |
 | M5 | 测试、打磨、交付打包 | ⏳ 待开发 |
 
-M0 具体交付：代码按职责拆包（路由 / 数据访问 / 服务）；4 张表的 schema 与建库逻辑；Word 报告底座（A4 页面 + 样例字体 + 表格原语）；PoC 的缺陷填报链路迁移进蓝图并保持可用；56 项自动化测试。
+M1 交付：项目增删改查（编号唯一、列表显示记录数、删除二次确认并提示级联影响）；立柱/横梁两种模板的检测记录录入，每检测面 5 个厚度读数并实时计算最小值；多检测面构件；编辑时模板类型锁定；项目详情展示记录数与关联报告。
 
 ## 范围
 
@@ -38,17 +38,27 @@ python app.py
 
 浏览器打开 <http://127.0.0.1:5000>。首次启动会自动按 `webapp/schema.sql` 建库（`defects.db`）。
 
+使用顺序：新建项目 → 进入项目详情 → 添加检测记录（选立柱或横梁模板）→ 填写构件信息与检测面读数 → 保存。
+
 ## 测试
 
 ```powershell
-python -m pytest -q          # 全部测试
+python -m pytest -q                              # Python 测试套件（132 项）
 python -m pytest tests/test_word_report.py -v    # 只跑 Word 版式相关
 ```
 
-导出的报告底座由样例派生，若 `webapp/resources/report_base.docx` 缺失或需要重建：
+两个额外的验证工具：
 
 ```powershell
-python tools/make_report_template.py
+python tools/verify_case_data.py     # 用 docs/samples 的真实案例数据走完整录入链路并逐面比对最小值
+python tools/make_report_template.py # 从样例重生报告底座（webapp/resources/report_base.docx）
+```
+
+前端 JS 功能测试（可选，需要 Node.js）：
+
+```powershell
+npm install --no-save jsdom
+node tests/js/record_form.test.js    # 21 项：实时最小值、增删检测面行
 ```
 
 ## 目录结构
@@ -60,27 +70,33 @@ Capstone/
 ├── webapp/                    应用包
 │   ├── __init__.py            应用工厂：注册蓝图、启动建库
 │   ├── config.py              路径、预置缺陷类型、截面要求条文、检测面建议值
-│   ├── db.py                  SQLite 连接 / 建库 / 查询助手
+│   ├── db.py                  SQLite 连接 / 建库 / 查询助手 / transaction()
 │   ├── schema.sql             4 张表：projects / measurement_records /
 │   │                          thickness_readings / defects
 │   ├── resources/
 │   │   └── report_base.docx   Word 报告底座（由样例派生，见下）
-│   ├── routes/                pages.py / projects.py / defects.py
+│   ├── routes/                pages.py / projects.py / records.py / defects.py
 │   ├── services/
 │   │   ├── thickness.py       5 个厚度读数 -> 最小值、格式化
+│   │   ├── projects.py        项目读写、列表统计、删除影响面
+│   │   ├── measurements.py    记录表单解析、事务化增删改、分组读取
 │   │   └── word_report.py     A4 底座 + 表格原语（列宽/边框/合并/行高）
-│   ├── templates/             base / index / defects / projects
-│   └── static/css/app.css
+│   ├── templates/             base / index / projects / records / defects
+│   └── static/                css/app.css · js/app.js · js/record_form.js
 ├── reports/                   导出的 .docx（gitignore）
 ├── uploads/defects/           隐患图片（gitignore）
 ├── tests/
 │   ├── fixtures/              金骐智谷_金骐_检测报告.docx（对拍基准，勿改）
+│   ├── js/record_form.test.js 前端功能测试（jsdom）
 │   ├── test_db.py             表结构、约束、级联语义
 │   ├── test_thickness.py      最小值计算
 │   ├── test_word_report.py    A4 页面、字体、表格原语、与样例参数对齐
+│   ├── test_measurements.py   表单解析、事务回滚、编辑锁定
+│   ├── test_projects.py       项目 CRUD 与校验
+│   ├── test_records.py        记录 CRUD、模板锁定、最小值链路
 │   └── test_web.py            路由与完整链路冒烟
-├── tools/make_report_template.py
-└── docs/                      需求、计划、章程、案例资料
+├── tools/                     make_report_template.py · verify_case_data.py
+└── docs/                      需求、计划、章程、案例资料、设计文档
 ```
 
 ## Word 报告底座说明（重要）
@@ -102,14 +118,19 @@ Capstone/
 ## 关键业务规则
 
 - 每个检测面的最小值为该面 5 个读数的派生值，**不落库**，导出保留两位小数（`webapp/services/thickness.py`）
+- **前端实时最小值只是预览**：保存与导出时由服务端重算，前端结果不被信任
 - 检测面标签为短文本（真实数据：立柱 `B` / `H`，横梁 `t`），允许自由输入，不做枚举约束
 - 同一构件有多个检测面时，Word 导出需把「楼层 / 构件位置 / 尺寸检测结果 / 截面尺寸要求」四列纵向合并
+- 尺寸结果自动把 `x` / `X` / `*` 规范化为 `×`（如 `63x164` → `63×164`）
 - 截面尺寸要求存**文案快照**；为空时显示「无」
+- **编辑检测记录时模板类型不可切换**，三道防线：界面无控件、路由不接收该字段、`UPDATE` 语句不含该列
+- 检测记录与其厚度读数在**同一事务**内提交，任一步失败整体回滚
 - 删除项目 → 级联删除其检测记录；关联缺陷报告 `project_id` **置空保留**
 - 隐患图片存文件路径（`uploads/defects/`），不入库为 base64/BLOB
 
 ## 文档索引
 
 - `docs/requirements/` 需求报告（原始需求全文）
-- `docs/management/` 项目章程、开发计划、阶段交接记录
+- `docs/management/` 项目章程、开发计划、M1 设计、阶段交接记录
+- `docs/management/signed/` 签署类文档（含签名与联系方式，不入仓库）
 - `docs/samples/` 检测结果案例（Excel + 截图）

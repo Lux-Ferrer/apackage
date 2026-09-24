@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}{{ project['house_name'] }} - 项目详情{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="page-head">
+        <h1>{{ project['house_name'] }} <span class="muted">（{{ project['project_no'] }}）</span></h1>
+        <div class="head-actions">
+            <a class="btn ghost small" href="{{ url_for('projects.edit', project_id=project['id']) }}">编辑项目</a>
+            <form method="post" class="inline-form"
+                  action="{{ url_for('projects.delete', project_id=project['id']) }}"
+                  data-confirm="{{ delete_message }}" data-confirm-ok="确认删除">
+                <button type="submit" class="btn danger small">删除项目</button>
+            </form>
+        </div>
+    </div>
+
+    <dl class="info-grid">
+        <div><dt>项目编号</dt><dd>{{ project['project_no'] }}</dd></div>
+        <div><dt>房屋名称</dt><dd>{{ project['house_name'] }}</dd></div>
+        <div><dt>房屋地点</dt><dd>{{ project['house_address'] or '—' }}</dd></div>
+        <div><dt>委托单位</dt><dd>{{ project['client_org'] or '—' }}</dd></div>
+        <div><dt>检测日期</dt><dd>{{ project['test_date'] or '—' }}</dd></div>
+    </dl>
+</div>
+
+<div class="card">
+    <div class="page-head">
+        <h2>检测记录 <span class="muted">（{{ counts_text }}）</span></h2>
+        <a class="btn small" href="{{ url_for('records.new', project_id=project['id']) }}">+ 添加检测记录</a>
+    </div>
+
+    {% for group in groups %}
+    <section class="record-group">
+        <h3 class="group-title">
+            {{ group.short_name }}
+            <span class="muted">（{{ group.title }}，{{ group.count }} 条）</span>
+        </h3>
+
+        {% if group.records %}
+            {% for item in group.records %}
+            <details class="record" id="record-{{ item.record['id'] }}">
+                <summary>
+                    <span class="rec-title">{{ item.record['floor'] }} · 构件 {{ item.record['member_position'] }}</span>
+                    <span class="rec-meta">
+                        {{ item.record['size_result'] or '尺寸未填' }}
+                        · {{ item.faces|length }} 个面（{% for face in item.faces %}{{ face.face }}{% if not loop.last %}/{% endif %}{% endfor %}）
+                    </span>
+                    <span class="rec-actions">
+                        <a class="link" href="{{ url_for('records.edit', record_id=item.record['id']) }}">编辑</a>
+                        <form method="post" class="inline-form"
+                              action="{{ url_for('records.delete', record_id=item.record['id']) }}"
+                              data-confirm="确认删除这条检测记录（{{ item.record['floor'] }} · 构件 {{ item.record['member_position'] }}，{{ item.faces|length }} 个检测面）？"
+                              data-confirm-ok="确认删除">
+                            <button type="submit" class="link danger-link">删除</button>
+                        </form>
+                    </span>
+                </summary>
+
+                <div class="record-body">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th class="col-face">检测面</th>
+                                {% for position in range(1, 6) %}<th>{{ position }}</th>{% endfor %}
+                                <th class="col-min">最小值</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for face in item.faces %}
+                            <tr>
+                                <td class="col-face">{{ face.face }}</td>
+                                {% for text in face.readings_text %}<td>{{ text or '—' }}</td>{% endfor %}
+                                <td class="col-min">{{ face.min_text or '—' }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="7" class="muted">这条记录还没有检测面数据</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    <p class="requirement">
+                        <span class="label">{{ group.requirement_label }}：</span>{{ item.record['requirement_text'] or '无' }}
+                    </p>
+                </div>
+            </details>
+            {% endfor %}
+        {% else %}
+            <p class="hint">还没有{{ group.short_name }}记录。</p>
+        {% endif %}
+    </section>
+    {% endfor %}
+</div>
+
+<div class="card">
+    <h2>关联缺陷报告 <span class="muted">（{{ defects|length }} 份）</span></h2>
+
+    {% if defects %}
+    <table class="grid">
+        <thead>
+            <tr><th>缺陷类型</th><th>隐患等级</th><th>工程部位</th><th>提交时间</th></tr>
+        </thead>
+        <tbody>
+            {% for defect in defects %}
+            <tr>
+                <td>{{ defect['defect_type'] }}</td>
+                <td>
+                    <span class="badge {{ {'高': 'high', '中': 'medium', '低': 'low'}[defect['risk_level']] }}">{{ defect['risk_level'] }}</span>
+                </td>
+                <td>{{ defect['project_part'] }}</td>
+                <td class="muted">{{ defect['created_at'] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="hint">暂无关联报告。缺陷填报的「绑定项目」在 M3 实现。</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}选择检测记录模板 - 建筑幕墙检测报告工具{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="page-head">
+        <h1>选择检测记录模板</h1>
+        <a class="link" href="{{ url_for('projects.detail', project_id=project['id']) }}">← 返回项目详情</a>
+    </div>
+    <p class="sub">项目：{{ project['house_name'] }}（{{ project['project_no'] }}）</p>
+
+    <div class="template-choices">
+        {% for choice in choices %}
+        <a class="template-card"
+           href="{{ url_for('records.new', project_id=project['id'], template=choice.template_type) }}">
+            <h3>{{ choice.name }}</h3>
+            <p class="template-title">{{ choice.title }}</p>
+            <p class="muted">建议检测面：{{ choice.faces }}</p>
+            <p class="muted">截面尺寸要求条文：{{ choice.requirement_count }} 条</p>
+            <span class="btn small">选择</span>
+        </a>
+        {% endfor %}
+    </div>
+
+    <p class="hint">两类模板字段结构一致，仅名称与「截面尺寸要求」下拉选项不同；同一项目可混合录入。</p>
+</div>
+{% endblock %}

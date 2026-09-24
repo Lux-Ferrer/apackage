@@ -30,10 +30,11 @@ def create_app(test_config: dict | None = None) -> Flask:
     _ensure_directories(app)
     db.init_db(app.config["DB_PATH"])
 
-    from .routes import defects, pages, projects
+    from .routes import defects, pages, projects, records
 
     app.register_blueprint(pages.bp)
     app.register_blueprint(projects.bp)
+    app.register_blueprint(records.bp)
     app.register_blueprint(defects.bp)
 
     app.teardown_appcontext(db.close_db)

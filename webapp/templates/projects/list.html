@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}项目 - 建筑幕墙检测报告工具{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="page-head">
+        <h1>项目</h1>
+        <a class="btn" href="{{ url_for('projects.new') }}">+ 新建项目</a>
+    </div>
+
+    {% if projects %}
+    <table class="grid">
+        <thead>
+            <tr>
+                <th>项目编号</th>
+                <th>房屋名称</th>
+                <th>房屋地点</th>
+                <th>检测日期</th>
+                <th>记录数</th>
+                <th class="right">操作</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for project in projects %}
+            <tr>
+                <td>
+                    <a class="link strong" href="{{ url_for('projects.detail', project_id=project['id']) }}">{{ project['project_no'] }}</a>
+                </td>
+                <td>{{ project['house_name'] }}</td>
+                <td>{{ project['house_address'] or '—' }}</td>
+                <td>{{ project['test_date'] or '—' }}</td>
+                <td class="muted">立柱 {{ project['column_count'] }} · 横梁 {{ project['beam_count'] }}</td>
+                <td class="right nowrap">
+                    <a class="link" href="{{ url_for('projects.detail', project_id=project['id']) }}">详情</a>
+                    <a class="link" href="{{ url_for('projects.edit', project_id=project['id']) }}">编辑</a>
+                    <form method="post" class="inline-form"
+                          action="{{ url_for('projects.delete', project_id=project['id']) }}"
+                          data-confirm="确认删除项目「{{ project['house_name'] }}（{{ project['project_no'] }}）」？将同时删除该项目下 {{ project['column_count'] + project['beam_count'] }} 条检测记录；关联的缺陷报告会解除绑定并保留。"
+                          data-confirm-ok="确认删除">
+                        <button type="submit" class="link danger-link">删除</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="hint">还没有项目。</p>
+    <p><a class="btn" href="{{ url_for('projects.new') }}">新建第一个项目</a></p>
+    {% endif %}
+</div>
+{% endblock %}

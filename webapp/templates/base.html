@@ -12,18 +12,41 @@
             <a class="brand" href="{{ url_for('pages.index') }}">建筑幕墙检测报告工具</a>
             <nav>
                 <a href="{{ url_for('pages.index') }}">首页</a>
-                <a href="{{ url_for('defects.new') }}">缺陷填报</a>
                 <a href="{{ url_for('projects.index') }}">项目</a>
+                <a href="{{ url_for('defects.new') }}">缺陷填报</a>
             </nav>
         </div>
     </header>
 
     <main class="wrap">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <div class="flashes">
+                {% for message in messages %}<div class="flash">{{ message }}</div>{% endfor %}
+            </div>
+            {% endif %}
+        {% endwith %}
+
         {% block content %}{% endblock %}
     </main>
 
     <footer class="wrap foot">
         本期范围：立柱 / 横梁截面尺寸检测（5 个厚度值自动计算最小值）· 缺陷检测填报 · 项目级 Word 导出
     </footer>
+
+    {# 应用内确认弹窗：带 data-confirm 的表单提交前会走这里 #}
+    <dialog id="confirm-dialog" class="dialog">
+        <form method="dialog">
+            <h2 id="confirm-title">请确认</h2>
+            <p id="confirm-message" class="dialog-message"></p>
+            <div class="dialog-actions">
+                <button value="cancel" class="btn ghost">取消</button>
+                <button value="confirm" class="btn danger" id="confirm-ok">确认删除</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>
