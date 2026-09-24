@@ -45,11 +45,10 @@ def get(project_id):
     return db.query_one("SELECT * FROM projects WHERE id = ?", (project_id,))
 
 
-def list_defects(project_id):
-    """项目关联的缺陷报告（倒序）。绑定字段在 M3 实现，这里先做只读展示。"""
+def list_options():
+    """缺陷填报「绑定项目」下拉用的轻量列表。"""
     return db.query_all(
-        "SELECT * FROM defects WHERE project_id = ? ORDER BY created_at DESC, id DESC",
-        (project_id,),
+        "SELECT id, project_no, house_name FROM projects ORDER BY id DESC"
     )
 
 

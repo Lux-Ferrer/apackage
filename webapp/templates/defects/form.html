@@ -4,11 +4,24 @@
 {% block content %}
 <div class="card">
     <h1>缺陷检测填报</h1>
-    <p class="sub">提交后写入本地 SQLite，可导出 Word 报告（M3 将补齐图片与项目绑定）</p>
+    <p class="sub">拍照取证 + 填写结论；提交后写入本地 SQLite，可随项目报告输出附页</p>
 
-    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    <form method="post" action="{{ url_for('defects.create') }}" enctype="multipart/form-data">
 
-    <form method="post" action="{{ url_for('defects.create') }}">
+        <h2 class="form-section">隐患信息</h2>
+
+        <div class="field">
+            <label for="image">隐患图片 <span class="required">*</span></label>
+            <input type="file" id="image" name="image" accept="image/*" capture="environment"
+                   data-max-bytes="{{ max_image_mb * 1024 * 1024 }}"
+                   class="{% if errors.get('image') %}input-error{% endif %}">
+            <p class="hint">拍照或从相册选择；不超过 {{ max_image_mb }}MB，支持 {{ allowed_image_types|join('、') }}</p>
+            <p class="field-error" id="image-error"{% if not errors.get('image') %} hidden{% endif %}>{{ errors.get('image', '') }}</p>
+            <div class="image-preview" id="image-preview" hidden>
+                <img id="image-preview-img" alt="隐患图片预览">
+            </div>
+        </div>
+
         <div class="field">
             <label for="defect_type">缺陷类型 <span class="required">*</span></label>
             <select id="defect_type" name="defect_type" required onchange="toggleCustomDefect()">
@@ -19,12 +32,14 @@
             <input type="text" id="custom_defect_type" name="custom_defect_type" maxlength="100"
                    placeholder="请输入自定义缺陷类型" style="display:none; margin-top:8px;"
                    value="{{ form.get('custom_defect_type', '') }}">
+            {% if errors.get('custom_defect_type') %}<p class="field-error">{{ errors.get('custom_defect_type') }}</p>{% endif %}
         </div>
 
         <div class="field">
             <label for="project_part">工程部位 <span class="required">*</span></label>
             <input type="text" id="project_part" name="project_part" required maxlength="200"
                    placeholder="如：东立面三层 1# 立柱" value="{{ form.get('project_part', '') }}">
+            {% if errors.get('project_part') %}<p class="field-error">{{ errors.get('project_part') }}</p>{% endif %}
         </div>
 
         <div class="field">
@@ -38,18 +53,64 @@
                 </label>
                 {% endfor %}
             </div>
+            {% if errors.get('risk_level') %}<p class="field-error">{{ errors.get('risk_level') }}</p>{% endif %}
         </div>
+
+        <h2 class="form-section">处理建议</h2>
 
         <div class="field">
             <label for="rectification_plan">整改方案 <span class="required">*</span></label>
             <textarea id="rectification_plan" name="rectification_plan" required rows="5"
                       placeholder="填写整改措施……">{{ form.get('rectification_plan', '') }}</textarea>
+            {% if errors.get('rectification_plan') %}<p class="field-error">{{ errors.get('rectification_plan') }}</p>{% endif %}
         </div>
 
-        <button type="submit">提交保存</button>
+        <div class="field">
+            <label for="related_standards">相关规范</label>
+            <textarea id="related_standards" name="related_standards" rows="3"
+                      placeholder="违反的标准条款（标准名称 + 条款号）">{{ form.get('related_standards', '') }}</textarea>
+            <p class="hint">选填；每行一条</p>
+        </div>
+
+        <div class="field">
+            <label for="extra_advice">补充建议</label>
+            <textarea id="extra_advice" name="extra_advice" rows="3"
+                      placeholder="人工补充说明（选填）">{{ form.get('extra_advice', '') }}</textarea>
+        </div>
+
+        <h2 class="form-section">归属</h2>
+
+        <div class="field">
+            <label for="project_id">绑定项目</label>
+            <select id="project_id" name="project_id">
+                <option value="">不绑定</option>
+                {% for project in projects %}
+                <option value="{{ project['id'] }}"
+                        {% if form.get('project_id') == project['id']|string %}selected{% endif %}>
+                    {{ project['project_no'] }} - {{ project['house_name'] }}
+                </option>
+                {% endfor %}
+            </select>
+            <p class="hint">绑定后，该报告可作为附页随项目报告一并导出</p>
+            {% if errors.get('project_id') %}<p class="field-error">{{ errors.get('project_id') }}</p>{% endif %}
+        </div>
+
+        <div class="field">
+            <label>报告人</label>
+            <p class="readonly-value">{{ reporter.name }}（{{ reporter.department }}）</p>
+            <p class="hint">取当前用户（登录功能未纳入本期，暂用默认用户）</p>
+        </div>
+
+        <div class="actions">
+            <button type="submit">提交保存</button>
+            <a class="link" href="{{ url_for('pages.index') }}">取消</a>
+        </div>
     </form>
 </div>
+{% endblock %}
 
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/defects_form.js') }}"></script>
 <script>
     function toggleCustomDefect() {
         const select = document.getElementById("defect_type");

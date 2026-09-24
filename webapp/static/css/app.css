@@ -96,6 +96,34 @@ button:disabled { background: #c9ced6; cursor: not-allowed; }
 .actions { margin-top: 24px; display: flex; gap: 14px; align-items: center; }
 .table-actions { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
 
+/* 表单分节（缺陷填报按需求 3.3.1 的流程分为 隐患信息 / 处理建议 / 归属） */
+.form-section {
+    font-size: 14px; color: var(--muted); font-weight: 600;
+    margin: 26px 0 14px; padding-bottom: 6px; border-bottom: 1px solid var(--line);
+}
+.form-section:first-of-type { margin-top: 6px; }
+
+/* 文件选择与图片预览 */
+input[type="file"] {
+    width: 100%; padding: 8px 10px; border: 1px dashed #c3c9d2; border-radius: 6px;
+    background: #fafbfc; font-size: 14px; font-family: inherit;
+}
+input[type="file"]::file-selector-button {
+    margin-right: 10px; padding: 6px 12px; border: 0; border-radius: 6px;
+    background: var(--accent); color: #fff; font-size: 13px; cursor: pointer;
+}
+.image-preview { margin-top: 10px; }
+.image-preview img {
+    max-width: 100%; max-height: 260px; border: 1px solid var(--line); border-radius: 6px;
+}
+img.thumb {
+    max-width: 220px; max-height: 220px; border: 1px solid var(--line); border-radius: 6px;
+    display: block;
+}
+.readonly-value { margin: 0; padding: 8px 10px; background: #f7f8fa; border: 1px solid var(--line); border-radius: 6px; }
+.clip { font-size: 12px; }
+.back-link { margin: 0 0 12px; }
+
 /* 保存前的整体校验提示（有非法读数时显示） */
 .form-status {
     display: none; margin: 18px 0 0; padding: 8px 12px; border-radius: 6px; font-size: 13px;

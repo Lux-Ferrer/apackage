@@ -53,11 +53,37 @@ DEFAULT_RISK_LEVEL = "中"
 
 MAX_IMAGE_BYTES = 20 * 1024 * 1024                      # 单张隐患图片 ≤20MB
 
+# 隐患图片上传白名单（扩展名 + Pillow 识别出的真实格式，双重校验）
+ALLOWED_IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png")
+ALLOWED_IMAGE_FORMATS = ("JPEG", "PNG")
+
 # 登录功能不在本期范围，报告人/部门先取配置常量（将来接入登录再替换）
 DEFAULT_REPORTER = {
     "name": "Zeyu Jin",
     "department": "结构工程部",
+    "department_code": "KJGL",      # 供 M5「我的」用户卡显示
+    "employee_no": "",
 }
+
+# 检测报告附页（需求报告 4.4）的字段顺序与标签
+# 末尾的「图片文件」是为追溯原文件名而追加的（4.4 的清单里没有它）
+ATTACHMENT_LABELS = {
+    "defect_type": "缺陷类型",
+    "project_part": "工程部位",
+    "risk_level": "隐患等级",
+    "rectification_plan": "整改方案",
+    "extra_advice": "补充建议",
+    "related_standards": "相关规范",
+    "reporter": "报告人",
+    "reported_at": "报告时间",
+    "image_file": "图片文件",
+}
+ATTACHMENT_ORDER = (
+    "defect_type", "project_part", "risk_level", "rectification_plan",
+    "extra_advice", "related_standards", "reporter", "reported_at", "image_file",
+)
+# 附页中为空时显示「无」的字段（需求报告 4.4）
+ATTACHMENT_EMPTY_FIELDS = ("extra_advice", "related_standards", "image_file")
 
 # --------------------------------------------------------------------------
 # 检测记录模板（立柱 / 横梁共用一张表，template_type 区分）

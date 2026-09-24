@@ -8,7 +8,13 @@
     <div class="page-head">
         <h1>{{ project['house_name'] }} <span class="muted">（{{ project['project_no'] }}）</span></h1>
         <div class="head-actions">
+            {% if defect_count %}
+            {# 需求 4.1：有关联报告时二选一。用两个按钮而不是弹层，无需 JS 且移动端好点 #}
+            <a class="btn small" href="{{ url_for('projects.export', project_id=project['id'], attachments=1) }}">附加 {{ defect_count }} 份并导出</a>
+            <a class="btn ghost small" href="{{ url_for('projects.export', project_id=project['id'], attachments=0) }}">仅导出检测报告</a>
+            {% else %}
             <a class="btn small" href="{{ url_for('projects.export', project_id=project['id']) }}">导出 Word</a>
+            {% endif %}
             <a class="btn ghost small" href="{{ url_for('projects.edit', project_id=project['id']) }}">编辑项目</a>
             <form method="post" class="inline-form"
                   action="{{ url_for('projects.delete', project_id=project['id']) }}"
@@ -96,28 +102,38 @@
 </div>
 
 <div class="card">
-    <h2>关联缺陷报告 <span class="muted">（{{ defects|length }} 份）</span></h2>
+    <h2>关联缺陷报告 <span class="muted">（{{ defect_count }} 份）</span></h2>
 
     {% if defects %}
     <table class="grid">
         <thead>
-            <tr><th>缺陷类型</th><th>隐患等级</th><th>工程部位</th><th>提交时间</th></tr>
+            <tr>
+                <th>缺陷类型</th><th>隐患等级</th><th>工程部位</th><th>提交时间</th>
+                <th class="right">操作</th>
+            </tr>
         </thead>
         <tbody>
             {% for defect in defects %}
             <tr>
-                <td>{{ defect['defect_type'] }}</td>
+                <td>
+                    {{ defect['defect_type'] }}
+                    {% if defect['image_path'] %}<span class="clip" title="附页含隐患图片">📎</span>{% endif %}
+                </td>
                 <td>
                     <span class="badge {{ {'高': 'high', '中': 'medium', '低': 'low'}[defect['risk_level']] }}">{{ defect['risk_level'] }}</span>
                 </td>
                 <td>{{ defect['project_part'] }}</td>
                 <td class="muted">{{ defect['created_at'] }}</td>
+                <td class="right nowrap">
+                    <a class="link" href="{{ url_for('defects.detail', defect_id=defect['id']) }}">查看</a>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    <p class="hint">导出时选择「附加 {{ defect_count }} 份并导出」，这些报告会作为附页追加在正文之后（每份独立成页）。</p>
     {% else %}
-    <p class="hint">暂无关联报告。缺陷填报的「绑定项目」在 M3 实现。</p>
+    <p class="hint">暂无关联报告。在<a class="link" href="{{ url_for('defects.new') }}">缺陷检测填报</a>里选择「绑定项目」即可关联。</p>
     {% endif %}
 </div>
 {% endblock %}

@@ -110,6 +110,15 @@ HEADER_FIXED = tuple(SPEC["headers"]["fixed"])
 HEADER_THICKNESS = SPEC["headers"]["thickness"]
 HEADER_THICKNESS_SUB = tuple(SPEC["headers"]["thicknessSub"])
 
+# —— 缺陷报告附页（M3）——
+# 两列信息表的宽度来自需求报告 4.4；图片压缩参数属渲染参数，导出时现压、不落库
+ATTACHMENT_SPEC = SPEC["attachment"]
+ATTACHMENT_LABEL_WIDTH = ATTACHMENT_SPEC["labelColumnTwips"]
+ATTACHMENT_VALUE_WIDTH = ATTACHMENT_SPEC["valueColumnTwips"]
+ATTACHMENT_ROW_TWIPS = ATTACHMENT_SPEC["rowHeightTwips"]
+# 96 DPI 下 1 px = 15 twips（用于"不放大原图"的上限）
+NATIVE_TWIPS_PER_PIXEL = 1440 / 96
+
 ASCII_FONT = "Times New Roman"
 
 # 二列信息表（旧缺陷单页导出用，需求报告 4.4）
@@ -273,11 +282,12 @@ def _add_run(paragraph_element, text: str, *, bold: bool = False,
 def _add_paragraph(container, text: str = "", *, bold: bool = False,
                    size_pt: float | None = None, align: str | None = "center",
                    before: int | None = None, after: int | None = None,
-                   with_props: bool = True):
+                   with_props: bool = True, page_break_before: bool = False):
     """在 tc / body 内追加一个段落。
 
     ``container`` 可以是 ``CT_Tc``（单元格）或 ``Document``（正文）。
     ``with_props=False`` 用于纵向合并的 continue 单元格：段落是裸的 ``<w:p/>``。
+    ``page_break_before`` 用于附页标题（等价于分页符，但**不产生游离空段**）。
     """
     if hasattr(container, "add_p"):
         paragraph = container.add_p()
@@ -285,6 +295,8 @@ def _add_paragraph(container, text: str = "", *, bold: bool = False,
         paragraph = container.element.body.add_p()
     if with_props:
         ppr = OxmlElement("w:pPr")
+        if page_break_before:
+            _insert_ordered(ppr, OxmlElement("w:pageBreakBefore"), _PPR_ORDER)
         if before is not None or after is not None:
             spacing = OxmlElement("w:spacing")
             if before is not None:
@@ -592,10 +604,11 @@ def info_lines(project) -> list:
     ]
 
 
-def build_project_report(project, groups):
-    """装配完整报告：信息段 → （章节标题 + 表 + 空段）×N → 备注 → 空段。
+def build_project_report(project, groups, attachments=None):
+    """装配完整报告：信息段 → （章节标题 + 表 + 空段）×N → 备注 → 附页×N → 文末空段。
 
     只输出有记录的章节（立柱 / 横梁各自判断）；不输出玻璃模块。
+    ``attachments`` 为空时产出与 M2 **完全一致**（文末空段的位置对无附页路径是恒等变换）。
     """
     doc = new_document()
     for line in info_lines(project):
@@ -609,6 +622,11 @@ def build_project_report(project, groups):
         add_spacer(doc)
 
     add_note(doc, config.NOTE_TEXT)
+
+    attachments = list(attachments or [])
+    for index, view in enumerate(attachments, start=1):
+        build_attachment(doc, view, index, len(attachments))
+
     add_trailing_empty(doc)
     return doc
 
@@ -630,6 +648,68 @@ def save(doc, path) -> str:
     path = str(path)
     doc.save(path)
     return path
+
+
+# --------------------------------------------------------------------------
+# 缺陷报告附页（M3）
+# --------------------------------------------------------------------------
+def fit_image_twips(width_px: int, height_px: int, spec=None):
+    """像素尺寸 → 嵌入用的 twips：适配附页的最大宽/高，且**不放大**。
+
+    上限取 ``min(最大宽/像素宽, 最大高/像素高, 1px=15twips)`` ——
+    最后一项保证小图不会被拉伸到超过其 96 DPI 的自然尺寸。
+    """
+    spec = spec or ATTACHMENT_SPEC
+    if width_px <= 0 or height_px <= 0:
+        return 0, 0
+    scale = min(spec["imageMaxWidthTwips"] / width_px,
+                spec["imageMaxHeightTwips"] / height_px,
+                NATIVE_TWIPS_PER_PIXEL)
+    return int(round(width_px * scale)), int(round(height_px * scale))
+
+
+def add_picture_paragraph(doc, image_path, width_twips: int, height_twips: int):
+    """居中插入一张图片（尺寸由 :func:`fit_image_twips` 算好）。"""
+    paragraph = doc.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = paragraph.add_run()
+    run.add_picture(str(image_path), width=Twips(int(width_twips)), height=Twips(int(height_twips)))
+    return paragraph
+
+
+def attachment_rows(view, values):
+    """附页的两列信息表：标签列加粗居中、内容列左对齐（需求报告 4.4）。"""
+    rows = []
+    for key in config.ATTACHMENT_ORDER:
+        rows.append(Row(cells=[
+            Cell(text=config.ATTACHMENT_LABELS[key], width=ATTACHMENT_LABEL_WIDTH, bold=True),
+            Cell(text=values[key], width=ATTACHMENT_VALUE_WIDTH, align="left"),
+        ], height=ATTACHMENT_ROW_TWIPS))
+    return rows
+
+
+def build_attachment(doc, view, index: int, total: int):
+    """一份检测报告附页：标题（前加分页）→ 两列信息表 → 隐患图片。"""
+    _add_paragraph(doc, config.ATTACHMENT_TITLE.format(index=index, total=total),
+                   bold=True, size_pt=TITLE_PT, align="center",
+                   before=SPACING["titleBefore"], after=SPACING["titleAfter"],
+                   page_break_before=True)
+
+    from . import defects as defect_service          # 延迟导入，避免服务层循环依赖
+    build_table(doc, attachment_rows(view, defect_service.field_values(view)),
+                widths=(ATTACHMENT_LABEL_WIDTH, ATTACHMENT_VALUE_WIDTH))
+
+    if view.get("image_path"):
+        _add_paragraph(doc, ATTACHMENT_SPEC["imageLabel"], align="left",
+                       size_pt=BODY_PT, before=SPACING["titleBefore"],
+                       after=SPACING["titleAfter"])
+        add_picture_paragraph(doc, view["image_path"],
+                              view.get("image_width_twips", 0), view.get("image_height_twips", 0))
+    elif view.get("original_name"):
+        # 降级：图片读不出来也要把附页导出去
+        _add_paragraph(doc, "（图片缺失：%s）" % view["original_name"],
+                       align="left", size_pt=BODY_PT, before=SPACING["titleBefore"])
+    return doc
 
 
 # --------------------------------------------------------------------------

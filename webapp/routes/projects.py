@@ -4,11 +4,13 @@
 from __future__ import annotations
 
 import sqlite3
+import tempfile
 from pathlib import Path
 
 from flask import (Blueprint, abort, current_app, flash, redirect,
                    render_template, request, send_file, url_for)
 
+from ..services import defects as defect_service
 from ..services import measurements, word_report
 from ..services import projects as project_service
 
@@ -57,6 +59,7 @@ def detail(project_id):
     project = _project_or_404(project_id)
     groups = measurements.grouped_by_template(project_id)
     counts = {group["template_type"]: group["count"] for group in groups}
+    report_rows = defect_service.list_for_project(project_id)
 
     return render_template(
         "projects/detail.html",
@@ -64,7 +67,8 @@ def detail(project_id):
         groups=groups,
         counts=counts,
         counts_text=measurements.describe_counts(counts),
-        defects=project_service.list_defects(project_id),
+        defects=report_rows,
+        defect_count=len(report_rows),
         delete_message=project_service.build_delete_message(
             project, project_service.delete_impact(project_id)
         ),
@@ -110,18 +114,23 @@ def delete(project_id):
 def export(project_id):
     """导出项目级 Word 检测报告：`项目编号_房屋名称_检测报告.docx`。
 
-    ``attachments`` 参数（是否附加缺陷报告附页）在此接好，附页渲染在 M3 实现；
-    当前没有附页渲染时始终按"不附加"导出，避免给出无效选项。
+    ``attachments=1`` 时在正文之后追加关联缺陷报告的附页（每份独立成页）。
+    附页里的图片是**导出时现压**的副本（渲染产物，不落库）。
     """
     project = _project_or_404(project_id)
     groups = measurements.grouped_by_template(project_id)
+    report_rows = defect_service.list_for_project(project_id)
+    with_attachments = request.args.get("attachments") == "1" and bool(report_rows)
 
-    doc = word_report.build_project_report(project, groups)
     filename = word_report.report_filename(project)
-
     reports_dir = Path(current_app.config["REPORTS_DIR"])
     reports_dir.mkdir(parents=True, exist_ok=True)
     path = reports_dir / filename
-    word_report.save(doc, path)
+
+    with tempfile.TemporaryDirectory() as workdir:
+        attachments = (defect_service.attachment_views(report_rows, workdir)
+                       if with_attachments else None)
+        doc = word_report.build_project_report(project, groups, attachments=attachments)
+        word_report.save(doc, path)
 
     return send_file(path, as_attachment=True, download_name=filename)

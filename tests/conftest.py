@@ -50,3 +50,44 @@ def ctx(app):
     """服务层测试用的应用上下文（db.get_db / db.transaction 需要它）。"""
     with app.app_context():
         yield
+
+
+@pytest.fixture
+def make_image():
+    """现场生成一张小图片用于上传（不向仓库提交二进制）。
+
+    返回可直接塞进 Flask test client 的 ``(BytesIO, filename)`` 元组。
+    """
+    import io
+
+    from PIL import Image
+
+    def _make(size=(8, 8), image_format="PNG", color=(200, 30, 30), filename=None):
+        buffer = io.BytesIO()
+        Image.new("RGB", size, color).save(buffer, image_format)
+        buffer.seek(0)
+        return (buffer, filename or ("sample.%s" % image_format.lower()))
+
+    return _make
+
+
+@pytest.fixture
+def make_upload():
+    """构造可直接传给**服务层**的 FileStorage 替身（只需 filename 与 stream）。"""
+    import io
+
+    from PIL import Image
+
+    class _Storage:
+        def __init__(self, data, filename):
+            self.filename = filename
+            self.stream = io.BytesIO(data)
+
+    def _make(size=(8, 8), image_format="PNG", filename=None, data=None):
+        if data is None:
+            buffer = io.BytesIO()
+            Image.new("RGB", size, (200, 30, 30)).save(buffer, image_format)
+            data = buffer.getvalue()
+        return _Storage(data, filename or ("sample.%s" % image_format.lower()))
+
+    return _make

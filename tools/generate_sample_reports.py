@@ -48,6 +48,38 @@ SAMPLE_PROJECTS = [
 ]
 
 
+# 缺陷报告附页样例（附在第一份报告之后，用于人工确认附页版式）
+SAMPLE_DEFECTS = [
+    {
+        "defect_type": "玻璃面板碎裂缺失",
+        "project_part": "东立面三层 1# 立柱",
+        "risk_level": "高",
+        "rectification_plan": "1. 立即设置警戒隔离区，禁止人员靠近；\n2. 更换同规格钢化玻璃面板并复检密封胶；\n3. 复检合格后撤除警戒。",
+        "related_standards": "GB/T 21086-2007 第 5.2 条\nJGJ 102-2003 第 3.1 条",
+        "extra_advice": "建议雨季前完成整改，避免雨水渗漏影响室内装修。",
+        "color": (176, 42, 42),
+    },
+    {
+        "defect_type": "密封胶开裂",
+        "project_part": "南立面六层 2# 横梁",
+        "risk_level": "中",
+        "rectification_plan": "清除原密封胶并重新打胶，控制胶缝厚度与宽度。",
+        "related_standards": "JGJ 102-2003 第 3.4 条",
+        "extra_advice": "",
+        "color": (196, 122, 30),
+    },
+    {
+        "defect_type": "半隐框外表面损伤",
+        "project_part": "北立面二十三层 5# 立柱",
+        "risk_level": "低",
+        "rectification_plan": "打磨受损部位并按原工艺补漆。",
+        "related_standards": "",
+        "extra_advice": "不影响结构安全，可在下次例行维护时一并处理。",
+        "color": (46, 122, 76),
+    },
+]
+
+
 def filename_from_response(response) -> str:
     """从 Content-Disposition 里取真实文件名。
 
@@ -67,6 +99,22 @@ def filename_from_response(response) -> str:
     if fallback:
         return fallback
     raise SystemExit("无法从响应头解析文件名：%s" % disposition)
+
+
+def make_defect_image(color, size=(1200, 900)):
+    """现场生成一张示意图（附页图片是给人看版式的，不提交真实照片）。"""
+    import io
+
+    from PIL import Image, ImageDraw
+
+    image = Image.new("RGB", size, color)
+    draw = ImageDraw.Draw(image)
+    draw.rectangle([40, 40, size[0] - 40, size[1] - 40], outline=(255, 255, 255), width=6)
+    draw.line([60, size[1] - 60, size[0] - 60, 60], fill=(255, 255, 255), width=8)
+    buffer = io.BytesIO()
+    image.save(buffer, "JPEG", quality=85)
+    buffer.seek(0)
+    return buffer
 
 
 def main() -> int:
@@ -98,6 +146,24 @@ def main() -> int:
             submit(client, project_id, "column", column_cases, column_order)
             submit(client, project_id, "beam", beam_cases, beam_order)
 
+            # 第一份项目额外关联 3 条缺陷，并导出一份带附页的版本供人工确认
+            extra = ""
+            if project is SAMPLE_PROJECTS[0]:
+                for index, defect in enumerate(SAMPLE_DEFECTS, start=1):
+                    payload = {key: value for key, value in defect.items() if key != "color"}
+                    payload["project_id"] = str(project_id)
+                    payload["image"] = (make_defect_image(defect["color"]),
+                                        "隐患照片_%d.jpg" % index)
+                    client.post("/defects/", data=payload, content_type="multipart/form-data")
+
+                response = client.get("/projects/%d/export?attachments=1" % project_id)
+                data = response.data
+                name = filename_from_response(response)
+                response.close()
+                extra = name.replace(".docx", "_含附页.docx")
+                (out_dir / extra).write_bytes(data)
+                print("  生成 %s（含 %d 份附页，%d 字节）" % (extra, len(SAMPLE_DEFECTS), len(data)))
+
             response = client.get("/projects/%d/export" % project_id)
             if response.status_code != 200:
                 raise SystemExit("导出失败：%s -> HTTP %s"
@@ -108,14 +174,14 @@ def main() -> int:
             response.close()                     # 释放文件句柄，否则临时目录清理会失败
             (out_dir / name).write_bytes(data)
             print("  生成 %s（%d 字节）" % (name, len(data)))
-            rows.append((name, project, len(column_order), len(beam_order)))
+            rows.append((name, project, len(column_order), len(beam_order), extra))
 
     # 清单
     lines = [
-        "# 样例报告（5 份）",
+        "# 样例报告（5 份 + 1 份含附页）",
         "",
         "由 `tools/generate_sample_reports.py` 生成；检测数据来自 `docs/samples/检测结果案例.xlsx`，",
-        "项目信息为构造值。用于章程 Objective 3 的度量：",
+        "项目信息与缺陷内容为构造值。用于章程 Objective 3 的度量：",
         "",
         "> Five sample reports generated from test data match the client's template in structure and formatting.",
         "",
@@ -124,10 +190,14 @@ def main() -> int:
         "| 文件 | 项目编号 | 房屋名称 | 检测日期 | 立柱检测面 | 横梁检测面 |",
         "| --- | --- | --- | --- | --- | --- |",
     ]
-    for name, project, column_faces, beam_faces in rows:
+    for name, project, column_faces, beam_faces, extra in rows:
         lines.append("| `%s` | %s | %s | %s | %d | %d |"
                      % (name, project["project_no"], project["house_name"],
                         project["test_date"], column_faces, beam_faces))
+        if extra:
+            lines.append("| `%s`（**含 3 份缺陷附页**） | %s | %s | %s | %d | %d |"
+                         % (extra, project["project_no"], project["house_name"],
+                            project["test_date"], column_faces, beam_faces))
     lines += [
         "",
         "## 每份报告的预期结构",
@@ -137,6 +207,11 @@ def main() -> int:
         "- 「幕墙横梁截面尺寸检测结果」标题 + 表格（5 条记录、5 个检测面；单面不合并）",
         "- 固定备注：`备注：检测构件位置详见检测工作内容附件 18。`",
         "- **不含玻璃模块**（范围外）",
+        "",
+        "含附页版本在备注之后追加：每份附页**独立成页**（标题带 pageBreakBefore），",
+        "内容为 9 行两列信息表（缺陷类型 / 工程部位 / 隐患等级 / 整改方案 / 补充建议 /",
+        "相关规范 / 报告人 / 报告时间 / 图片文件）+ 「隐患图片」标签与压缩后的图片。",
+        "**附页没有客户样例可对拍**，请人工确认版式。",
         "",
         "## 结构一致性验证",
         "",

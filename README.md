@@ -8,20 +8,21 @@ Existing Curtain Wall Inspection Data Recording and Report Generation Tool —�
 
 ## 当前状态
 
-**M2（项目级 Word 导出）已完成** —— 2026-09-23
+**M3（缺陷填报完善 + 项目关联 + 附页导出）已完成** —— 2026-09-24
 
 | 里程碑 | 内容 | 状态 |
 | --- | --- | --- |
 | M0 | 拆包、数据库 schema、Word A4 报告底座 | ✅ 完成 |
 | M1 | 项目管理 CRUD + 立柱/横梁检测记录录入 | ✅ 完成 |
 | M2 | 项目级 Word 导出（与样例**逐属性对拍一致**） | ✅ 完成 |
-| M3 | 缺陷报告完善（图片/规范/建议/绑定项目）+ 附页导出 | ⏳ 待开发 |
-| M4 | 报告管理 | ⏳ 待开发 |
+| M3 | 缺陷填报完善（图片/规范/建议/绑定项目）+ 附页导出 | ✅ 完成 |
+| M4 | 报告管理（列表/筛选/详情/删除） | ⏳ 待开发 |
+| UI | 移动优先响应式改造（静态壳 + 客户端渲染，为 M5 铺路） | ⏳ 待开发 |
 | M5 | 前端本地化改造（IndexedDB + docx JS + 纯静态 PWA，移除 Flask） | ⏳ 待开发 |
 
-M2 交付：`webapp/resources/report_layout.json`（语言中立的版式规格）、立柱/横梁表构建（表头跨 7 列 + 多面构件四列纵向合并）、项目级导出路由、逐单元格对拍工具、5 份样例报告与回归基线。
+M3 交付：隐患图片（必填、拍照/相册、≤20MB、原图落盘且保留原文件名）、相关规范/补充建议、绑定项目；项目详情显示真实关联报告与「附加 N 份并导出 / 仅导出检测报告」二选一；导出附页（每份独立成页、9 行两列信息表、导出时现压的图片副本、图片缺失时降级）。
 
-> **架构说明**：M5 将把导出与数据层迁移到前端（IndexedDB + docx JS），移除 Flask 后端改为纯静态 PWA。M2 的 Python 引擎是该迁移的**参考实现与规格来源**，`report_layout.json` 中的数值可直接被 JS 复用。
+> **架构说明**：M5 将把导出与数据层迁移到前端（IndexedDB + docx JS），移除 Flask 后端改为纯静态 PWA。M2/M3 的 Python 实现是该迁移的**参考实现与规格来源**，`report_layout.json` 中的数值可直接被 JS 复用。
 
 ## 范围
 
@@ -46,7 +47,7 @@ python app.py
 
 | 文件 | 内容 | 用途 |
 | --- | --- | --- |
-| `requirements.txt` | `flask`、`python-docx` | 运行应用所需 |
+| `requirements.txt` | `flask`、`python-docx`、`pillow` | 运行应用所需（Pillow 用于隐患图片的压缩与 EXIF 摆正） |
 | `requirements-dev.txt` | 追加 `pytest`、`openpyxl` | 跑测试与 `tools/verify_case_data.py` |
 
 ## 测试
@@ -109,9 +110,11 @@ Capstone/
 │   │   ├── thickness.py       5 个厚度读数 -> 最小值、格式化
 │   │   ├── projects.py        项目读写、列表统计、删除影响面
 │   │   ├── measurements.py    记录表单解析、事务化增删改、分组读取
-│   │   └── word_report.py     A4 底座 + 表格原语（列宽/边框/合并/行高）
+│   │   ├── defects.py         缺陷表单解析、读写、附页渲染数据装配
+│   │   ├── images.py          隐患图片：上传校验、落盘命名、导出时压缩
+│   │   └── word_report.py     A4 底座 + 表格原语 + 检测表/附页构建
 │   ├── templates/             base / index / projects / records / defects
-│   └── static/                css/app.css · js/app.js · js/record_form.js
+│   └── static/                css/app.css · js/{app,record_form,defects_form}.js
 ├── reports/                   导出的 .docx（gitignore）
 ├── uploads/defects/           隐患图片（gitignore）
 ├── tests/
@@ -126,6 +129,11 @@ Capstone/
 │   ├── test_records.py        记录 CRUD、模板锁定、最小值链路
 │   ├── test_report_export.py  导出路由、文件名、空项目、无玻璃
 │   ├── test_report_fidelity.py 与样例逐属性对拍 + 回归基线
+│   ├── test_images.py         图片校验、命名、EXIF 摆正、压缩、降级
+│   ├── test_defects.py        缺陷表单、绑定项目、落盘原子性、附页数据
+│   ├── test_attachment_export.py 附页结构、分页、图片、无附页路径不变
+│   ├── test_text_fit.py       列宽适配度量工具
+│   ├── test_extract_layout_spec.py 版式提取器与规格一致性
 │   └── test_web.py            路由与完整链路冒烟
 ├── deliverables/              5 份样例报告 + 对拍报告（章程 Objective 3 的证据）
 ├── tools/                     compare_report_with_sample.py · verify_case_data.py
@@ -173,6 +181,16 @@ Capstone/
 - 「截面尺寸要求」数据格 8pt + 左右 60 边距（复刻样例，为长条文挤空间）；其余单元格不写字号（继承，Word 下 10pt）
 - 版式数值全部存放于 `webapp/resources/report_layout.json`，由测试与样例实测值上锁
 - 条文文案**以需求报告为准**（全角标点）；预置项只允许追加，不得改动或重排已有项（历史快照靠索引回填）
+
+### 缺陷报告与附页（M3）
+
+- 隐患图片**必填**：拍照/相册、≤20MB、扩展名与真实格式双校验（防改扩展名的假图片）
+- **原图落盘、压缩副本不落库**：落盘名为 `<uuid>_<清洗后的原名>.<ext>`，从路径即可反推原文件名（无需额外字段、无需迁移）；压缩在**导出时现压**（长边 ≤1600px、JPEG q=80），与「最小值不落库」同一原则
+- 图片按 **EXIF 方向摆正**（手机竖拍必须），透明区域合成为白底
+- 图片缺失/损坏 → 附页仍能导出，就地显示「（图片缺失：原名）」，**绝不因一张图让整份报告失败**
+- 附页结构（需求 4.4）：标题 `检测报告附页（N/总数）`（带 `pageBreakBefore`，不产生游离空段）+ 9 行两列信息表（末行「图片文件」用于追溯原文件名）+ 「隐患图片」标签与图片
+- 项目详情在有关联报告时提供二选一：「附加 N 份并导出」/「仅导出检测报告」
+- **无附页路径与 M2 完全一致**：`add_trailing_empty` 已移到文档末尾，对无附页输出是恒等变换（对拍主闸门与回归基线继续生效）
 
 ## 文档索引
 
