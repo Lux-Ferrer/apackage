@@ -79,6 +79,39 @@ def test_new_record_unknown_project_404(client):
     assert client.get("/projects/999/records/new").status_code == 404
 
 
+def test_form_exposes_hooks_required_by_frontend_js(client):
+    """前端 JS 依赖这些元素/属性；改模板时不能悄悄破坏这份契约。"""
+    _project(client)
+    html = client.get("/projects/1/records/new?template=column").get_data(as_text=True)
+
+    assert 'id="face-table"' in html            # 表格容器（data-face-max 等）
+    assert 'data-face-max="6"' in html
+    assert 'id="record-form"' in html           # 提交拦截挂在这个表单上
+    assert 'id="save-record"' in html           # 非法读数时禁用的那个按钮
+    assert 'id="form-status"' in html           # 整体校验提示
+    assert 'id="add-face"' in html
+    assert 'id="face-hint"' in html
+    assert 'id="face-row-template"' in html     # 新增行的模板
+    assert 'class="input-hint"' in html         # 就地「请填数字」
+    assert "请填数字" in html
+    assert 'pattern="-?(\\d+(\\.\\d*)?|\\.\\d+)"' in html   # 无 JS 时的原生兜底
+    assert 'name="value_0_1"' in html
+
+    # 新增行的模板里也必须带提示元素，否则 JS 加出来的行没有提示位
+    template_html = html[html.index('id="face-row-template"'):]
+    assert 'class="input-hint"' in template_html
+    assert 'name="value___INDEX___1"' in template_html
+
+
+def test_edit_form_also_exposes_frontend_hooks(client, ctx):
+    _project(client)
+    _post_record(client)
+    html = client.get("/records/1/edit").get_data(as_text=True)
+    assert 'id="save-record"' in html
+    assert 'id="record-form"' in html
+    assert 'class="input-hint"' in html
+
+
 # --------------------------------------------------------------------------
 # 新增
 # --------------------------------------------------------------------------

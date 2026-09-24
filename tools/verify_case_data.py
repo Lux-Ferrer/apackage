@@ -21,7 +21,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import openpyxl                                                   # noqa: E402
+try:
+    import openpyxl                                               # noqa: E402
+except ImportError:                                               # pragma: no cover
+    raise SystemExit(
+        "本工具需要 openpyxl，请先安装开发依赖：\n"
+        "    python -m pip install -r requirements-dev.txt"
+    )
 
 from webapp import create_app                                     # noqa: E402
 

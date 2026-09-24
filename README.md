@@ -40,11 +40,19 @@ python app.py
 
 使用顺序：新建项目 → 进入项目详情 → 添加检测记录（选立柱或横梁模板）→ 填写构件信息与检测面读数 → 保存。
 
+## 依赖
+
+| 文件 | 内容 | 用途 |
+| --- | --- | --- |
+| `requirements.txt` | `flask`、`python-docx` | 运行应用所需 |
+| `requirements-dev.txt` | 追加 `pytest`、`openpyxl` | 跑测试与 `tools/verify_case_data.py` |
+
 ## 测试
 
 ```powershell
-python -m pytest -q                              # Python 测试套件（132 项）
-python -m pytest tests/test_word_report.py -v    # 只跑 Word 版式相关
+python -m pip install -r requirements-dev.txt     # pytest + openpyxl
+python -m pytest -q                               # Python 测试套件（132 项）
+python -m pytest tests/test_word_report.py -v     # 只跑 Word 版式相关
 ```
 
 两个额外的验证工具：
@@ -58,7 +66,7 @@ python tools/make_report_template.py # 从样例重生报告底座（webapp/reso
 
 ```powershell
 npm install --no-save jsdom
-node tests/js/record_form.test.js    # 21 项：实时最小值、增删检测面行
+node tests/js/record_form.test.js    # 35 项：实时最小值、非法读数拦截、增删检测面行
 ```
 
 ## 目录结构
@@ -119,6 +127,7 @@ Capstone/
 
 - 每个检测面的最小值为该面 5 个读数的派生值，**不落库**，导出保留两位小数（`webapp/services/thickness.py`）
 - **前端实时最小值只是预览**：保存与导出时由服务端重算，前端结果不被信任
+- 厚度读数**允许留空**（现场可能只测几个点），但"非空却不是数字"会被拦下：输入框标红 + 就地提示「请填数字」+ **禁用保存按钮**，并拦截回车触发的隐式提交；此时最小值仍按有效值计算
 - 检测面标签为短文本（真实数据：立柱 `B` / `H`，横梁 `t`），允许自由输入，不做枚举约束
 - 同一构件有多个检测面时，Word 导出需把「楼层 / 构件位置 / 尺寸检测结果 / 截面尺寸要求」四列纵向合并
 - 尺寸结果自动把 `x` / `X` / `*` 规范化为 `×`（如 `63x164` → `63×164`）
