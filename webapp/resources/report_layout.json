@@ -1,5 +1,5 @@
 {
-  "_source": "全部数值实测自 tests/fixtures/金骐智谷_金骐_检测报告.docx 的 OOXML；由 tests/test_word_report.py::test_layout_spec_matches_sample 上锁",
+  "_source": "版式框架实测自 tests/fixtures/金骐智谷_金骐_检测报告.docx 的 OOXML；**列宽含对样例的有意偏离**（见 columns._widthOverrides）。由 tests/test_word_report.py::test_layout_spec_matches_sample 与 tests/test_extract_layout_spec.py 共同上锁。",
   "_note": "语言中立：Python 导出引擎读取本文件；将来移植到前端 docx JS 时直接复用同一份数值，避免二次抄写引入偏差。字号单位 pt，几何单位 twips（1 pt = 20 twips）。",
 
   "page": {
@@ -20,7 +20,22 @@
   },
 
   "columns": {
-    "widths": [492, 553, 614, 480, 760, 760, 760, 760, 760, 760, 2101],
+    "widths": [960, 553, 614, 480, 682, 682, 682, 682, 682, 682, 2101],
+    "_note": "这是**生效列宽**（导出实际使用）。其中楼层列与读数列是对样例的**有意偏离**，见 _widthOverrides；其余列与样例一致。总宽保持 8800（A4 版心）。",
+    "_widthOverrides": {
+      "rule": "楼层列按 4 个汉字设定：10pt 下 1 汉字 = 200 twips → 4×200 = 800，加左右边距 160 = 960 twips。",
+      "floor": {
+        "sampleTwips": 492,
+        "widthTwips": 960,
+        "reason": "样例 492 twips 连案例里的「二十三层」都放不下（实测需 800 twips、折 3 行）"
+      },
+      "reading": {
+        "sampleTwips": 760,
+        "widthTwips": 682,
+        "columns": [4, 5, 6, 7, 8, 9],
+        "reason": "为楼层列匀出 6×78 = 468 twips。读数最长 -0.01 实测 417 twips，匀后可用 522 仍有余量；不动已最紧张的截面尺寸要求列"
+      }
+    },
     "index": { "floor": 0, "position": 1, "size": 2, "face": 3, "readingFirst": 4, "readingCount": 5, "minimum": 9, "requirement": 10 },
     "mergedInBody": ["floor", "position", "size", "requirement"]
   },
@@ -60,5 +75,17 @@
 
   "spans": {
     "thickness": 7
+  },
+
+  "_attachment_note": "缺陷报告附页（M3）所需的渲染参数。两列信息表的宽度来自需求报告 4.4（标签列约 1600 twips）；图片压缩参数属渲染参数，不落库，导出时现压。换对拍基准时这些值不随检测表变化，故 extract_layout_spec.py 不比对本段。",
+  "attachment": {
+    "labelColumnTwips": 1600,
+    "valueColumnTwips": 7200,
+    "rowHeightTwips": 400,
+    "imageLabel": "隐患图片",
+    "imageMaxWidthTwips": 8800,
+    "imageMaxHeightTwips": 8000,
+    "imageMaxPixels": 1600,
+    "imageJpegQuality": 80
   }
 }

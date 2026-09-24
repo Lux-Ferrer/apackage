@@ -207,6 +207,20 @@ def _sample_body():
     return root.find(W + "body")
 
 
+def sample_column_widths():
+    """样例的**原始**列宽 = 规格列宽，但把已声明的偏离列还原成样例值。
+
+    楼层列与读数列是对样例的有意偏离（见 report_layout.json 的 columns._widthOverrides），
+    所以"样例侧"的期望要用这个函数而不是直接用 SPEC。
+    """
+    widths = list(wr.GRID_COLS)
+    overrides = SPEC["columns"]["_widthOverrides"]
+    widths[wr.COLUMN_INDEX["floor"]] = overrides["floor"]["sampleTwips"]
+    for column in overrides["reading"]["columns"]:
+        widths[column] = overrides["reading"]["sampleTwips"]
+    return widths
+
+
 def _text(element):
     return "".join(node.text or "" for node in element.iter(W + "t"))
 
@@ -214,6 +228,7 @@ def _text(element):
 def test_layout_spec_matches_sample():
     """`report_layout.json` 的每个常量都必须等于样例实测值 —— 改错这里立刻红。"""
     body = _sample_body()
+    sample_widths = sample_column_widths()
     tbl = body.findall(W + "tbl")[0]
     tbl_pr = tbl.find(W + "tblPr")
     rows = tbl.findall(W + "tr")
@@ -224,8 +239,9 @@ def test_layout_spec_matches_sample():
     assert tbl_pr.find(W + "jc").get(W + "val") == SPEC["table"]["align"]
     assert tbl_pr.find(W + "tblLayout").get(W + "type") == SPEC["table"]["layout"]
     col_widths = [int(g.get(W + "w")) for g in tbl.find(W + "tblGrid").findall(W + "gridCol")]
-    assert col_widths == list(wr.GRID_COLS)
-    assert sum(col_widths) == wr.TABLE_WIDTH_TWIPS
+    assert col_widths == sample_column_widths()
+    assert sum(col_widths) == wr.TABLE_WIDTH_TWIPS == 8800
+    assert sum(wr.GRID_COLS) == wr.TABLE_WIDTH_TWIPS          # 生效列宽同样守恒
 
     borders = tbl_pr.find(W + "tblBorders")
     for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
@@ -255,8 +271,8 @@ def test_layout_spec_matches_sample():
     assert _text(header0[3]) == SPEC["headers"]["thickness"]
     assert int(header0[3].find(W + "tcPr").find(W + "gridSpan").get(W + "val")) == wr.THICKNESS_SPAN
     assert [int(tc.find(W + "tcPr").find(W + "tcW").get(W + "w")) for tc in header0] == [
-        wr.GRID_COLS[0], wr.GRID_COLS[1], wr.GRID_COLS[2],
-        sum(wr.GRID_COLS[3:10]), wr.GRID_COLS[10],
+        sample_widths[0], sample_widths[1], sample_widths[2],
+        sum(sample_widths[3:10]), sample_widths[10],
     ]
     sub = [_text(tc) for tc in rows[1].findall(W + "tc")[3:10]]
     assert sub == list(SPEC["headers"]["thicknessSub"])
@@ -318,6 +334,34 @@ def test_layout_spec_file_is_language_neutral():
     assert spec["columns"]["widths"] == list(wr.GRID_COLS)
     assert spec["fonts"]["inheritedTablePt"] == 10      # Word 未指定时的继承字号（已人工核对）
     assert spec["fonts"]["requirementPt"] == 8
+
+
+def test_floor_column_fits_four_chinese_characters():
+    """楼层列按「4 个汉字」设定（2026-09-24 决定）：10pt 下 1 汉字 = 200 twips。
+
+    样例的 492 twips 连案例里的「二十三层」都放不下（实测 800 twips、折 3 行）。
+    """
+    usable = wr.GRID_COLS[wr.COLUMN_INDEX["floor"]] - 2 * wr.CELL_MARGIN_HORIZONTAL
+    assert usable >= 4 * wr.INHERITED_TABLE_PT * 20
+
+    from tools.analyze_text_fit import make_measurer        # 用真实字体验证，而非只比算式
+    assert make_measurer()("二十三层", wr.INHERITED_TABLE_PT) <= usable
+
+
+def test_width_overrides_are_declared_with_sample_values():
+    """对样例的列宽偏离必须全部声明在 _widthOverrides 里，且如实记录样例原值。"""
+    overrides = SPEC["columns"]["_widthOverrides"]
+    assert overrides["floor"]["sampleTwips"] == 492
+    assert overrides["floor"]["widthTwips"] == wr.GRID_COLS[wr.COLUMN_INDEX["floor"]]
+    assert overrides["reading"]["sampleTwips"] == 760
+    assert len(overrides["reading"]["columns"]) == 6
+    for column in overrides["reading"]["columns"]:
+        assert wr.GRID_COLS[column] == overrides["reading"]["widthTwips"]
+    # 只有这 7 列偏离样例
+    assert sample_column_widths() != list(wr.GRID_COLS)
+    differing = [index for index, (old, new) in enumerate(zip(sample_column_widths(), wr.GRID_COLS))
+                 if old != new]
+    assert differing == [wr.COLUMN_INDEX["floor"]] + list(overrides["reading"]["columns"])
 
 
 # --------------------------------------------------------------------------
@@ -393,7 +437,7 @@ def test_table_header_spans_seven_columns():
     assert len(header) == 5                      # 跨 7 列 → 该行只有 5 个 tc
     span = header[3].find(W + "tcPr").find(W + "gridSpan")
     assert int(span.get(W + "val")) == 7
-    assert int(header[3].find(W + "tcPr").find(W + "tcW").get(W + "w")) == 5040
+    assert int(header[3].find(W + "tcPr").find(W + "tcW").get(W + "w")) == sum(wr.GRID_COLS[3:10])
 
 
 def test_empty_requirement_shows_placeholder():

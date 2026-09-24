@@ -308,14 +308,44 @@ def flatten(data, prefix="") -> dict:
     return flat
 
 
+# 不从检测报告里提取的段落：附页的渲染参数属于我们自己的实现规格（需求报告 4.4 + M3 决策），
+# 检测报告里没有这些值，参与比对只会产生"缺失"噪音。
+IGNORED_PREFIXES = ("attachment.",)
+
+
 def compare(current, candidate) -> list:
     left, right = flatten(current), flatten(candidate)
     diffs = []
     for key in sorted(set(left) | set(right)):
+        if key.startswith(IGNORED_PREFIXES):
+            continue
         old, new = left.get(key, "（缺）"), right.get(key, "（缺）")
         if old != new:
             diffs.append((key, old, new))
     return diffs
+
+
+def describe_width_diff(sample_widths, spec_widths, spec) -> list:
+    """把列宽差异按列说明，便于人工确认（比丢两个列表可读得多）。"""
+    overrides = spec.get("columns", {}).get("_widthOverrides", {})
+    names = {0: "楼层", 1: "构件位置", 2: "尺寸结果", 3: "检测面"}
+    for offset in range(spec.get("columns", {}).get("index", {}).get("readingCount", 5)):
+        names[4 + offset] = "读数 %d" % (offset + 1)
+    names[9] = "最小值"
+    names[10] = "截面尺寸要求"
+
+    lines = []
+    for index, (old, new) in enumerate(zip(sample_widths, spec_widths)):
+        if old == new:
+            continue
+        label = names.get(index, "第 %d 列" % index)
+        declared = ""
+        if label == "楼层" and "floor" in overrides:
+            declared = "（已声明：%s）" % overrides["floor"].get("reason", "")
+        elif label.startswith("读数") and "reading" in overrides:
+            declared = "（已声明：为楼层列匀出空间）"
+        lines.append("第 %d 列 %s：样例 %d → 生效 %d%s" % (index, label, old, new, declared))
+    return lines
 
 
 def main() -> int:
@@ -357,6 +387,11 @@ def main() -> int:
         print("-" * 100)
         for key, old, new in diffs:
             print("%-46s %-28s %s" % (key, repr(old)[:28], repr(new)[:40]))
+        if any(key == "columns.widths" for key, _old, _new in diffs):
+            print()
+            print("列宽逐列差异：")
+            for line in describe_width_diff(candidate["columns"]["widths"], wr.GRID_COLS, wr.SPEC):
+                print("  - %s" % line)
 
     if args.json:
         Path(args.json).parent.mkdir(parents=True, exist_ok=True)

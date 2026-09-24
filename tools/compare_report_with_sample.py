@@ -34,6 +34,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import io
 import sys
 import tempfile
@@ -299,6 +300,30 @@ def extract_groups(root) -> list:
 # --------------------------------------------------------------------------
 # 主流程
 # --------------------------------------------------------------------------
+def apply_spec_widths(table_fingerprint, spec_widths) -> dict:
+    """把样例指纹里的列宽换成**规格值**（并重算跨列格的 tcW）。
+
+    背景：楼层列与读数列是对样例的**有意偏离**（见 report_layout.json 的
+    ``columns._widthOverrides`` —— 样例的 492 twips 连"二十三层"都放不下）。
+    因此对拍的几何期望改为"样例的其余一切 + 我们的列宽"，
+    这样"除列宽以外任何一处偏差"依然会被抓住。
+    """
+    patched = copy.deepcopy(table_fingerprint)
+    patched["grid"] = list(spec_widths)
+    for row in patched["rows"]:
+        column = 0
+        for cell in row["cells"]:
+            span = int(cell.get("gridSpan") or 1)
+            cell["tcW"] = {"w": str(sum(spec_widths[column:column + span])), "type": "dxa"}
+            column += span
+    return patched
+
+
+def width_deviation_columns(sample_grid, spec_widths) -> list:
+    """样例列宽与规格列宽不一致的列下标（应当恰好等于已声明的偏离列）。"""
+    return [index for index, (old, new) in enumerate(zip(sample_grid, spec_widths)) if old != new]
+
+
 def build_from_sample(output_path, sample_path=None):
     """用样例自身的数据生成报告并保存 —— O3 回灌模式的产物，也是回归基线的来源。"""
     sample_path = Path(sample_path or config.GOLDEN_SAMPLE)
@@ -335,8 +360,11 @@ def run_comparison(sample_path=None, output_docx=None) -> dict:
     diffs += diff(expected_children, actual["children"], "body")
 
     # 2) 每张表的全部版式属性（列宽/行高/边框/边距/合并/文本）
+    #    列宽以**规格**为准（含对样例的有意偏离），其余属性以样例为准
+    spec_widths = list(wr.GRID_COLS)
     for index in range(min(len(expected["tables"]), len(actual["tables"]))):
-        diffs += diff(expected["tables"][index], actual["tables"][index], "table[%d]" % index)
+        reference = apply_spec_widths(expected["tables"][index], spec_widths)
+        diffs += diff(reference, actual["tables"][index], "table[%d]" % index)
 
     # 3) 合并结构的逻辑网格
     for index in range(min(len(expected_grids), len(actual_grids))):
@@ -354,6 +382,8 @@ def run_comparison(sample_path=None, output_docx=None) -> dict:
         "compared_tables": min(len(expected["tables"]), len(actual["tables"])),
         "expected_grids": expected_grids,
         "actual_grids": actual_grids,
+        "sample_widths": expected["tables"][0]["grid"] if expected["tables"] else [],
+        "spec_widths": list(wr.GRID_COLS),
     }
 
 
@@ -381,11 +411,15 @@ def build_markdown(result, sample_name: str) -> str:
             "",
             "生成的立柱表与横梁表在下列维度与样例完全相同：",
             "",
-            "- 表格：总宽、居中方式、固定布局、六边边框、表级单元格边距、tblLook、11 列列宽",
+            "- 表格：总宽、居中方式、固定布局、六边边框、表级单元格边距、tblLook",
             "- 行：行高（含 hRule 语义）、行内居中",
-            "- 单元格：tcW、gridSpan、vMerge、tcMar、vAlign、段落对齐、run 属性",
+            "- 单元格：gridSpan、vMerge、tcMar、vAlign、段落对齐、run 属性",
             "- 合并结构：表头跨 7 列 +（多面构件）四列纵向合并的逻辑网格",
             "- 正文：信息段 / 章节标题 / 表格后空段 / 备注 / 文末空段的顺序与间距",
+            "",
+            "> 列宽以 `report_layout.json` 的**规格值**为准：楼层列与读数列是对样例的"
+            "**有意偏离**（样例 492 twips 连「二十三层」都放不下），已在 `columns._widthOverrides` 记录；"
+            "除这几列外任何一处偏差仍会被本报告抓住。",
             "",
             "> 样例的玻璃章节不在范围内，比较前已从样例侧剔除，并反向断言生成物不含玻璃表。",
         ]
