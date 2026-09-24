@@ -14,6 +14,9 @@ from lxml import etree
 from webapp import config
 from webapp.services import word_report as wr
 
+SPEC = wr.SPEC
+SPACING = wr.SPACING
+
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 A = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
 
@@ -164,7 +167,8 @@ def test_row_height_is_at_least_semantics():
     assert first.get(qn("w:hRule")) is None      # 不写 hRule = "至少"，与样例一致
 
 
-def test_write_cell_is_centered_and_sized():
+def test_write_cell_is_centered_and_inherits_size_by_default():
+    """样例的表格单元格**不写字号**（继承），所以默认 size=None 才是正确行为。"""
     doc = wr.new_document()
     table = wr.create_table(doc, 1, 1)
     wr.write_cell(table.cell(0, 0), "楼层", bold=True)
@@ -174,7 +178,14 @@ def test_write_cell_is_centered_and_sized():
     assert cell._tc.tcPr.find(qn("w:vAlign")).get(qn("w:val")) == "center"
     run = paragraph.runs[0]
     assert run.bold is True
-    assert run.font.size.pt == 11
+    assert run.font.size is None                                 # 不写 w:sz → 继承
+
+
+def test_write_cell_sets_size_when_explicitly_asked():
+    doc = wr.new_document()
+    table = wr.create_table(doc, 1, 1)
+    wr.write_cell(table.cell(0, 0), "2.99", size=wr.BODY_SIZE)
+    assert table.cell(0, 0).paragraphs[0].runs[0].font.size.pt == 11
 
 
 def test_write_cell_multiline_creates_paragraphs():
@@ -185,6 +196,211 @@ def test_write_cell_multiline_creates_paragraphs():
     assert len(paragraphs) == 2
     assert paragraphs[0].text == "第一行"
     assert paragraphs[1].text == "第二行"
+
+
+# --------------------------------------------------------------------------
+# 版式规格与样例的锁定关系
+# --------------------------------------------------------------------------
+def _sample_body():
+    with zipfile.ZipFile(config.GOLDEN_SAMPLE) as archive:
+        root = etree.fromstring(archive.read("word/document.xml"))
+    return root.find(W + "body")
+
+
+def _text(element):
+    return "".join(node.text or "" for node in element.iter(W + "t"))
+
+
+def test_layout_spec_matches_sample():
+    """`report_layout.json` 的每个常量都必须等于样例实测值 —— 改错这里立刻红。"""
+    body = _sample_body()
+    tbl = body.findall(W + "tbl")[0]
+    tbl_pr = tbl.find(W + "tblPr")
+    rows = tbl.findall(W + "tr")
+
+    # 表格级
+    assert int(tbl_pr.find(W + "tblW").get(W + "w")) == wr.TABLE_WIDTH_TWIPS == 8800
+    assert tbl_pr.find(W + "tblW").get(W + "type") == "dxa"
+    assert tbl_pr.find(W + "jc").get(W + "val") == SPEC["table"]["align"]
+    assert tbl_pr.find(W + "tblLayout").get(W + "type") == SPEC["table"]["layout"]
+    col_widths = [int(g.get(W + "w")) for g in tbl.find(W + "tblGrid").findall(W + "gridCol")]
+    assert col_widths == list(wr.GRID_COLS)
+    assert sum(col_widths) == wr.TABLE_WIDTH_TWIPS
+
+    borders = tbl_pr.find(W + "tblBorders")
+    for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
+        element = borders.find(W + edge)
+        assert element.get(W + "val") == SPEC["table"]["border"]["val"]
+        assert int(element.get(W + "sz")) == SPEC["table"]["border"]["sz"]
+    cell_margin = tbl_pr.find(W + "tblCellMar")
+    assert int(cell_margin.find(W + "left").get(W + "w")) == SPEC["table"]["tableCellMargin"]["left"]
+    assert int(cell_margin.find(W + "right").get(W + "w")) == SPEC["table"]["tableCellMargin"]["right"]
+    look = tbl_pr.find(W + "tblLook")
+    for key, value in SPEC["table"]["look"].items():
+        assert look.get(W + key) == str(value), key
+
+    # 行高（表头 600 / 数据 400，且不写 hRule）
+    for tr in rows[:2]:
+        height = tr.find(W + "trPr").find(W + "trHeight")
+        assert int(height.get(W + "val")) == wr.HEADER_ROW_TWIPS
+        assert height.get(W + "hRule") is None
+    data_height = rows[2].find(W + "trPr").find(W + "trHeight")
+    assert int(data_height.get(W + "val")) == wr.DATA_ROW_TWIPS
+
+    # 表头文案（含样例里的空格写法）与跨列
+    header0 = rows[0].findall(W + "tc")
+    assert _text(header0[0]) == SPEC["headers"]["fixed"][0]
+    assert _text(header0[1]) == SPEC["headers"]["fixed"][1]
+    assert _text(header0[2]) == SPEC["headers"]["fixed"][2]
+    assert _text(header0[3]) == SPEC["headers"]["thickness"]
+    assert int(header0[3].find(W + "tcPr").find(W + "gridSpan").get(W + "val")) == wr.THICKNESS_SPAN
+    assert [int(tc.find(W + "tcPr").find(W + "tcW").get(W + "w")) for tc in header0] == [
+        wr.GRID_COLS[0], wr.GRID_COLS[1], wr.GRID_COLS[2],
+        sum(wr.GRID_COLS[3:10]), wr.GRID_COLS[10],
+    ]
+    sub = [_text(tc) for tc in rows[1].findall(W + "tc")[3:10]]
+    assert sub == list(SPEC["headers"]["thicknessSub"])
+
+    # 单元格边距：普通格 60/80，要求列数据格 60/60
+    normal_mar = header0[0].find(W + "tcPr").find(W + "tcMar")
+    assert int(normal_mar.find(W + "top").get(W + "w")) == wr.CELL_MARGIN_VERTICAL
+    assert int(normal_mar.find(W + "left").get(W + "w")) == wr.CELL_MARGIN_HORIZONTAL
+    requirement_cell = rows[2].findall(W + "tc")[wr.COLUMN_INDEX["requirement"]]
+    requirement_mar = requirement_cell.find(W + "tcPr").find(W + "tcMar")
+    for side in ("top", "left", "bottom", "right"):
+        assert int(requirement_mar.find(W + side).get(W + "w")) == wr.REQUIREMENT_MARGIN
+
+    # 「截面尺寸要求」数据格显式 8pt（为长条文挤空间）
+    size = (requirement_cell.find(W + "p").find(W + "r")
+            .find(W + "rPr").find(W + "sz"))
+    assert int(size.get(W + "val")) == int(wr.REQUIREMENT_PT * 2) == 16
+
+    # 正文段落：字号与间距
+    paragraphs = body.findall(W + "p")
+
+    def run_size(paragraph):
+        return int(paragraph.find(W + "r").find(W + "rPr").find(W + "sz").get(W + "val"))
+
+    def spacing(paragraph):
+        element = paragraph.find(W + "pPr").find(W + "spacing")
+        return element.attrib if element is not None else {}
+
+    def attr(element, name):
+        return element.get(W + name)
+
+    assert run_size(paragraphs[0]) == int(wr.BODY_PT * 2) == 22
+    assert attr(spacing(paragraphs[0]), "after") == str(SPACING["infoAfter"])
+    assert run_size(paragraphs[5]) == int(wr.TITLE_PT * 2) == 32
+    assert attr(spacing(paragraphs[5]), "before") == str(SPACING["titleBefore"])
+    assert attr(spacing(paragraphs[5]), "after") == str(SPACING["titleAfter"])
+
+    # note: findall(p) 不含表格，所以下标与 body 子元素下标不同：
+    # 0-4 信息段 / 5 立柱标题 / 6 空段 / 7 横梁标题 / 8 空段 / 9 玻璃标题 / 10 空段 / 11 备注 / 12 文末空段
+    assert len(paragraphs) == 13
+    assert _text(paragraphs[5]) == "幕墙立柱截面尺寸检测结果"
+    assert _text(paragraphs[7]) == "幕墙横梁截面尺寸检测结果"
+    for index in (6, 8, 10):
+        assert _text(paragraphs[index]) == ""
+        assert attr(spacing(paragraphs[index]), "before") == str(SPACING["spacerBefore"])
+        assert attr(spacing(paragraphs[index]), "after") == str(SPACING["spacerAfter"])
+
+    note = paragraphs[11]
+    assert _text(note).startswith("备注：")
+    assert run_size(note) == int(wr.BODY_PT * 2)
+    assert attr(spacing(note), "before") == str(SPACING["noteBefore"])
+    assert _text(paragraphs[12]) == ""                       # 文末空段
+
+
+def test_layout_spec_file_is_language_neutral():
+    """规格放在 JSON 里（而非代码），便于将来移植到前端 docx JS。"""
+    assert wr.SPEC_PATH.exists()
+    spec = wr.load_spec()
+    assert spec["columns"]["widths"] == list(wr.GRID_COLS)
+    assert spec["fonts"]["inheritedTablePt"] == 10      # Word 未指定时的继承字号（已人工核对）
+    assert spec["fonts"]["requirementPt"] == 8
+
+
+# --------------------------------------------------------------------------
+# 立柱/横梁表结构
+# --------------------------------------------------------------------------
+def _group(faces, template_type="column", **record_overrides):
+    record = {
+        "floor": "六层",
+        "member_position": "1",
+        "size_result": "63×164",
+        "requirement_text": "立柱铝型材开口部位的厚度不应小于3.0mm，闭口部位的厚度不应小于2.5mm",
+    }
+    record.update(record_overrides)
+    return {
+        "template_type": template_type,
+        "records": [{
+            "record": record,
+            "faces": [
+                {"face": face, "readings_text": ["2.99"] * 5, "min_text": "2.99"}
+                for face in faces
+            ],
+        }],
+    }
+
+
+def test_single_face_member_has_no_vmerge():
+    """单面构件与样例一样：不带任何 vMerge（一条 restart 不构成合并，但会产生无谓差异）。"""
+    doc = wr.new_document()
+    table = wr.build_detection_table(doc, _group(["B"]))
+    rows = table._tbl.findall(W + "tr")
+    assert len(rows) == 3                       # 表头 2 + 数据 1
+    for tc in rows[2].findall(W + "tc"):
+        assert tc.find(W + "tcPr").find(W + "vMerge") is None
+
+
+def test_multi_face_member_merges_four_columns():
+    """两个检测面 → 两行，四列纵向合并：首行 restart，次行 continue（裸格）。"""
+    doc = wr.new_document()
+    table = wr.build_detection_table(doc, _group(["B", "H"]))
+    rows = table._tbl.findall(W + "tr")
+    assert len(rows) == 4                       # 表头 2 + 2 个面
+
+    first, second = rows[2], rows[3]
+    merged_columns = (0, 1, 2, wr.COLUMN_INDEX["requirement"])
+    for column in merged_columns:
+        restart = first.findall(W + "tc")[column].find(W + "tcPr").find(W + "vMerge")
+        assert restart is not None and restart.get(W + "val") == "restart"
+
+        tc = second.findall(W + "tc")[column]
+        tc_pr = tc.find(W + "tcPr")
+        vmerge = tc_pr.find(W + "vMerge")
+        assert vmerge is not None and vmerge.get(W + "val") is None      # continue
+        assert tc_pr.find(W + "tcMar") is None                          # 裸格不带边距
+        assert tc_pr.find(W + "vAlign") is None                         # 不带垂直居中
+        paragraph = tc.find(W + "p")
+        assert paragraph is not None and paragraph.find(W + "pPr") is None  # 无 pPr 的空段
+        assert _text(tc) == ""
+
+    # 面 / 读数 / 最小值 三列不参与纵向合并
+    for column in (3, 4, 9):
+        tc_pr = second.findall(W + "tc")[column].find(W + "tcPr")
+        assert tc_pr.find(W + "vMerge") is None
+        assert tc_pr.find(W + "vAlign") is not None
+
+    # 第二行的面与读数是自己的内容
+    assert _text(second.findall(W + "tc")[3]) == "H"
+
+
+def test_table_header_spans_seven_columns():
+    doc = wr.new_document()
+    table = wr.build_detection_table(doc, _group(["B"]))
+    header = table._tbl.findall(W + "tr")[0].findall(W + "tc")
+    assert len(header) == 5                      # 跨 7 列 → 该行只有 5 个 tc
+    span = header[3].find(W + "tcPr").find(W + "gridSpan")
+    assert int(span.get(W + "val")) == 7
+    assert int(header[3].find(W + "tcPr").find(W + "tcW").get(W + "w")) == 5040
+
+
+def test_empty_requirement_shows_placeholder():
+    doc = wr.new_document()
+    table = wr.build_detection_table(doc, _group(["B"], requirement_text=None))
+    data_row = table._tbl.findall(W + "tr")[2]
+    assert _text(data_row.findall(W + "tc")[wr.COLUMN_INDEX["requirement"]]) == "无"
 
 
 def test_create_table_rejects_mismatched_widths():

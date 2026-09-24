@@ -1,0 +1,64 @@
+{
+  "_source": "全部数值实测自 tests/fixtures/金骐智谷_金骐_检测报告.docx 的 OOXML；由 tests/test_word_report.py::test_layout_spec_matches_sample 上锁",
+  "_note": "语言中立：Python 导出引擎读取本文件；将来移植到前端 docx JS 时直接复用同一份数值，避免二次抄写引入偏差。字号单位 pt，几何单位 twips（1 pt = 20 twips）。",
+
+  "page": {
+    "widthTwips": 11906,
+    "heightTwips": 16838,
+    "marginTwips": 1440,
+    "headerFooterTwips": 708,
+    "docGridLinePitch": 360
+  },
+
+  "table": {
+    "widthTwips": 8800,
+    "align": "center",
+    "layout": "fixed",
+    "border": { "val": "single", "sz": 4, "space": 0, "color": "auto" },
+    "tableCellMargin": { "left": 10, "right": 10 },
+    "look": { "val": "04A0", "firstRow": 1, "lastRow": 0, "firstColumn": 1, "lastColumn": 0, "noHBand": 0, "noVBand": 1 }
+  },
+
+  "columns": {
+    "widths": [492, 553, 614, 480, 760, 760, 760, 760, 760, 760, 2101],
+    "index": { "floor": 0, "position": 1, "size": 2, "face": 3, "readingFirst": 4, "readingCount": 5, "minimum": 9, "requirement": 10 },
+    "mergedInBody": ["floor", "position", "size", "requirement"]
+  },
+
+  "rows": {
+    "headerHeightTwips": 600,
+    "dataHeightTwips": 400
+  },
+
+  "cell": {
+    "marginVerticalTwips": 60,
+    "marginHorizontalTwips": 80,
+    "requirementMarginTwips": 60
+  },
+
+  "fonts": {
+    "inheritedTablePt": 10,
+    "requirementPt": 8,
+    "bodyPt": 11,
+    "titlePt": 16
+  },
+
+  "paragraphSpacing": {
+    "infoAfter": 100,
+    "titleBefore": 300,
+    "titleAfter": 200,
+    "spacerBefore": 200,
+    "spacerAfter": 200,
+    "noteBefore": 300
+  },
+
+  "headers": {
+    "fixed": ["楼层", "构件 位置", "尺寸结果 (mm)"],
+    "thickness": "厚度检测结果 (mm)",
+    "thicknessSub": ["面", "1", "2", "3", "4", "5", "最小"]
+  },
+
+  "spans": {
+    "thickness": 7
+  }
+}

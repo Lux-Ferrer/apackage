@@ -13,12 +13,17 @@
 
 from __future__ import annotations
 
+import re
+
 from .. import config, db
 from . import thickness
 
 # 尺寸结果里可能出现的乘号写法，统一成全角 ×
 _SIZE_SEPARATORS = ("x", "X", "*", "＊")
 _SIZE_MULTIPLY = "×"
+# 「两个数字 + 空白」这种没有运算符的写法（现场/表格里常见）→ 空白应当视作乘号，
+# 而不是被当作普通空格删掉（否则 "63 164" 会被粘成 "63164"）。
+_TWO_NUMBERS = re.compile(r"^(\d+(?:\.\d+)?)[\s\u3000]+(\d+(?:\.\d+)?)$")
 
 
 def _clean(value):
@@ -30,13 +35,24 @@ def _clean(value):
 # 解析与校验
 # --------------------------------------------------------------------------
 def normalize_size_result(raw):
-    """规范化尺寸结果：去掉空白，把 x / X / * 统一成 ×（如 ``63x164`` -> ``63×164``）。"""
-    text = _clean(raw).replace(" ", "").replace("\u3000", "")
+    """规范化尺寸结果。
+
+    - 把 ``x`` / ``X`` / ``*`` / ``＊`` 统一成 ``×``（如 ``63x164`` -> ``63×164``）；
+    - **两个数字之间只有空白**时，把空白视作乘号（``63 164`` -> ``63×164``）；
+    - 其余空白去掉，因此 ``12 + 75`` 保留为 ``12+75``（需求报告里的写法）。
+    """
+    text = _clean(raw)
     if not text:
         return None
+
     for separator in _SIZE_SEPARATORS:
         text = text.replace(separator, _SIZE_MULTIPLY)
-    return text or None
+
+    pairs = _TWO_NUMBERS.match(text)
+    if pairs:
+        return "%s%s%s" % (pairs.group(1), _SIZE_MULTIPLY, pairs.group(2))
+
+    return text.replace(" ", "").replace("\u3000", "") or None
 
 
 def resolve_requirement(index_raw, template_type):
@@ -60,6 +76,24 @@ def requirement_index_of(requirement_text, template_type):
     if requirement_text in options:
         return options.index(requirement_text)
     return None
+
+
+# 条文文案的标点归一化表（全角 → 半角）
+_CLAUSE_PUNCTUATION = {"，": ",", "。": ".", "；": ";", "：": ":", "（": "(", "）": ")"}
+
+
+def normalize_clause(text):
+    """条文文案归一化：去空白、全角标点转半角、去首尾标点。
+
+    用途是**比较与追溯**（配置文案 vs 需求报告 / 对拍时的原始差异判定），
+    不参与存储——库里存的始终是用户选中的原文快照。
+    """
+    if text is None:
+        return ""
+    cleaned = re.sub(r"\s+", "", str(text))
+    for full, half in _CLAUSE_PUNCTUATION.items():
+        cleaned = cleaned.replace(full, half)
+    return cleaned.strip(".;,、")
 
 
 def parse_record_form(form, template_type):

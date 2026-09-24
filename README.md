@@ -8,18 +8,20 @@ Existing Curtain Wall Inspection Data Recording and Report Generation Tool —�
 
 ## 当前状态
 
-**M1（项目管理 + 检测记录录入）已完成** —— 2026-09-23
+**M2（项目级 Word 导出）已完成** —— 2026-09-23
 
 | 里程碑 | 内容 | 状态 |
 | --- | --- | --- |
 | M0 | 拆包、数据库 schema、Word A4 报告底座 | ✅ 完成 |
 | M1 | 项目管理 CRUD + 立柱/横梁检测记录录入 | ✅ 完成 |
-| M2 | 项目级 Word 导出（立柱/横梁表，与样例对拍） | ⏳ 待开发 |
+| M2 | 项目级 Word 导出（与样例**逐属性对拍一致**） | ✅ 完成 |
 | M3 | 缺陷报告完善（图片/规范/建议/绑定项目）+ 附页导出 | ⏳ 待开发 |
 | M4 | 报告管理 | ⏳ 待开发 |
-| M5 | 测试、打磨、交付打包 | ⏳ 待开发 |
+| M5 | 前端本地化改造（IndexedDB + docx JS + 纯静态 PWA，移除 Flask） | ⏳ 待开发 |
 
-M1 交付：项目增删改查（编号唯一、列表显示记录数、删除二次确认并提示级联影响）；立柱/横梁两种模板的检测记录录入，每检测面 5 个厚度读数并实时计算最小值；多检测面构件；编辑时模板类型锁定；项目详情展示记录数与关联报告。
+M2 交付：`webapp/resources/report_layout.json`（语言中立的版式规格）、立柱/横梁表构建（表头跨 7 列 + 多面构件四列纵向合并）、项目级导出路由、逐单元格对拍工具、5 份样例报告与回归基线。
+
+> **架构说明**：M5 将把导出与数据层迁移到前端（IndexedDB + docx JS），移除 Flask 后端改为纯静态 PWA。M2 的 Python 引擎是该迁移的**参考实现与规格来源**，`report_layout.json` 中的数值可直接被 JS 复用。
 
 ## 范围
 
@@ -51,15 +53,25 @@ python app.py
 
 ```powershell
 python -m pip install -r requirements-dev.txt     # pytest + openpyxl
-python -m pytest -q                               # Python 测试套件（132 项）
+python -m pytest -q                               # Python 测试套件（170 项）
 python -m pytest tests/test_word_report.py -v     # 只跑 Word 版式相关
 ```
 
-两个额外的验证工具：
+验证与交付工具：
 
 ```powershell
-python tools/verify_case_data.py     # 用 docs/samples 的真实案例数据走完整录入链路并逐面比对最小值
-python tools/make_report_template.py # 从样例重生报告底座（webapp/resources/report_base.docx）
+# 主闸门：从样例回灌其自身数据后重新生成，与样例逐属性对拍
+python tools/compare_report_with_sample.py --report deliverables/fidelity-report.md
+python tools/compare_report_with_sample.py --bless      # 验收后重新冻结回归基线
+
+# O2：用真实案例数据走完整录入 + 导出，并与案例逐格比对内容
+python tools/verify_case_data.py
+
+# 生成 5 份样例报告（章程 Objective 3 的证据）到 deliverables/samples/
+python tools/generate_sample_reports.py
+
+# 从样例重生报告底座（webapp/resources/report_base.docx）
+python tools/make_report_template.py
 ```
 
 前端 JS 功能测试（可选，需要 Node.js）：
@@ -68,6 +80,14 @@ python tools/make_report_template.py # 从样例重生报告底座（webapp/reso
 npm install --no-save jsdom
 node tests/js/record_form.test.js    # 35 项：实时最小值、非法读数拦截、增删检测面行
 ```
+
+## 交付物
+
+| 路径 | 说明 |
+| --- | --- |
+| `deliverables/samples/` | 5 份样例报告 + 清单（章程 Objective 3 的度量证据） |
+| `deliverables/fidelity-report.md` | 与客户样例的逐属性对拍报告 |
+| `tests/fixtures/generated_baseline.docx` | 回归基线：生成物偏离即测试失败，直到显式重新冻结 |
 
 ## 目录结构
 
@@ -82,7 +102,8 @@ Capstone/
 │   ├── schema.sql             4 张表：projects / measurement_records /
 │   │                          thickness_readings / defects
 │   ├── resources/
-│   │   └── report_base.docx   Word 报告底座（由样例派生，见下）
+│   │   ├── report_base.docx   Word 报告底座（由样例派生，见下）
+│   │   └── report_layout.json 版式规格（语言中立，供 M5 的前端移植复用）
 │   ├── routes/                pages.py / projects.py / records.py / defects.py
 │   ├── services/
 │   │   ├── thickness.py       5 个厚度读数 -> 最小值、格式化
@@ -95,15 +116,21 @@ Capstone/
 ├── uploads/defects/           隐患图片（gitignore）
 ├── tests/
 │   ├── fixtures/              金骐智谷_金骐_检测报告.docx（对拍基准，勿改）
+│   │                          generated_baseline.docx（回归基线）
 │   ├── js/record_form.test.js 前端功能测试（jsdom）
 │   ├── test_db.py             表结构、约束、级联语义
 │   ├── test_thickness.py      最小值计算
-│   ├── test_word_report.py    A4 页面、字体、表格原语、与样例参数对齐
-│   ├── test_measurements.py   表单解析、事务回滚、编辑锁定
+│   ├── test_word_report.py    A4 页面、字体、表格原语、版式常量上锁
+│   ├── test_measurements.py   表单解析、事务回滚、编辑锁定、条文与需求报告一致
 │   ├── test_projects.py       项目 CRUD 与校验
 │   ├── test_records.py        记录 CRUD、模板锁定、最小值链路
+│   ├── test_report_export.py  导出路由、文件名、空项目、无玻璃
+│   ├── test_report_fidelity.py 与样例逐属性对拍 + 回归基线
 │   └── test_web.py            路由与完整链路冒烟
-├── tools/                     make_report_template.py · verify_case_data.py
+├── deliverables/              5 份样例报告 + 对拍报告（章程 Objective 3 的证据）
+├── tools/                     compare_report_with_sample.py · verify_case_data.py
+│                              generate_sample_reports.py · make_report_template.py
+│                              case_data.py（案例解析，多工具共用）
 └── docs/                      需求、计划、章程、案例资料、设计文档
 ```
 
@@ -136,6 +163,16 @@ Capstone/
 - 检测记录与其厚度读数在**同一事务**内提交，任一步失败整体回滚
 - 删除项目 → 级联删除其检测记录；关联缺陷报告 `project_id` **置空保留**
 - 隐患图片存文件路径（`uploads/defects/`），不入库为 base64/BLOB
+
+### Word 导出（M2）
+
+- 文件名 `项目编号_房屋名称_检测报告.docx`，非法字符替换为 `_` 并限长
+- **只有存在记录的章节才输出**（立柱 / 横梁各自判断）；两者都无则只出信息段 + 备注
+- **不输出玻璃模块**（范围外，测试里反向断言）
+- 表头「厚度检测结果 (mm)」横向跨 7 列；**多面构件**的「楼层 / 构件位置 / 尺寸结果 / 截面尺寸要求」四列纵向合并；**单面构件不写 `vMerge`**（与样例一致）
+- 「截面尺寸要求」数据格 8pt + 左右 60 边距（复刻样例，为长条文挤空间）；其余单元格不写字号（继承，Word 下 10pt）
+- 版式数值全部存放于 `webapp/resources/report_layout.json`，由测试与样例实测值上锁
+- 条文文案**以需求报告为准**（全角标点）；预置项只允许追加，不得改动或重排已有项（历史快照靠索引回填）
 
 ## 文档索引
 

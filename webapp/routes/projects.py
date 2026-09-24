@@ -4,11 +4,12 @@
 from __future__ import annotations
 
 import sqlite3
+from pathlib import Path
 
-from flask import (Blueprint, abort, flash, redirect, render_template, request,
-                   url_for)
+from flask import (Blueprint, abort, current_app, flash, redirect,
+                   render_template, request, send_file, url_for)
 
-from ..services import measurements
+from ..services import measurements, word_report
 from ..services import projects as project_service
 
 bp = Blueprint("projects", __name__, url_prefix="/projects")
@@ -103,3 +104,24 @@ def delete(project_id):
         abort(404)
     flash("项目已删除：%s（%s）" % (project["house_name"], project["project_no"]))
     return redirect(url_for("projects.index"))
+
+
+@bp.get("/<int:project_id>/export")
+def export(project_id):
+    """导出项目级 Word 检测报告：`项目编号_房屋名称_检测报告.docx`。
+
+    ``attachments`` 参数（是否附加缺陷报告附页）在此接好，附页渲染在 M3 实现；
+    当前没有附页渲染时始终按"不附加"导出，避免给出无效选项。
+    """
+    project = _project_or_404(project_id)
+    groups = measurements.grouped_by_template(project_id)
+
+    doc = word_report.build_project_report(project, groups)
+    filename = word_report.report_filename(project)
+
+    reports_dir = Path(current_app.config["REPORTS_DIR"])
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    path = reports_dir / filename
+    word_report.save(doc, path)
+
+    return send_file(path, as_attachment=True, download_name=filename)

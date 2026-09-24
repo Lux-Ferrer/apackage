@@ -24,6 +24,11 @@ UPLOADS_DIR = BASE_DIR / "uploads" / "defects"           # 隐患图片
 REPORT_BASE_TEMPLATE = RESOURCE_DIR / "report_base.docx"
 # 对拍基准样例（勿删、勿改动）
 GOLDEN_SAMPLE = BASE_DIR / "tests" / "fixtures" / "金骐智谷_金骐_检测报告.docx"
+# 回归基线：M2 验收通过后冻结的生成物，用来捕捉后续改动的意外偏差
+# （重新祝福：python tools/compare_report_with_sample.py --bless）
+GENERATED_BASELINE = BASE_DIR / "tests" / "fixtures" / "generated_baseline.docx"
+# 交付物：5 份样例报告与对拍报告
+DELIVERABLES_DIR = BASE_DIR / "deliverables"
 
 # --------------------------------------------------------------------------
 # 缺陷检测填报（需求报告 3.3）
@@ -94,7 +99,10 @@ FACE_SUGGESTIONS = {
 THICKNESS_VALUE_COUNT = 5        # 每个检测面固定 5 个厚度读数
 FACE_MAX_COUNT = 6               # 单个构件最多 6 个检测面
 
-# 截面尺寸要求预置条文（需求报告 3.5.2）
+# 截面尺寸要求预置条文（需求报告 3.5.2；标点按需求报告走全角）
+#
+# ⚠️ 只允许**追加**，不要改动/重排已有项：记录里存的是选择时的文案快照，
+#    索引一旦错位，历史记录的编辑页就会落到"（历史条文）"分支。
 REQUIREMENT_OPTIONS = {
     TEMPLATE_COLUMN: (
         "立柱铝型材开口部位的厚度不应小于3.0mm，闭口部位的厚度不应小于2.5mm",
@@ -102,6 +110,9 @@ REQUIREMENT_OPTIONS = {
     ),
     TEMPLATE_BEAM: (
         "当横梁跨度不大于1.2m时，铝型材截面主要受力部位的厚度不应小于2.0mm",
+        "当横梁跨度大于1.2m时，其截面主要受力部位的厚度不应小于2.5mm",
+        # 追加项（索引 2）：需求报告表 2-5 的"两句合并"写法
+        "当横梁跨度不大于1.2m时，铝型材截面主要受力部位的厚度不应小于2.0mm；"
         "当横梁跨度大于1.2m时，其截面主要受力部位的厚度不应小于2.5mm",
     ),
 }

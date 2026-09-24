@@ -3,9 +3,12 @@
 
 {% block content %}
 <div class="card">
+    <p class="back-link"><a class="link" href="{{ url_for('projects.index') }}">← 返回项目列表</a></p>
+
     <div class="page-head">
         <h1>{{ project['house_name'] }} <span class="muted">（{{ project['project_no'] }}）</span></h1>
         <div class="head-actions">
+            <a class="btn small" href="{{ url_for('projects.export', project_id=project['id']) }}">导出 Word</a>
             <a class="btn ghost small" href="{{ url_for('projects.edit', project_id=project['id']) }}">编辑项目</a>
             <form method="post" class="inline-form"
                   action="{{ url_for('projects.delete', project_id=project['id']) }}"

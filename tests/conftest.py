@@ -6,10 +6,18 @@
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 import pytest
 
-from webapp import create_app
-from webapp import db as db_module
+# 让 `pytest` 与 `python -m pytest` 都能导入 webapp / tools
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from webapp import create_app          # noqa: E402
+from webapp import db as db_module     # noqa: E402
 
 
 @pytest.fixture

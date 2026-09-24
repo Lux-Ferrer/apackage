@@ -11,8 +11,9 @@ from __future__ import annotations
 import sqlite3
 
 import pytest
+from docx import Document
 
-from webapp import db
+from webapp import config, db
 from webapp.services import measurements
 from webapp.services import projects as project_service
 
@@ -59,8 +60,68 @@ def test_normalize_size_result(raw, expected):
     assert measurements.normalize_size_result(raw) == expected
 
 
+@pytest.mark.parametrize("raw, expected", [
+    ("63 164", "63×164"),          # 两个数字 + 空格 → 空格视作乘号
+    ("63  164", "63×164"),
+    ("63\u3000164", "63×164"),     # 全角空格
+    ("12 + 75", "12+75"),          # 需求报告里的加号写法保留
+    ("  82 * 76 ", "82×76"),
+])
+def test_normalize_size_result_space_forms(raw, expected):
+    assert measurements.normalize_size_result(raw) == expected
+
+
+def test_normalize_size_result_never_glues_two_numbers():
+    """回归：`63 164` 曾经被删空格粘成 `63164`（数据静默损坏）。"""
+    assert measurements.normalize_size_result("63 164") != "63164"
+    assert measurements.normalize_size_result("63 164") == "63×164"
+
+
+def test_beam_requirement_options_keep_existing_order():
+    """预置条文只允许追加：前两项的文本与索引不能变（历史快照靠索引回填）。"""
+    options = config.REQUIREMENT_OPTIONS[config.TEMPLATE_BEAM]
+    assert len(options) == 3
+    assert options[0] == "当横梁跨度不大于1.2m时，铝型材截面主要受力部位的厚度不应小于2.0mm"
+    assert options[1] == "当横梁跨度大于1.2m时，其截面主要受力部位的厚度不应小于2.5mm"
+    assert options[2].startswith("当横梁跨度不大于1.2m时") and "；" in options[2]
+
+
+def test_column_requirement_options_unchanged():
+    options = config.REQUIREMENT_OPTIONS[config.TEMPLATE_COLUMN]
+    assert len(options) == 2
+    assert options[0].startswith("立柱铝型材开口部位的厚度不应小于3.0mm")
+
+
+REQUIREMENTS_DOC = config.BASE_DIR / "docs" / "requirements" / "幕墙检测APP需求报告.docx"
+
+
+def test_requirement_text_matches_requirements_doc():
+    """config 的条文文案必须与需求报告一致（去空白、统一标点后比较）。
+
+    需求报告是"文字内容"的权威来源，对拍基准样例只负责字体与版式。
+    第 3 个横梁选项只存在于需求报告的表 2-5 图片里（文字层没有），故只核对前两项。
+    """
+    if not REQUIREMENTS_DOC.exists():
+        pytest.skip("需求报告缺失：%s" % REQUIREMENTS_DOC)
+
+    document = Document(str(REQUIREMENTS_DOC))
+    known = {
+        measurements.normalize_clause(paragraph.text.strip().lstrip("-").strip())
+        for paragraph in document.paragraphs
+    }
+    for template_type in config.TEMPLATE_TYPES:
+        for option in config.REQUIREMENT_OPTIONS[template_type][:2]:
+            assert measurements.normalize_clause(option) in known, option
+
+
+def test_normalize_clause_unifies_spacing_and_punctuation():
+    assert measurements.normalize_clause("不应小于 3.0mm，闭口") == "不应小于3.0mm,闭口"
+    assert measurements.normalize_clause("当横梁跨度大于1.2m时；") == "当横梁跨度大于1.2m时"
+    assert measurements.normalize_clause(None) == ""
+
+
 def test_resolve_requirement_by_index():
-    options = measurements.config.REQUIREMENT_OPTIONS["column"]
+    options = config.REQUIREMENT_OPTIONS["column"]
     assert measurements.resolve_requirement("0", "column") == options[0]
     assert measurements.resolve_requirement("1", "column") == options[1]
     assert measurements.resolve_requirement("", "column") is None
@@ -69,8 +130,9 @@ def test_resolve_requirement_by_index():
 
 
 def test_requirement_index_round_trip():
-    options = measurements.config.REQUIREMENT_OPTIONS["beam"]
+    options = config.REQUIREMENT_OPTIONS["beam"]
     assert measurements.requirement_index_of(options[1], "beam") == 1
+    assert measurements.requirement_index_of(options[2], "beam") == 2
     assert measurements.requirement_index_of("某条历史文案", "beam") is None
     assert measurements.requirement_index_of(None, "beam") is None
 
