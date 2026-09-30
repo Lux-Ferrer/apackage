@@ -229,35 +229,84 @@ details.record[open] > summary::before { content: "▾"; }
 .requirement { margin: 10px 0 0; font-size: 13px; }
 .requirement .label { color: var(--muted); }
 
-/* 厚度明细表 / 录入表 */
-table.data-table, table.face-table {
-    width: 100%; border-collapse: collapse; margin-top: 10px;
+/* --------------------------------------------------------------------------
+   检测面：摘要行 + 下级编辑（<ol> + <details>）
+   开合是原生行为，无 JS 也能用；JS 只刷派生状态（圆点/进度/最小值/警告灯）。
+   -------------------------------------------------------------------------- */
+ol.face-list { list-style: none; margin: 10px 0 0; padding: 0; }
+ol.face-list > li { margin-bottom: 8px; }
+
+details.face-row {
+    border: 1px solid var(--line); border-radius: 8px; background: #fff; overflow: hidden;
 }
-table.data-table th, table.data-table td,
-table.face-table th, table.face-table td {
+details.face-row[open] { border-color: #cfd8e3; box-shadow: 0 1px 6px rgba(0, 0, 0, .05); }
+
+/* 摘要行：纯展示，整行可点（≥48px 命中区），警告灯在出错时换到第二行 */
+.face-summary {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px;
+    min-height: 48px; padding: 10px 12px; cursor: pointer; list-style: none;
+}
+.face-summary::-webkit-details-marker { display: none; }
+.face-summary::after {                       /* 展开指示三角，纯装饰 */
+    content: "▾"; margin-left: auto; color: var(--muted); font-size: 12px;
+    transition: transform .15s ease;
+}
+details.face-row[open] > .face-summary::after { transform: rotate(180deg); }
+
+.face-dot { flex: 0 0 auto; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--muted); }
+.face-dot.state-none { border-color: var(--muted); background: transparent; }        /* ○ 未填 */
+.face-dot.state-partial { border-color: var(--warn); background: var(--warn); }      /* ● 部分 */
+.face-dot.state-done { border-color: var(--ok-fg); background: var(--ok-fg); }       /* ● 完成 */
+.face-name { font-weight: 600; }
+.face-count { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.face-min { color: var(--muted); font-size: 13px; }
+.face-min .min-value { color: var(--accent-dark); font-variant-numeric: tabular-nums; }
+
+/* 警告灯：与三态着色**独立**的通道 —— 着色说"还剩多少活"，它说"能不能保存" */
+.face-lamp {
+    flex: 0 0 100%; font-size: 12px; color: var(--danger);
+    background: #fdecea; border-radius: 4px; padding: 2px 8px;
+}
+.face-lamp[hidden] { display: none; }
+
+.face-editor { padding: 4px 12px 12px; border-top: 1px solid var(--line); }
+label.face-field {
+    display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center;
+    gap: 8px; margin: 10px 0; font-weight: 600; color: var(--muted); font-size: 14px;
+}
+label.face-field .face-input { text-align: left; }
+
+/* 5 个读数：每个格子自带标签与就地提示（.input-hint 必须是 input 的直接父元素内，
+   record_form.js 与 JS 测试都用 input.parentNode.querySelector('.input-hint')） */
+.reading-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.reading-cell { display: block; }
+.reading-label { display: block; text-align: center; font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+.reading-cell input.reading { text-align: center; padding: 8px 2px; }
+input.reading.is-min { background: #eaf2fe; border-color: var(--accent); font-weight: 600; }
+input.reading.is-invalid, .face-input.input-error { border-color: var(--danger); background: #fff8f7; }
+.reading-cell .input-hint {
+    display: none; color: var(--danger); font-size: 11px; line-height: 1.2; margin-top: 2px;
+    text-align: center;
+}
+.reading-cell .input-hint.show { display: block; }
+
+.face-editor-foot {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    margin-top: 8px; flex-wrap: wrap;
+}
+.face-editor-foot .row-remove {
+    background: none; border: 0; color: var(--danger); font-size: 14px; cursor: pointer;
+}
+.face-editor-foot .row-remove:hover { background: none; text-decoration: underline; }
+
+/* 旧的表格录入样式（table.face-table）随 UI 改造下线，只保留只读明细表 table.data-table */
+table.data-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+table.data-table th, table.data-table td {
     border: 1px solid var(--line); padding: 6px 8px; text-align: center;
 }
-table.data-table th, table.face-table th { background: #f7f8fa; font-weight: 600; font-size: 13px; }
-table.data-table .col-face, table.face-table .col-face { width: 72px; }
-table.data-table .col-min, table.face-table .col-min { width: 78px; font-weight: 600; }
-table.face-table .col-op { width: 40px; }
-
-/* 检测面录入行 */
-table.face-table input[type="text"] {
-    padding: 5px 6px; text-align: center; font-size: 14px;
-}
-table.face-table input.face-input { text-align: center; }
-table.face-table .min-value { color: var(--accent-dark); font-variant-numeric: tabular-nums; }
-table.face-table input.is-min { background: #eaf2fe; border-color: var(--accent); font-weight: 600; }
-table.face-table input.is-invalid { border-color: var(--danger); background: #fff8f7; }
-table.face-table .input-hint {
-    display: none; color: var(--danger); font-size: 11px; line-height: 1.2; margin-top: 2px;
-}
-table.face-table .input-hint.show { display: block; }
-.row-remove {
-    background: none; color: var(--muted); border: 0; padding: 2px 6px; font-size: 14px; cursor: pointer;
-}
-.row-remove:hover { background: none; color: var(--danger); }
+table.data-table th { background: #f7f8fa; font-weight: 600; font-size: 13px; }
+table.data-table .col-face { width: 72px; }
+table.data-table .col-min { width: 78px; font-weight: 600; }
 
 /* 模板选择 */
 .template-badge {

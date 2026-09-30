@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import re
+
 from webapp import db
 
 PROJECT_FORM = {
@@ -80,11 +82,15 @@ def test_new_record_unknown_project_404(client):
 
 
 def test_form_exposes_hooks_required_by_frontend_js(client):
-    """前端 JS 依赖这些元素/属性；改模板时不能悄悄破坏这份契约。"""
+    """前端 JS 依赖这些元素/属性；改模板时不能悄悄破坏这份契约。
+
+    契约清单见 docs/management/UI-设计.md 第 5.2 节：UI 改造只允许换**容器**
+    （`table#face-table` → `ol#face-list`），其余 id / name / class 一律冻结。
+    """
     _project(client)
     html = client.get("/projects/1/records/new?template=column").get_data(as_text=True)
 
-    assert 'id="face-table"' in html            # 表格容器（data-face-max 等）
+    assert 'id="face-list"' in html             # 检测面容器（data-face-max 等）
     assert 'data-face-max="6"' in html
     assert 'id="record-form"' in html           # 提交拦截挂在这个表单上
     assert 'id="save-record"' in html           # 非法读数时禁用的那个按钮
@@ -97,10 +103,78 @@ def test_form_exposes_hooks_required_by_frontend_js(client):
     assert 'pattern="-?(\\d+(\\.\\d*)?|\\.\\d+)"' in html   # 无 JS 时的原生兜底
     assert 'name="value_0_1"' in html
 
+    # 每个读数输入的直接父元素内必须有 .input-hint：
+    # record_form.js 与 JS 测试都用 input.parentNode.querySelector('.input-hint')
+    assert 'class="reading-cell"' in html
+    assert re.search(
+        r'<label class="reading-cell">.*?<input[^>]*class="reading[^"]*"[^>]*>'
+        r'.*?<span class="input-hint">', html, re.S
+    ), "读数输入必须与它的 .input-hint 在同一个 .reading-cell 里（JS 靠 parentNode 找）"
+
     # 新增行的模板里也必须带提示元素，否则 JS 加出来的行没有提示位
     template_html = html[html.index('id="face-row-template"'):]
     assert 'class="input-hint"' in template_html
     assert 'name="value___INDEX___1"' in template_html
+
+
+def test_create_form_opens_the_first_face(client):
+    """新增模式：唯一一行默认展开并聚焦，用户进来就能开始敲（服务端写 open）。"""
+    _project(client)
+    html = client.get("/projects/1/records/new?template=column").get_data(as_text=True)
+
+    assert '<details class="face-row" data-index="0" open>' in html
+    # 只算真正的行，不算 <template> 里那一行
+    body = html[:html.index('id="face-row-template"')]
+    assert body.count('class="face-row"') == 1
+    assert 'data-index="__INDEX__" open' in html        # 新增出来的行也展开
+
+
+def test_edit_form_keeps_all_faces_collapsed(client, ctx):
+    """编辑模式且无错误：全部折叠，摘要行就是这条记录的概览。"""
+    _project(client)
+    _post_record(client)
+    html = client.get("/records/1/edit").get_data(as_text=True)
+
+    assert 'class="face-row" data-index="0" open' not in html
+    assert 'data-index="0"' in html
+
+
+def test_failed_submit_expands_the_rows_with_errors(client, ctx):
+    """校验失败回填时，含错误的行默认展开 —— 折叠态会藏起错误，用户就不知道哪里要改。"""
+    _project(client)
+    payload = {
+        "floor": "六层",
+        "member_position": "1",
+        "size_result": "63×164",
+        "face_0": "B",
+        "value_0_1": "abc",                    # 非法读数 → 第 0 行应当展开
+        "face_1": "H",
+        "value_1_1": "2.99",
+    }
+    response = client.post("/projects/1/records/?template=column", data=payload)
+    assert response.status_code == 400
+    html = response.get_data(as_text=True)
+
+    assert 'class="face-row" data-index="0" open' in html       # 出错行展开
+    assert 'class="face-row" data-index="1" open' not in html   # 没出错的行保持折叠
+
+
+def test_summary_row_renders_three_state_and_lamp(client, ctx):
+    """摘要行的三态与警告灯由服务端先渲染一份，保证无 JS 时也看得见。"""
+    _project(client)
+    client.post("/projects/1/records/?template=column", data={
+        "floor": "六层", "member_position": "1", "size_result": "63×164",
+        "face_0": "B", "value_0_1": "2.10", "value_0_2": "2.20",
+        "face_1": "H",
+        "value_1_1": "2.10", "value_1_2": "2.20", "value_1_3": "2.30",
+        "value_1_4": "2.40", "value_1_5": "2.50",
+    })
+    html = client.get("/records/1/edit").get_data(as_text=True)
+
+    assert 'class="face-dot state-partial"' in html        # B 面填了 2 格
+    assert 'class="face-dot state-done"' in html           # H 面填满 5 格
+    assert "2/5" in html and "5/5" in html
+    assert "2.10" in html                                  # 服务端先算好的最小值（B 面）
 
 
 def test_edit_form_also_exposes_frontend_hooks(client, ctx):

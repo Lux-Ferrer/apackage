@@ -51,6 +51,50 @@ def face_min_text(values, digits: int = VALUE_DIGITS) -> str:
     return format_mm(face_min(values), digits)
 
 
+def face_min_text_of_valid(values, digits: int = VALUE_DIGITS) -> str:
+    """容错版最小值文本：**跳过**非法文本，只按有效读数算。
+
+    专门给表单回填用：用户可能在某些格子里留下非数字文本，那时应当显示
+    "其余有效值的最小值"并由警告灯提示是哪几格，而不是抛异常把页面打成 500。
+    校验流程仍旧走 :func:`normalize_value`（严格，非法即报错）。
+    """
+    numbers = []
+    for raw in values:
+        try:
+            value = normalize_value(raw)
+        except ValueError:
+            continue
+        if value is not None:
+            numbers.append(value)
+    return format_mm(min(numbers) if numbers else None, digits)
+
+
 def readings_of_row(row) -> list:
     """从 thickness_readings 行取出 value_1..value_5。"""
     return [row["value_%d" % i] for i in range(1, 6)]
+
+
+# --------------------------------------------------------------------------
+# 读数状态（供表单视图模型使用）
+#
+# 与 :func:`normalize_value` 的分工：那个用异常表达"非法"，适合校验流程；
+# 这里的调用方需要"有多少格填了、有多少格是错的"这类**计数**，
+# 用异常控制流会写出很别扭的循环，所以单独提供不抛异常的版本。
+# --------------------------------------------------------------------------
+def reading_state(raw) -> str:
+    """一个读数的状态：``'empty'``（未填）/ ``'valid'`` / ``'invalid'``（非空非数字）。"""
+    try:
+        return "empty" if normalize_value(raw) is None else "valid"
+    except ValueError:
+        return "invalid"
+
+
+def count_readings(values) -> tuple:
+    """返回 ``(有效个数, 非法个数)``；空值不计入任何一边。
+
+    UI 设计里这两个数分别驱动两个**独立**的视觉通道：
+    有效个数 → 三态着色（还剩多少活）；非法个数 → 警告灯（能不能保存）。
+    合并成一个数会让"5 格全填了 abc"看起来像填完了。
+    """
+    states = [reading_state(raw) for raw in values]
+    return states.count("valid"), states.count("invalid")

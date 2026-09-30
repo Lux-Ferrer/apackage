@@ -40,30 +40,56 @@ def _record_or_404(record_id):
 
 # --------------------------------------------------------------------------
 # 行构造（模板渲染用）
+#
+# 视图模型在这里算完，模板只做 {{ }} 输出（与 M4 的 routes/reports.py::_card()
+# 同一约定）。三个派生量各有明确用途：
+#   filled_count  → 摘要行的「3/5」与三态着色（还剩多少活）
+#   invalid_count → 摘要行的警告灯（能不能保存）—— **独立通道**，不与三态合并
+#   open          → 折叠态的初始开合，由服务端决定，不依赖 JS（见 UI 设计 2.6）
 # --------------------------------------------------------------------------
-def _row(index, face, readings):
-    """一行检测面；``min_text`` 由服务端先算好，保证无 JS 时也能看到最小值。
+def _row(index, face, readings, *, error_fields=(), open_=None):
+    readings = list(readings)
+    filled, invalid = thickness.count_readings(readings)
 
-    键名用 ``readings`` 而非 ``values``：Jinja 里 ``row.values`` 会命中 dict 自带的
-    ``values()`` 方法，取值会静默变空。
-    """
+    # 服务端校验也认得出错格：校验失败回填时用它点亮警告灯与展开该行
+    row_errors = [field for field in error_fields
+                  if field == "face_%d" % index or field.startswith("value_%d_" % index)]
+    bad_readings = [field for field in row_errors if field.startswith("value_")]
+
+    # open_=None 表示"按默认规则决定"：**有错就展开**。
+    # 这是折叠设计的关键补偿 —— 折叠态会藏起错误，出错行必须自己打开。
+    # 新增模式的初始行显式传 True；编辑模式没有错误，自然全部折叠。
+    if open_ is None:
+        open_ = bool(row_errors)
+
     return {
         "index": index,
         "face": face,
         "readings": readings,
-        "min_text": thickness.face_min_text(readings),
+        "min_text": thickness.face_min_text_of_valid(readings),
+        "filled_count": filled,
+        "state": ("done" if filled >= config.THICKNESS_VALUE_COUNT
+                  else "partial" if filled else "none"),
+        "invalid_count": max(invalid, len(bad_readings)),
+        "has_error": bool(row_errors),
+        "open": open_,
     }
 
 
 def _empty_rows(count: int = 1):
+    """新增模式的初始行：**第一行默认展开并聚焦**（用户进来就能开始敲）。"""
     return [
-        _row(index, "", [""] * config.THICKNESS_VALUE_COUNT)
+        _row(index, "", [""] * config.THICKNESS_VALUE_COUNT, open_=(index == 0))
         for index in range(count)
     ]
 
 
-def _rows_from_submitted(form):
-    """校验失败回填：保留用户输入，并**保留原始下标**，使错误提示不错位。"""
+def _rows_from_submitted(form, errors=None):
+    """校验失败回填：保留用户输入，并**保留原始下标**，使错误提示不错位。
+
+    有错的行默认展开 —— 折叠态会藏起错误，用户就不知道哪里要改。
+    """
+    errors = errors or {}
     rows = []
     for index in range(config.FACE_MAX_COUNT):
         face = (form.get("face_%d" % index) or "").strip()
@@ -73,11 +99,12 @@ def _rows_from_submitted(form):
         ]
         if not face and not any(readings):
             continue                                   # 空白行不回填（避免越填越长）
-        rows.append(_row(index, face, readings))
+        rows.append(_row(index, face, readings, error_fields=errors))
     return rows or _empty_rows()
 
 
 def _rows_from_record(record_id):
+    """编辑模式：**全部折叠** —— 摘要行就是"这条记录有哪些面、最小值多少"的概览。"""
     rows = []
     for index, reading in enumerate(measurements.get_readings(record_id)):
         readings = [
@@ -204,7 +231,7 @@ def create(project_id):
 
     return _render_record_form(
         project, template_type, mode="create",
-        rows=_rows_from_submitted(request.form),
+        rows=_rows_from_submitted(request.form, errors),
         errors=errors,
         form=request.form,
         selected_requirement=_requirement_selection(request.form.get("requirement_index")),
@@ -252,7 +279,7 @@ def update(record_id):
 
     return _render_record_form(
         project, template_type, mode="edit", record=record,
-        rows=_rows_from_submitted(request.form),
+        rows=_rows_from_submitted(request.form, errors),
         errors=errors,
         form=request.form,
         selected_requirement=_requirement_selection(request.form.get("requirement_index")),
