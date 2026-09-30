@@ -26,56 +26,14 @@ def post_defect(client, make_image, **overrides):
     return client.post("/defects/", data=payload, content_type="multipart/form-data")
 
 
-def test_landing_redirects_to_projects(client):
-    """UI 改造后首屏是「项目」Tab，不再是一张模块进度表。"""
-    response = client.get("/")
-    assert response.status_code == 302
-    assert response.headers["Location"].endswith("/projects/")
+def test_about_page_reachable(client):
+    """旧首页内容（模块进度表）搬到了 /about，从「我的 → 应用信息」进入。
 
-
-def test_home_page(client):
-    """旧首页内容（模块进度表）搬到了 /about，从「我的 → 应用信息」进入。"""
+    更细的 UI 契约断言在 ``tests/test_ui.py``。
+    """
     response = client.get("/about")
     assert response.status_code == 200
     assert "模块进度" in response.get_data(as_text=True)
-
-
-def test_about_page_has_no_stale_todo_text(client):
-    """/about 是演示时会被看到的地方：已完成的里程碑不能还挂着「待开发」。"""
-    html = client.get("/about").get_data(as_text=True)
-    assert "待开发" not in html
-    assert "报告管理" in html
-    assert "M4" in html
-
-
-def test_navigation_tabs_present_on_list_pages(client):
-    """三个 Tab 在浏览类页面显示，且当前 Tab 高亮。"""
-    for path, key in (("/projects/", "项目"), ("/reports/", "报告"), ("/me/", "我的")):
-        html = client.get(path).get_data(as_text=True)
-        assert 'class="tabbar"' in html, path
-        assert "nav-item active" in html, path
-        assert key in html, path
-
-
-def test_navigation_tabs_hidden_on_form_pages(client):
-    """表单类页面隐藏 Tab，改用固定的底部操作条（见 UI 设计 1.3）。"""
-    html = client.get("/defects/new").get_data(as_text=True)
-    assert 'class="tabbar"' not in html
-
-    html = client.get("/projects/new").get_data(as_text=True)
-    assert 'class="tabbar"' not in html
-
-
-def test_active_tab_follows_endpoint_prefix(client):
-    """检测记录归属「项目」Tab（records.* → projects），缺陷填报归属「报告」Tab。"""
-    from webapp import config
-
-    assert config.TAB_BY_ENDPOINT_PREFIX["records"] == "projects"
-    assert config.TAB_BY_ENDPOINT_PREFIX["defects"] == "reports"
-
-    client.post("/projects/", data={"project_no": "P-1", "house_name": "某楼"})
-    html = client.get("/projects/1/records/new?template=column").get_data(as_text=True)
-    assert 'href="/projects/"' in html and "nav-item active" in html
 
 
 def test_projects_page_reachable(client):

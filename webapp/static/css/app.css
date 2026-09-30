@@ -449,6 +449,15 @@ figure.photo figcaption { margin-top: 6px; }
 /* 小屏表格（项目详情里的厚度明细、关于页的模块表）允许横向滚动，不撑破页面 */
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
+/* 项目列表：复用报告卡的卡片流（统一布局，桌面也只是变宽） */
+.project-list .report-card { align-items: center; }
+.record-actions-bar {
+    display: flex; align-items: center; justify-content: flex-end; gap: 14px;
+    padding: 6px 0 2px;
+}
+/* 自定义缺陷类型的输入框：默认收起，由 defects_form.js 按需显示 */
+.hidden-row { display: none; }
+
 /* ==========================================================================
    移动优先：base 就是手机竖屏
    ========================================================================== */
@@ -460,9 +469,11 @@ h1 { font-size: 19px; }
 input[type="text"], input[type="date"], input[type="file"], select, textarea { font-size: 16px; }
 input[type="text"], input[type="date"], select { padding: 10px; min-height: 44px; }
 button, .btn { min-height: 44px; }
-/* 文本型按钮（删除/编辑）命中区补到 44px：现在只有 2px 6px，手机上很难点 */
-.danger-link, .link, .row-remove { padding: 11px 4px; display: inline-block; }
-.inline-form .danger-link { padding: 11px 4px; }
+/* 文本型操作按钮（删除/编辑）命中区补到 44px。只对**独立成块**的操作链接生效：
+   正文句子里那种 <a class="link"> 不能加 padding，否则会把行高撑起来、破坏折行。 */
+.danger-link, .row-remove { padding: 11px 6px; display: inline-block; }
+.report-actions .link, .record-actions-bar .link, .head-actions .link,
+.actions .link, .table-actions .link, .page-head > .link { padding: 11px 4px; display: inline-block; }
 .table-actions { flex-wrap: wrap; }
 ul.report-list { margin-top: 4px; }
 .report-card { padding: 14px 0; gap: 10px; }
@@ -493,6 +504,14 @@ ul.report-list { margin-top: 4px; }
     .action-bar { position: static; border-top: 0; padding: 0; min-height: 0; background: none; }
     .action-bar .form-status { margin: 0 0 12px; }
     .form-row, .form-row-block { grid-template-columns: 96px minmax(0, 1fr); }
+
+    /* 桌面恢复改造前的观感：触控用的放大尺寸在这里收回，
+       否则 44px 的最小高度会让桌面上的紧凑按钮显得臃肿 */
+    input[type="text"], input[type="date"], select { padding: 8px 10px; min-height: 0; font-size: 14px; }
+    button, .btn { min-height: 0; }
+    .danger-link, .row-remove { padding: 0; }
+    .report-actions .link, .record-actions-bar .link, .head-actions .link,
+    .actions .link, .table-actions .link, .page-head > .link { padding: 0; }
 }
 
 /* 小屏（iPhone SE 320px）：读数网格 5 列会窄于 60px，换成 3 列 ×2 行 */

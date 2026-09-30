@@ -8,7 +8,7 @@ Existing Curtain Wall Inspection Data Recording and Report Generation Tool —�
 
 ## 当前状态
 
-**M4（报告管理：列表 / 筛选 / 详情 / 删除）已完成** —— 2026-09-25
+**UI（移动端优先改造）已完成** —— 2026-09-25
 
 | 里程碑 | 内容 | 状态 |
 | --- | --- | --- |
@@ -17,8 +17,10 @@ Existing Curtain Wall Inspection Data Recording and Report Generation Tool —�
 | M2 | 项目级 Word 导出（与真实客户报告**逐属性对拍一致**） | ✅ 完成 |
 | M3 | 缺陷填报完善（图片/规范/建议/绑定项目）+ 附页导出 | ✅ 完成 |
 | M4 | 报告管理（列表/筛选/详情/删除） | ✅ 完成 |
-| UI | 移动优先响应式改造（静态壳 + 客户端渲染，为 M5 铺路） | ⏳ 待开发 |
+| UI | 移动优先响应式改造（静态壳 + 客户端渲染，为 M5 铺路） | ✅ 完成 |
 | M5 | 前端本地化改造（IndexedDB + docx JS + 纯静态 PWA，移除 Flask） | ⏳ 待开发 |
+
+UI 交付：底部 3 Tab（项目 / 报告 / 我的）+ 桌面顶栏导航（同一个 partial 两处渲染）、检测面「摘要行 + 下级编辑」（原生 `<details>`，**无 JS 也能录入并提交**）、三态着色与警告灯双通道、构件信息横向表格布局、表单页固定底部操作条、`/` 落地到项目 Tab、模块进度搬到 `/about`、「我的」页（报告人卡 / 数据概览 / 清除全部报告 / 应用信息）。三档断点，**只有 ≥960px 一处做结构性变化**。
 
 M4 交付：报告管理列表（倒序 + 隐患等级徽标 + 缩略图 + 绑定项目）、顶部统计（总数 / 高 / 中 / 低，同时就是筛选控件）、详情页（全字段 + 大图）、删除（应用内确认弹窗 + 图片一并删除 + 自动解除项目关联）。**不改数据库结构**（未新增表/列，`SCHEMA_VERSION` 仍为 1）。
 
@@ -107,8 +109,9 @@ Capstone/
 │   ├── resources/
 │   │   ├── report_base.docx   Word 报告底座（由样例派生，见下）
 │   │   └── report_layout.json 版式规格（语言中立，供 M5 的前端移植复用）
-│   ├── routes/                pages.py / projects.py / records.py / defects.py / reports.py
-│   │                          （defects = 需求 3.3 填报写入；reports = 需求 3.4 报告管理）
+│   ├── routes/                pages.py / projects.py / records.py / defects.py / reports.py / me.py
+│   │                          （defects = 需求 3.3 填报写入；reports = 需求 3.4 报告管理；
+│   │                            me = 需求 3.7 我的；pages = 落地重定向 + 关于页）
 │   ├── services/
 │   │   ├── thickness.py       5 个厚度读数 -> 最小值、格式化
 │   │   ├── projects.py        项目读写、列表统计、删除影响面
@@ -116,7 +119,8 @@ Capstone/
 │   │   ├── defects.py         缺陷表单解析、读写、附页渲染数据、报告管理查询/删除
 │   │   ├── images.py          隐患图片：上传校验、落盘命名、导出压缩副本、列表缩略图
 │   │   └── word_report.py     A4 底座 + 表格原语 + 检测表/附页构建
-│   ├── templates/             base / index / projects / records / defects / reports
+│   ├── templates/             base / _nav / about / index 占位
+│   │                          projects / records / defects / reports / me
 │   └── static/                css/app.css · js/{app,record_form,defects_form}.js
 ├── reports/                   导出的 .docx（gitignore）
 ├── uploads/defects/           隐患图片（gitignore）
@@ -137,6 +141,7 @@ Capstone/
 │   ├── test_defects.py        缺陷表单、绑定项目、落盘原子性、附页数据
 │   ├── test_attachment_export.py 附页结构、分页、图片、无附页路径不变
 │   ├── test_reports.py        报告管理：列表/排序/统计/筛选/详情/缩略图/删除
+│   ├── test_ui.py             UI 契约：底部 Tab、操作条、横向表格布局、卡片列表、我的页
 │   ├── test_text_fit.py       列宽适配度量工具
 │   ├── test_extract_layout_spec.py 版式提取器与规格一致性
 │   ├── test_case_data.py      案例期望行构造（条文列的合并语义）
@@ -212,9 +217,23 @@ Capstone/
 - 需求 3.4e 的「删除后自动解除项目关联」不需要 `UPDATE ... SET project_id = NULL` —— 关联就在这一行上，删除即解绑
 - 列表页所有派生字段（徽标类名、时间文案、缩略图 URL、项目标签、图片是否存在）由 `routes/reports.py::_card()` 统一装配，模板只做 `{{ }}` 输出 —— 这是给 UI 阶段/ M5 前端渲染留的交接面（同一份 dict 可直接 `jsonify`）
 
+### 移动端界面（UI）
+
+- **导航**：一个 partial（`templates/_nav.html`）渲染两处 —— 移动端底部 3 Tab（项目 / 报告 / 我的）、桌面顶栏导航。高亮由 app 级 `context_processor` 按**端点前缀**推导（`records.*` 归「项目」、`defects.*` 归「报告」），不靠路由传参，漏传不会丢高亮
+- **Tab 的显示/隐藏**：浏览类页面（列表 / 详情）显示 Tab；表单类页面用 `{% block tabbar %}` 覆盖成空，改用**固定底部操作条**（保存必须落在拇指可达处，校验提示也移进操作条，否则长表单里提示会在屏幕外）
+- **检测面录入**：`<table>` 8 列在 375px 下每列不足 24px，无法使用 → 改成 `<ol>` + 原生 `<details>/<summary>` 的**摘要行 + 下级编辑**
+  - 摘要行显示：三态圆点 + 检测面名称 + 进度 `N/5` + 最小值 + 警告灯
+  - **自动展开不需要 JS**：新增模式首行、校验失败的行由服务端写 `open`；编辑模式全折叠（摘要行即记录概览）
+  - 折叠状态下浏览器仍提交 `<details>` 内的控件 → **禁用 JS 也能完整录入并保存**
+- **三态着色与警告灯是两个独立通道**：着色（灰 / 黄 / 绿）表示"还剩多少活"，警告灯（只在有非法读数时亮）表示"能不能保存"。合并成一个信号会让"5 格全填 `abc`"看起来像填完了
+- **输入时不打扰**：出现非法值只在摘要行亮警告灯，不自动展开；点保存被拦截时才展开非法行并聚焦第一个
+- **构件信息**：label 左 / 控件右的两列网格（横向表格布局）。用 `minmax(0, 1fr)` 而不是 `1fr`（后者最小值是 `auto`，长内容会撑破网格）；桌面**复用同一 DOM**，只调整宽度
+- **断点**：base（手机）/ 640px / 960px / max-359px（读数网格 5 列 → 3 列）。**只有 960px 一处做结构性变化**（底部 Tab → 顶栏导航），其余只调宽度、字号、间距
+- **触控与字号硬约束**：输入框移动端 `font-size: 16px`（iOS 聚焦缩放的红线）、命中区 ≥44px、`viewport-fit=cover` + `env(safe-area-inset-bottom)` 处理 iPhone 底部横条 —— 桌面在 960px 档把这些收回改造前的观感
+
 ## 文档索引
 
 - `docs/requirements/` 需求报告（原始需求全文）
-- `docs/management/` 项目章程、开发计划、M1/M2/M4 设计、阶段交接记录
+- `docs/management/` 项目章程、开发计划、M1/M2/M4/UI 设计、阶段交接记录
 - `docs/management/signed/` 签署类文档（含签名与联系方式，不入仓库）
 - `docs/samples/` 检测结果案例（Excel + 截图）

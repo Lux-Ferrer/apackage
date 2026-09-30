@@ -55,7 +55,12 @@
                         {{ item.record['size_result'] or '尺寸未填' }}
                         · {{ item.faces|length }} 个面（{% for face in item.faces %}{{ face.face }}{% if not loop.last %}/{% endif %}{% endfor %}）
                     </span>
-                    <span class="rec-actions">
+                </summary>
+
+                <div class="record-body">
+                    {# 编辑 / 删除放在展开区底部：summary 里的链接命中区太小，
+                       而且和"点整行展开"的点击语义冲突（UI 设计 5.1） #}
+                    <div class="record-actions-bar">
                         <a class="link" href="{{ url_for('records.edit', record_id=item.record['id']) }}">编辑</a>
                         <form method="post" class="inline-form"
                               action="{{ url_for('records.delete', record_id=item.record['id']) }}"
@@ -63,30 +68,30 @@
                               data-confirm-ok="确认删除">
                             <button type="submit" class="link danger-link">删除</button>
                         </form>
-                    </span>
-                </summary>
+                    </div>
 
-                <div class="record-body">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th class="col-face">检测面</th>
-                                {% for position in range(1, 6) %}<th>{{ position }}</th>{% endfor %}
-                                <th class="col-min">最小值</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for face in item.faces %}
-                            <tr>
-                                <td class="col-face">{{ face.face }}</td>
-                                {% for text in face.readings_text %}<td>{{ text or '—' }}</td>{% endfor %}
-                                <td class="col-min">{{ face.min_text or '—' }}</td>
-                            </tr>
-                            {% else %}
-                            <tr><td colspan="7" class="muted">这条记录还没有检测面数据</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    <div class="table-scroll">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th class="col-face">检测面</th>
+                                    {% for position in range(1, 6) %}<th>{{ position }}</th>{% endfor %}
+                                    <th class="col-min">最小值</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for face in item.faces %}
+                                <tr>
+                                    <td class="col-face">{{ face.face }}</td>
+                                    {% for text in face.readings_text %}<td>{{ text or '—' }}</td>{% endfor %}
+                                    <td class="col-min">{{ face.min_text or '—' }}</td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="7" class="muted">这条记录还没有检测面数据</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
 
                     <p class="requirement">
                         <span class="label">{{ group.requirement_label }}：</span>{{ item.record['requirement_text'] or '无' }}
@@ -105,32 +110,34 @@
     <h2>关联缺陷报告 <span class="muted">（{{ defect_count }} 份）</span></h2>
 
     {% if defects %}
-    <table class="grid">
-        <thead>
-            <tr>
-                <th>缺陷类型</th><th>隐患等级</th><th>工程部位</th><th>提交时间</th>
-                <th class="right">操作</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for defect in defects %}
-            <tr>
-                <td>
-                    {{ defect['defect_type'] }}
-                    {% if defect['image_path'] %}<span class="clip" title="附页含隐患图片">📎</span>{% endif %}
-                </td>
-                <td>
-                    <span class="badge {{ risk_badge_classes[defect['risk_level']] }}">{{ defect['risk_level'] }}</span>
-                </td>
-                <td>{{ defect['project_part'] }}</td>
-                <td class="muted">{{ defect['created_at'] }}</td>
-                <td class="right nowrap">
-                    <a class="link" href="{{ url_for('reports.detail', report_id=defect['id']) }}">查看</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-scroll">
+        <table class="grid">
+            <thead>
+                <tr>
+                    <th>缺陷类型</th><th>隐患等级</th><th>工程部位</th><th>提交时间</th>
+                    <th class="right">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for defect in defects %}
+                <tr>
+                    <td>
+                        {{ defect['defect_type'] }}
+                        {% if defect['image_path'] %}<span class="clip" title="附页含隐患图片">📎</span>{% endif %}
+                    </td>
+                    <td>
+                        <span class="badge {{ risk_badge_classes[defect['risk_level']] }}">{{ defect['risk_level'] }}</span>
+                    </td>
+                    <td>{{ defect['project_part'] }}</td>
+                    <td class="muted">{{ defect['created_at'] }}</td>
+                    <td class="right nowrap">
+                        <a class="link" href="{{ url_for('reports.detail', report_id=defect['id']) }}">查看</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     <p class="hint">导出时选择「附加 {{ defect_count }} 份并导出」，这些报告会作为附页追加在正文之后（每份独立成页）。</p>
     {% else %}
     <p class="hint">暂无关联报告。在<a class="link" href="{{ url_for('defects.new') }}">缺陷检测填报</a>里选择「绑定项目」即可关联。</p>

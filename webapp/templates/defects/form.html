@@ -4,11 +4,15 @@
 {% block tabbar %}{% endblock %}
 
 {% block content %}
-<div class="card">
-    <h1>缺陷检测填报</h1>
+<div class="card form-card">
+    <div class="page-head">
+        <h1>缺陷检测填报</h1>
+        <a class="link" href="{{ url_for('reports.index') }}">← 报告管理</a>
+    </div>
     <p class="sub">拍照取证 + 填写结论；提交后写入本地 SQLite，可随项目报告输出附页</p>
 
-    <form method="post" action="{{ url_for('defects.create') }}" enctype="multipart/form-data">
+    <form method="post" id="defect-form" action="{{ url_for('defects.create') }}"
+          enctype="multipart/form-data">
 
         <h2 class="form-section">隐患信息</h2>
 
@@ -24,38 +28,47 @@
             </div>
         </div>
 
-        <div class="field">
-            <label for="defect_type">缺陷类型 <span class="required">*</span></label>
-            <select id="defect_type" name="defect_type" required onchange="toggleCustomDefect()">
-                {% for item in defect_types %}
-                <option value="{{ item }}" {% if form.get('defect_type') == item %}selected{% endif %}>{{ item }}</option>
-                {% endfor %}
-            </select>
-            <input type="text" id="custom_defect_type" name="custom_defect_type" maxlength="100"
-                   placeholder="请输入自定义缺陷类型" style="display:none; margin-top:8px;"
-                   value="{{ form.get('custom_defect_type', '') }}">
-            {% if errors.get('custom_defect_type') %}<p class="field-error">{{ errors.get('custom_defect_type') }}</p>{% endif %}
-        </div>
-
-        <div class="field">
-            <label for="project_part">工程部位 <span class="required">*</span></label>
-            <input type="text" id="project_part" name="project_part" required maxlength="200"
-                   placeholder="如：东立面三层 1# 立柱" value="{{ form.get('project_part', '') }}">
-            {% if errors.get('project_part') %}<p class="field-error">{{ errors.get('project_part') }}</p>{% endif %}
-        </div>
-
-        <div class="field">
-            <label>隐患等级 <span class="required">*</span></label>
-            <div class="radio-row">
-                {% for level in risk_levels %}
-                <label>
-                    <input type="radio" name="risk_level" value="{{ level }}"
-                           {% if form.get('risk_level') == level or (not form.get('risk_level') and level == default_risk_level) %}checked{% endif %}>
-                    {{ level }}
-                </label>
-                {% endfor %}
+        <div class="form-table">
+            <div class="form-row">
+                <label for="defect_type">缺陷类型 <span class="required">*</span></label>
+                <div class="form-control">
+                    <select id="defect_type" name="defect_type" required onchange="toggleCustomDefect()">
+                        {% for item in defect_types %}
+                        <option value="{{ item }}" {% if form.get('defect_type') == item %}selected{% endif %}>{{ item }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="text" id="custom_defect_type" name="custom_defect_type" maxlength="100"
+                           placeholder="请输入自定义缺陷类型" class="hidden-row"
+                           value="{{ form.get('custom_defect_type', '') }}">
+                    {% if errors.get('custom_defect_type') %}<p class="field-error">{{ errors.get('custom_defect_type') }}</p>{% endif %}
+                </div>
             </div>
-            {% if errors.get('risk_level') %}<p class="field-error">{{ errors.get('risk_level') }}</p>{% endif %}
+
+            <div class="form-row">
+                <label for="project_part">工程部位 <span class="required">*</span></label>
+                <div class="form-control">
+                    <input type="text" id="project_part" name="project_part" required maxlength="200"
+                           placeholder="如：东立面三层 1# 立柱" value="{{ form.get('project_part', '') }}">
+                    {% if errors.get('project_part') %}<p class="field-error">{{ errors.get('project_part') }}</p>{% endif %}
+                </div>
+            </div>
+
+            {# 需求 3.3.2：隐患等级为"三选一按钮"，默认中 #}
+            <div class="form-row">
+                <label>隐患等级 <span class="required">*</span></label>
+                <div class="form-control">
+                    <div class="segmented">
+                        {% for level in risk_levels %}
+                        <label>
+                            <input type="radio" name="risk_level" value="{{ level }}"
+                                   {% if form.get('risk_level') == level or (not form.get('risk_level') and level == default_risk_level) %}checked{% endif %}>
+                            {{ level }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% if errors.get('risk_level') %}<p class="field-error">{{ errors.get('risk_level') }}</p>{% endif %}
+                </div>
+            </div>
         </div>
 
         <h2 class="form-section">处理建议</h2>
@@ -82,32 +95,39 @@
 
         <h2 class="form-section">归属</h2>
 
-        <div class="field">
-            <label for="project_id">绑定项目</label>
-            <select id="project_id" name="project_id">
-                <option value="">不绑定</option>
-                {% for project in projects %}
-                <option value="{{ project['id'] }}"
-                        {% if form.get('project_id') == project['id']|string %}selected{% endif %}>
-                    {{ project['project_no'] }} - {{ project['house_name'] }}
-                </option>
-                {% endfor %}
-            </select>
-            <p class="hint">绑定后，该报告可作为附页随项目报告一并导出</p>
-            {% if errors.get('project_id') %}<p class="field-error">{{ errors.get('project_id') }}</p>{% endif %}
-        </div>
+        <div class="form-table">
+            <div class="form-row">
+                <label for="project_id">绑定项目</label>
+                <div class="form-control">
+                    <select id="project_id" name="project_id">
+                        <option value="">不绑定</option>
+                        {% for project in projects %}
+                        <option value="{{ project['id'] }}"
+                                {% if form.get('project_id') == project['id']|string %}selected{% endif %}>
+                            {{ project['project_no'] }} - {{ project['house_name'] }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <p class="hint">绑定后，该报告可作为附页随项目报告一并导出</p>
+                    {% if errors.get('project_id') %}<p class="field-error">{{ errors.get('project_id') }}</p>{% endif %}
+                </div>
+            </div>
 
-        <div class="field">
-            <label>报告人</label>
-            <p class="readonly-value">{{ reporter.name }}（{{ reporter.department }}）</p>
-            <p class="hint">取当前用户（登录功能未纳入本期，暂用默认用户）</p>
-        </div>
-
-        <div class="actions">
-            <button type="submit">提交保存</button>
-            <a class="link" href="{{ url_for('pages.index') }}">取消</a>
+            <div class="form-row">
+                <label>报告人</label>
+                <div class="form-control">
+                    <p class="readonly-value">{{ reporter.name }}（{{ reporter.department }}）</p>
+                </div>
+            </div>
         </div>
     </form>
+</div>
+
+{# 底部固定操作条：提交是这一步的主操作，必须落在拇指可达处 #}
+<div class="action-bar">
+    <span class="action-spacer"></span>
+    <a class="link" href="{{ url_for('reports.index') }}">取消</a>
+    <button type="submit" form="defect-form">提交保存</button>
 </div>
 {% endblock %}
 
@@ -118,7 +138,7 @@
         const select = document.getElementById("defect_type");
         const customBox = document.getElementById("custom_defect_type");
         const isCustom = select.value === "{{ custom_option }}";
-        customBox.style.display = isCustom ? "block" : "none";
+        customBox.classList.toggle("hidden-row", !isCustom);
         if (isCustom) customBox.focus();
     }
     toggleCustomDefect();
