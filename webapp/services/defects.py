@@ -215,6 +215,30 @@ def delete(report_id: int):
     return row
 
 
+def delete_all() -> dict:
+    """清除全部报告（需求 3.7c「清除全部报告」）。返回 ``{reports, images}``。
+
+    与 :func:`delete` 同一套顺序：**先把行读出来、删库提交、再删文件** ——
+    反过来的话一旦 DELETE 失败就会留下指向不存在图片的记录（用户可见的数据损坏）。
+    这里先把全部 image_path 取出来，正是为了这个顺序。
+
+    不可恢复，调用方必须已经过二次确认（``templates/me/index.html`` 的确认弹窗）。
+    """
+    rows = db.query_all("SELECT id, image_path FROM defects")
+    if not rows:
+        return {"reports": 0, "images": 0}
+
+    with db.transaction() as conn:
+        conn.execute("DELETE FROM defects")
+
+    removed_images = 0
+    for row in rows:
+        if row["image_path"]:
+            images.remove(row["image_path"])
+            removed_images += 1
+    return {"reports": len(rows), "images": removed_images}
+
+
 # --------------------------------------------------------------------------
 # 附页渲染数据
 # --------------------------------------------------------------------------

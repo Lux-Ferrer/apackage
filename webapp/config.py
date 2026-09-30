@@ -107,6 +107,28 @@ TEMPLATE_COLUMN = "column"
 TEMPLATE_BEAM = "beam"
 TEMPLATE_TYPES = (TEMPLATE_COLUMN, TEMPLATE_BEAM)
 
+# 底部 Tab / 顶栏导航的高亮归属：按**端点前缀**推导，不靠每个路由传参
+# （漏传就会丢高亮）。检测记录归「项目」，缺陷填报归「报告」—— 填完就进报告列表，
+# 是同一条链路（需求报告 3.3.1 的流程图）。
+TAB_BY_ENDPOINT_PREFIX = {
+    "projects": "projects",
+    "records": "projects",
+    "reports": "reports",
+    "defects": "reports",
+    "me": "me",
+    "pages": "me",
+}
+DEFAULT_TAB = "projects"
+
+# 应用信息（需求 3.7e）。「关于」页与「我的」页都要用，做成模板全局。
+APP_INFO = {
+    "name": "建筑幕墙检测报告生成工具",
+    "name_en": "Existing Curtain Wall Inspection Data Recording and Report Generation Tool",
+    "version": "1.0.0",
+    "org": "NYU MS in Management and Systems · Capstone",
+    "client": "中冶建筑研究总院（深圳）有限公司",
+}
+
 TEMPLATE_NAMES = {
     TEMPLATE_COLUMN: "幕墙立柱",
     TEMPLATE_BEAM: "幕墙横梁",

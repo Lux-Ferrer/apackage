@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}关于 - 建筑幕墙检测报告工具{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>模块进度</h1>
+    <p class="sub">M1 项目管理与检测记录 · M2 项目级 Word 导出 · M3 缺陷附页 · M4 报告管理 · UI 移动端，均已可用。</p>
+
+    <table class="grid">
+        <thead>
+            <tr><th>模块</th><th>状态</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for name, status, endpoint, ready in modules %}
+            <tr>
+                <td>{{ name }}</td>
+                <td><span class="badge {{ 'ok' if ready else 'todo' }}">{{ status }}</span></td>
+                <td class="right">
+                    {% if ready and endpoint %}
+                        <a class="btn small" href="{{ url_for(endpoint) }}">进入</a>
+                    {% else %}
+                        <span class="muted">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>使用顺序</h2>
+    <ol class="plain">
+        <li>在「项目」里新建一个项目（项目编号 + 房屋名称必填）；</li>
+        <li>进入项目详情，点「添加检测记录」，选择立柱或横梁模板；</li>
+        <li>填写楼层、构件位置，展开每个检测面录入 5 个厚度读数（最小值自动计算）；</li>
+        <li>在「报告」里填写缺陷报告，可绑定到项目；</li>
+        <li>回项目详情导出 Word，需要时把关联报告作为附页一并输出。</li>
+    </ol>
+</div>
+
+<div class="card">
+    <h2>本期不做（已确认范围外）</h2>
+    <p class="sub">膜厚检测 · 玻璃面板尺寸及厚度检测 · 速记 · 统计 · 登录 · 结构安全评定</p>
+</div>
+
+<div class="card">
+    <h2>应用信息</h2>
+    <table class="grid">
+        <tbody>
+            <tr><th>名称</th><td>{{ app_info.name }}</td></tr>
+            <tr><th>English</th><td>{{ app_info.name_en }}</td></tr>
+            <tr><th>版本</th><td>{{ app_info.version }}</td></tr>
+            <tr><th>出品</th><td>{{ app_info.org }}</td></tr>
+            <tr><th>需求方</th><td>{{ app_info.client }}</td></tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}

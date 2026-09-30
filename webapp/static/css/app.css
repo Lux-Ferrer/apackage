@@ -1,4 +1,14 @@
 /* 建筑幕墙检测报告工具 —— 基础样式 */
+/* ==========================================================================
+   断点策略（详见 docs/management/UI-设计.md 第 4 节）
+   --------------------------------------------------------------------------
+   - base（<640px）      手机竖屏：单列、底部 Tab、输入框 16px
+   - @media 640px+       大屏手机/平板：内容加宽居中
+   - @media 960px+       桌面：**唯一的结构性变化** —— 底部 Tab 换成顶栏导航
+   - @media max-359px    小屏：读数网格 5 列 → 3 列
+   硬约束：除 960px 那一处外，任何断点都不允许改动 DOM 结构（只调宽度/字号/间距），
+   否则就变成"两套布局要同时维护"，正是本次改造要避免的。
+   ========================================================================== */
 :root {
     --accent: #1668dc;
     --accent-dark: #0f57bb;
@@ -9,6 +19,13 @@
     --danger: #b3261e;
     --ok-bg: #e8f5e9;
     --ok-fg: #1e7b34;
+    --warn: #b76e00;
+    --warn-bg: #fff4e5;
+
+    /* 固定底栏高度与 iPhone 底部安全区：底栏与页面底部留白共用这两个变量，
+       改一处即可，不会出现"底栏高度改了但内容被遮住"的错位 */
+    --bottom-bar-h: 56px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 * { box-sizing: border-box; }
@@ -27,12 +44,59 @@ body {
 .muted { color: var(--muted); }
 .strong { font-weight: 600; }
 
+/* 为固定底栏留出空间：主内容 + 页脚都要让位，否则最后一行会被压在底栏下面。
+   表单页没有底栏而是"底部操作条"，两者高度相同（--bottom-bar-h），所以共用一条规则。 */
+main.wrap, .foot { padding-bottom: calc(var(--bottom-bar-h) + var(--safe-bottom) + 12px); }
+
 /* 顶栏 */
 .topbar { background: #fff; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
 .topbar .bar { display: flex; align-items: center; justify-content: space-between; height: 56px; }
 .brand { font-weight: 700; color: var(--ink); text-decoration: none; font-size: 16px; }
-.topbar nav a { color: var(--muted); text-decoration: none; margin-left: 18px; }
-.topbar nav a:hover { color: var(--accent); }
+
+/* --------------------------------------------------------------------------
+   导航：一个 partial（templates/_nav.html）渲染两处
+   - .topnav  桌面顶栏用的横排链接（移动端隐藏）
+   - .tabbar  移动端固定在底部的 3 个 Tab（桌面隐藏）
+   高亮由 .active 决定（app 级 context_processor 提供的 active_tab）
+   -------------------------------------------------------------------------- */
+.topnav { display: none; }
+.topnav .nav-item {
+    color: var(--muted); text-decoration: none; font-size: 14px;
+    padding: 4px 2px; border-bottom: 2px solid transparent;
+}
+.topnav .nav-item:hover { color: var(--accent); }
+.topnav .nav-item.active { color: var(--accent); border-bottom-color: var(--accent); }
+.topnav .nav-icon { display: none; }
+
+.tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    display: flex; background: #fff; border-top: 1px solid var(--line);
+    height: calc(var(--bottom-bar-h) + var(--safe-bottom));
+    padding-bottom: var(--safe-bottom);
+}
+.tabbar .nav-item {
+    flex: 1 1 0; min-height: 44px;               /* 命中区下限 */
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; text-decoration: none; color: var(--muted); font-size: 11px;
+}
+.tabbar .nav-item.active { color: var(--accent); }
+.tabbar .nav-icon { display: block; width: 22px; height: 22px; }
+.tabbar .nav-icon svg { width: 100%; height: 100%; display: block; }
+
+/* --------------------------------------------------------------------------
+   底部固定操作条（表单页替代 Tab）：取消 / 主操作，固定在拇指可达处
+   -------------------------------------------------------------------------- */
+.action-bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    display: flex; align-items: center; gap: 12px;
+    background: #fff; border-top: 1px solid var(--line);
+    padding: 8px 12px calc(8px + var(--safe-bottom));
+    min-height: calc(var(--bottom-bar-h) + var(--safe-bottom));
+}
+.action-bar .action-spacer { flex: 1 1 auto; }
+.action-bar .btn, .action-bar button { padding: 10px 20px; }
+/* 校验提示放进操作条：长表单里它原本在页面底部按钮上方，禁用保存时提示往往在屏幕外 */
+.action-bar .form-status { margin: 0; flex: 1 1 auto; }
 
 /* 卡片与页头 */
 .card {
@@ -284,6 +348,110 @@ figure.photo figcaption { margin-top: 6px; }
     margin: 12px 0 18px; padding: 18px; text-align: center; color: var(--muted);
     background: #f7f8fa; border: 1px dashed var(--line); border-radius: 8px;
 }
-.hint.warn { color: #b76e00; }
+.hint.warn { color: var(--warn); }
 
-.foot { color: var(--muted); font-size: 12px; padding-bottom: 32px; }
+.foot { color: var(--muted); font-size: 12px; }
+
+/* --------------------------------------------------------------------------
+   UI 改造：移动优先的通用件
+   -------------------------------------------------------------------------- */
+
+/* 横向表格布局：label 左 / 控件右（移动端原生设置页的形态）。
+   - label 右对齐：中文标签只有 2~5 字，右对齐让控件列形成一条干净的竖线
+   - minmax(0, 1fr) 而不是 1fr：后者的最小值是 auto，长内容会把网格撑破
+   - 错误提示放在 .form-control 里，紧贴出错的控件，而不是跑到下一行 */
+.form-table { border-top: 1px solid var(--line); }
+.form-row {
+    display: grid; grid-template-columns: 84px minmax(0, 1fr);
+    gap: 4px 12px; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid var(--line);
+}
+.form-row > label { margin: 0; text-align: right; font-weight: 600; color: var(--muted); font-size: 14px; }
+.form-control { min-width: 0; }
+.form-control > .hint, .form-control > .field-error { margin-top: 4px; }
+.form-row-block { grid-template-columns: 84px minmax(0, 1fr); align-items: start; }
+.form-row-block > label { padding-top: 10px; }
+
+/* 三选一分段控件（隐患等级；需求 3.3.2 要求"三选一按钮"） */
+.segmented { display: flex; border: 1px solid #ccc; border-radius: 6px; overflow: hidden; }
+.segmented label {
+    flex: 1 1 0; margin: 0; text-align: center; padding: 10px 4px; font-weight: 400;
+    background: #fff; cursor: pointer; border-left: 1px solid #ccc; font-size: 15px;
+}
+.segmented label:first-child { border-left: 0; }
+.segmented input { position: absolute; opacity: 0; pointer-events: none; }
+.segmented label:has(input:checked) { background: var(--accent); color: #fff; }
+.segmented label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+/* 不支持 :has 的旧浏览器退化为原生 radio（仍然可用，只是没有选中配色） */
+@supports not selector(:has(*)) {
+    .segmented input { position: static; opacity: 1; pointer-events: auto; }
+}
+
+/* 「我的」页的报告人卡 */
+.profile { display: flex; align-items: center; gap: 14px; margin: 12px 0 6px; }
+.profile-avatar {
+    flex: 0 0 auto; width: 52px; height: 52px; border-radius: 50%;
+    background: var(--accent); color: #fff; display: flex; align-items: center;
+    justify-content: center; font-size: 22px; font-weight: 600;
+}
+.profile-body { min-width: 0; }
+.profile-name { margin: 0; font-size: 17px; font-weight: 600; }
+
+/* 小屏表格（项目详情里的厚度明细、关于页的模块表）允许横向滚动，不撑破页面 */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* ==========================================================================
+   移动优先：base 就是手机竖屏
+   ========================================================================== */
+.card { padding: 18px 16px; }
+h1 { font-size: 19px; }
+.page-head { flex-direction: column; align-items: stretch; gap: 10px; }
+.page-head .head-actions { flex-wrap: wrap; }
+/* iOS Safari 对 <16px 的输入框会在聚焦时自动放大页面 —— 这是硬约束，不要调小 */
+input[type="text"], input[type="date"], input[type="file"], select, textarea { font-size: 16px; }
+input[type="text"], input[type="date"], select { padding: 10px; min-height: 44px; }
+button, .btn { min-height: 44px; }
+/* 文本型按钮（删除/编辑）命中区补到 44px：现在只有 2px 6px，手机上很难点 */
+.danger-link, .link, .row-remove { padding: 11px 4px; display: inline-block; }
+.inline-form .danger-link { padding: 11px 4px; }
+.table-actions { flex-wrap: wrap; }
+ul.report-list { margin-top: 4px; }
+.report-card { padding: 14px 0; gap: 10px; }
+.report-actions { flex-direction: column; align-items: flex-end; gap: 2px; }
+.stats { gap: 6px; }
+.stat { padding: 10px 4px; }
+
+@media (min-width: 640px) {
+    .wrap { max-width: 640px; }
+    .card { padding: 22px 24px; }
+    .page-head { flex-direction: row; align-items: flex-start; justify-content: space-between; }
+    .form-row, .form-row-block { grid-template-columns: 96px minmax(0, 1fr); }
+    .report-card { padding: 16px 0; gap: 14px; }
+    .report-actions { flex-direction: row; gap: 12px; }
+    .stat { padding: 8px 6px; }
+    /* 表单页在宽屏上限制在 720px：label 到控件的距离不会拉到需要转头看 */
+    .card.form-card { max-width: 720px; margin-left: auto; margin-right: auto; }
+}
+
+/* --------------------------------------------------------------------------
+   ≥960px：**唯一的结构性变化** —— 底部 Tab 换成顶栏导航
+   -------------------------------------------------------------------------- */
+@media (min-width: 960px) {
+    .wrap { max-width: 980px; }
+    main.wrap, .foot { padding-bottom: 32px; }   /* 没有底栏了，收回留白 */
+    .tabbar { display: none; }
+    .topnav { display: flex; gap: 20px; align-items: center; }
+    .action-bar { position: static; border-top: 0; padding: 0; min-height: 0; background: none; }
+    .action-bar .form-status { margin: 0 0 12px; }
+    .form-row, .form-row-block { grid-template-columns: 96px minmax(0, 1fr); }
+}
+
+/* 小屏（iPhone SE 320px）：读数网格 5 列会窄于 60px，换成 3 列 ×2 行 */
+@media (max-width: 359px) {
+    .reading-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+}
+
+/* 尊重系统的"减少动态效果" */
+@media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+}

@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 {% block title %}选择检测记录模板 - 建筑幕墙检测报告工具{% endblock %}
+{# 一次性选择页：隐藏底部 Tab，避免选中模板时误触 #}
+{% block tabbar %}{% endblock %}
 
 {% block content %}
 <div class="card">

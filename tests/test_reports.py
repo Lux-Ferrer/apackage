@@ -359,9 +359,15 @@ def test_create_lands_on_report_detail(client, make_image):
 
 
 def test_nav_exposes_report_management(client):
-    html = client.get("/").get_data(as_text=True)
-    assert "报告管理" in html
+    """底部 Tab 里有「报告」入口，报告管理是 Tab 根页面。"""
+    html = client.get("/reports/").get_data(as_text=True)
     assert 'href="/reports/"' in html
+    assert "报告" in html
+
+    # 首屏是「项目」Tab（UI 改造后 / 不再是模块进度表）
+    landing = client.get("/")
+    assert landing.status_code == 302
+    assert landing.headers["Location"].endswith("/projects/")
 
 
 # --------------------------------------------------------------------------

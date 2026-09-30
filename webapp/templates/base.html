@@ -2,20 +2,17 @@
 <html lang="zh-CN">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {# viewport-fit=cover：让 env(safe-area-inset-*) 生效，否则 iPhone 底部横条会压住固定底栏 #}
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>{% block title %}建筑幕墙检测报告工具{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 </head>
 <body>
     <header class="topbar">
         <div class="wrap bar">
-            <a class="brand" href="{{ url_for('pages.index') }}">建筑幕墙检测报告工具</a>
-            <nav>
-                <a href="{{ url_for('pages.index') }}">首页</a>
-                <a href="{{ url_for('projects.index') }}">项目</a>
-                <a href="{{ url_for('reports.index') }}">报告管理</a>
-                <a href="{{ url_for('defects.new') }}">缺陷填报</a>
-            </nav>
+            <a class="brand" href="{{ url_for('projects.index') }}">建筑幕墙检测报告工具</a>
+            {# 桌面端导航：同一个 partial，移动端被 CSS 隐藏（底部 Tab 接管） #}
+            {% with nav_class = "topnav" %}{% include "_nav.html" %}{% endwith %}
         </div>
     </header>
 
@@ -34,6 +31,12 @@
     <footer class="wrap foot">
         本期范围：立柱 / 横梁截面尺寸检测（5 个厚度值自动计算最小值）· 缺陷检测填报 · 项目级 Word 导出 · 报告管理
     </footer>
+
+    {# 底部 Tab（移动端）。表单类页面用 {% block tabbar %}{% endblock %} 覆盖成空，
+       改用固定的底部操作条 —— 见 docs/management/UI-设计.md 第 1.3 节。 #}
+    {% block tabbar %}
+    {% with nav_class = "tabbar" %}{% include "_nav.html" %}{% endwith %}
+    {% endblock %}
 
     {# 应用内确认弹窗：带 data-confirm 的表单提交前会走这里 #}
     <dialog id="confirm-dialog" class="dialog">

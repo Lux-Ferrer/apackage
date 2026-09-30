@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}我的 - 建筑幕墙检测报告工具{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>我的</h1>
+
+    <div class="profile">
+        <div class="profile-avatar" aria-hidden="true">{{ reporter.name[:1] }}</div>
+        <div class="profile-body">
+            <p class="profile-name">{{ reporter.name }}</p>
+            <p class="report-meta muted">{{ reporter.department }}
+                {%- if reporter.department_code %}（{{ reporter.department_code }}）{% endif %}</p>
+            {% if reporter.employee_no %}
+            <p class="report-meta muted">工号 {{ reporter.employee_no }}</p>
+            {% endif %}
+        </div>
+    </div>
+    <p class="hint">登录功能未纳入本期范围，报告人取默认配置（<code>config.DEFAULT_REPORTER</code>）。</p>
+</div>
+
+<div class="card">
+    <h2>数据概览</h2>
+    <nav class="stats" aria-label="数据概览">
+        <a class="stat" href="{{ url_for('projects.index') }}">
+            <span class="stat-value">{{ overview.projects }}</span>
+            <span class="stat-label">项目</span>
+        </a>
+        <a class="stat" href="{{ url_for('projects.index') }}">
+            <span class="stat-value">{{ overview.records }}</span>
+            <span class="stat-label">检测记录</span>
+        </a>
+        <a class="stat" href="{{ url_for('reports.index') }}">
+            <span class="stat-value">{{ overview.reports }}</span>
+            <span class="stat-label">报告</span>
+        </a>
+    </nav>
+</div>
+
+<div class="card">
+    <h2>数据管理</h2>
+    {% if overview.reports %}
+    <p class="hint">清除全部 {{ overview.reports }} 份缺陷报告；隐患图片文件会一并删除。</p>
+    <form method="post" action="{{ url_for('me.clear_reports') }}"
+          data-confirm="确认清除全部 {{ overview.reports }} 份缺陷报告？隐患图片会一并删除，报告与项目的关联同时消失，此操作不可恢复。"
+          data-confirm-ok="确认清除">
+        <button type="submit" class="btn danger">清除全部报告</button>
+    </form>
+    {% else %}
+    <p class="hint">没有可清除的报告。</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>应用信息</h2>
+    <table class="grid">
+        <tbody>
+            <tr><th>名称</th><td>{{ app_info.name }}</td></tr>
+            <tr><th>版本</th><td>{{ app_info.version }}</td></tr>
+            <tr><th>出品</th><td>{{ app_info.org }}</td></tr>
+        </tbody>
+    </table>
+    <p><a class="link" href="{{ url_for('pages.about') }}">模块进度与范围说明 →</a></p>
+</div>
+{% endblock %}
