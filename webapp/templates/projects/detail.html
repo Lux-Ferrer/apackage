@@ -120,12 +120,12 @@
                     {% if defect['image_path'] %}<span class="clip" title="附页含隐患图片">📎</span>{% endif %}
                 </td>
                 <td>
-                    <span class="badge {{ {'高': 'high', '中': 'medium', '低': 'low'}[defect['risk_level']] }}">{{ defect['risk_level'] }}</span>
+                    <span class="badge {{ risk_badge_classes[defect['risk_level']] }}">{{ defect['risk_level'] }}</span>
                 </td>
                 <td>{{ defect['project_part'] }}</td>
                 <td class="muted">{{ defect['created_at'] }}</td>
                 <td class="right nowrap">
-                    <a class="link" href="{{ url_for('defects.detail', defect_id=defect['id']) }}">查看</a>
+                    <a class="link" href="{{ url_for('reports.detail', report_id=defect['id']) }}">查看</a>
                 </td>
             </tr>
             {% endfor %}

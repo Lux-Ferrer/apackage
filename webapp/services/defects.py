@@ -113,6 +113,23 @@ def get(defect_id):
     return db.query_one("SELECT * FROM defects WHERE id = ?", (defect_id,))
 
 
+def get_with_project(report_id):
+    """单条报告 + 绑定项目的编号/名称（与 :func:`list_reports` 同样的列集）。
+
+    详情页的卡片视图与列表页共用 :func:`routes.reports._card`，所以这里也要带上
+    项目两列 —— 否则 `_card` 取 ``house_name`` 会 IndexError。
+    """
+    return db.query_one(
+        """
+        SELECT d.*, p.project_no, p.house_name
+          FROM defects d
+          LEFT JOIN projects p ON p.id = d.project_id
+         WHERE d.id = ?
+        """,
+        (report_id,),
+    )
+
+
 def list_for_project(project_id):
     """项目关联的缺陷报告（倒序）。删除项目时 project_id 被置空，故不会出现在这里。"""
     return db.query_all(
@@ -125,6 +142,77 @@ def count_for_project(project_id) -> int:
     row = db.query_one("SELECT COUNT(*) AS total FROM defects WHERE project_id = ?",
                        (project_id,))
     return row["total"] if row else 0
+
+
+# --------------------------------------------------------------------------
+# 报告管理（需求报告 3.4：列表 / 筛选 / 顶部统计 / 删除）
+#
+# 本组函数只读 + 一个 DELETE，与上面那条"填报 → 附页排版"的链路（parse_form /
+# create / attachment_views / field_values / image_file_text / format_report_time）
+# 没有任何交集 —— 后者的产物被冻结基线 tests/fixtures/generated_baseline.docx
+# 与 tests/test_attachment_export.py 双重锁住，M4 一个字符都不动。
+# --------------------------------------------------------------------------
+def list_reports(risk_level=None):
+    """报告列表（倒序），附带绑定项目的编号与名称。
+
+    - ``LEFT JOIN`` 而不是内连接：缺陷报告可以不绑项目，内连接会把它们静默丢掉；
+    - 按需拼 ``WHERE`` 而不是 ``(? IS NULL OR ...)``：后者会让 ``idx_defects_risk`` 失效；
+    - ``created_at`` 精度只到秒，同秒内靠 ``id DESC`` 兜底，否则列表顺序会抖动。
+    """
+    sql = ["""
+        SELECT d.*, p.project_no, p.house_name
+          FROM defects d
+          LEFT JOIN projects p ON p.id = d.project_id
+    """]
+    params = []
+    if risk_level:
+        sql.append("WHERE d.risk_level = ?")
+        params.append(risk_level)
+    sql.append("ORDER BY d.created_at DESC, d.id DESC")
+    return db.query_all(" ".join(sql), tuple(params))
+
+
+def stats() -> dict:
+    """顶部统计：总数 + 高/中/低。
+
+    一条 SQL 算完，**恒为全量**（不受列表筛选影响，需求 3.4b 与 3.4c 是两件事）。
+    ``COALESCE`` 不可省：空表时 ``COUNT(*)`` 是 0，而 ``SUM(...)`` 对零行返回 NULL，
+    页面会显示成「高 None」。
+    """
+    row = db.query_one(
+        """
+        SELECT COUNT(*) AS total,
+               COALESCE(SUM(CASE WHEN risk_level = '高' THEN 1 ELSE 0 END), 0) AS high,
+               COALESCE(SUM(CASE WHEN risk_level = '中' THEN 1 ELSE 0 END), 0) AS medium,
+               COALESCE(SUM(CASE WHEN risk_level = '低' THEN 1 ELSE 0 END), 0) AS low
+          FROM defects
+        """
+    )
+    if row is None:
+        return {"total": 0, "high": 0, "medium": 0, "low": 0}
+    return dict(row)
+
+
+def delete(report_id: int):
+    """删除一份报告：先落库删除，提交后再尽力删掉隐患图片。
+
+    **顺序不能反**：先删文件的话，一旦 DELETE 失败就会留下一条指向不存在图片的记录
+    （用户可见的数据损坏）；按这个顺序最坏只留下一个不可见的孤儿文件。
+
+    需求 3.4e 的"删除后自动解除项目关联"不需要额外 SQL —— 关联就存在这一行的
+    ``project_id`` 上，删掉这行关联自然消失，项目详情页也就不再列出它。
+    """
+    row = get(report_id)
+    if row is None:
+        raise LookupError("报告不存在：#%s" % report_id)
+
+    with db.transaction() as conn:
+        cursor = conn.execute("DELETE FROM defects WHERE id = ?", (report_id,))
+        if cursor.rowcount == 0:
+            raise LookupError("报告不存在：#%s" % report_id)
+
+    images.remove(row["image_path"])      # remove() 本身吞掉缺失/越界，不会让删除失败
+    return row
 
 
 # --------------------------------------------------------------------------

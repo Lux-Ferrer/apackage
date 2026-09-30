@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}缺陷报告 #{{ report['id'] }} - 建筑幕墙检测报告工具{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="page-head">
+        <h1>缺陷报告 #{{ report['id'] }}</h1>
+        <a class="link" href="{{ url_for('reports.index') }}">← 返回报告管理</a>
+    </div>
+
+    {% if card.has_image %}
+    <figure class="photo">
+        <a href="{{ url_for('reports.image', report_id=report['id']) }}" target="_blank">
+            <img src="{{ url_for('reports.image', report_id=report['id']) }}"
+                 alt="{{ report['defect_type'] }} 隐患图片">
+        </a>
+        <figcaption class="hint">
+            {{ original_name }} · 点击看原图；附在项目导出里的是导出时现压的副本
+        </figcaption>
+    </figure>
+    {% else %}
+    <p class="photo-missing">
+        {% if report['image_path'] %}图片文件缺失（记录里有路径，但文件已不在）{% else %}这份报告没有隐患图片{% endif %}
+    </p>
+    {% endif %}
+
+    <table class="grid">
+        <tbody>
+            <tr><th>缺陷类型</th><td>{{ report['defect_type'] }}</td></tr>
+            <tr><th>工程部位</th><td>{{ report['project_part'] }}</td></tr>
+            <tr>
+                <th>隐患等级</th>
+                <td><span class="badge {{ card.badge_class }}">{{ report['risk_level'] }}</span></td>
+            </tr>
+            <tr><th>整改方案</th><td class="pre">{{ report['rectification_plan'] }}</td></tr>
+            {% if report['related_standards'] %}
+            <tr><th>相关规范</th><td class="pre">{{ report['related_standards'] }}</td></tr>
+            {% endif %}
+            {% if report['extra_advice'] %}
+            <tr><th>补充建议</th><td class="pre">{{ report['extra_advice'] }}</td></tr>
+            {% endif %}
+            <tr><th>报告人</th><td>{{ report['reporter_name'] }}（{{ report['reporter_department'] }}）</td></tr>
+            <tr><th>提交时间</th><td>{{ card.created_at_text }}</td></tr>
+            <tr>
+                <th>绑定项目</th>
+                <td>
+                    {% if card.project_label %}
+                    <a class="link" href="{{ url_for('projects.detail', project_id=report['project_id']) }}">{{ card.project_label }}</a>
+                    <span class="hint">（导出该项目报告时会作为附页追加）</span>
+                    {% else %}
+                    <span class="muted">未绑定项目</span>
+                    {% endif %}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="actions">
+        <form method="post" class="inline-form"
+              action="{{ url_for('reports.delete', report_id=report['id']) }}"
+              data-confirm="确认删除报告 #{{ report['id'] }}（{{ report['defect_type'] }}）？隐患图片会一并删除，此操作不可恢复。{% if card.project_label %}项目「{{ card.project_label }}」的关联会同时解除。{% endif %}"
+              data-confirm-ok="确认删除">
+            <button type="submit" class="btn danger">删除报告</button>
+        </form>
+        <a class="link" href="{{ url_for('defects.new') }}">再填写一条</a>
+        {% if card.project_label %}
+        <a class="link" href="{{ url_for('projects.detail', project_id=report['project_id']) }}">去项目里导出报告</a>
+        {% else %}
+        <a class="link" href="{{ url_for('projects.index') }}">去项目里导出报告</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

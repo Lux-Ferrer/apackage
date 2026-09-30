@@ -8,17 +8,19 @@ Existing Curtain Wall Inspection Data Recording and Report Generation Tool —�
 
 ## 当前状态
 
-**M3（缺陷填报完善 + 项目关联 + 附页导出）已完成** —— 2026-09-24
+**M4（报告管理：列表 / 筛选 / 详情 / 删除）已完成** —— 2026-09-25
 
 | 里程碑 | 内容 | 状态 |
 | --- | --- | --- |
 | M0 | 拆包、数据库 schema、Word A4 报告底座 | ✅ 完成 |
 | M1 | 项目管理 CRUD + 立柱/横梁检测记录录入 | ✅ 完成 |
-| M2 | 项目级 Word 导出（与样例**逐属性对拍一致**） | ✅ 完成 |
+| M2 | 项目级 Word 导出（与真实客户报告**逐属性对拍一致**） | ✅ 完成 |
 | M3 | 缺陷填报完善（图片/规范/建议/绑定项目）+ 附页导出 | ✅ 完成 |
-| M4 | 报告管理（列表/筛选/详情/删除） | ⏳ 待开发 |
+| M4 | 报告管理（列表/筛选/详情/删除） | ✅ 完成 |
 | UI | 移动优先响应式改造（静态壳 + 客户端渲染，为 M5 铺路） | ⏳ 待开发 |
 | M5 | 前端本地化改造（IndexedDB + docx JS + 纯静态 PWA，移除 Flask） | ⏳ 待开发 |
+
+M4 交付：报告管理列表（倒序 + 隐患等级徽标 + 缩略图 + 绑定项目）、顶部统计（总数 / 高 / 中 / 低，同时就是筛选控件）、详情页（全字段 + 大图）、删除（应用内确认弹窗 + 图片一并删除 + 自动解除项目关联）。**不改数据库结构**（未新增表/列，`SCHEMA_VERSION` 仍为 1）。
 
 M3 交付：隐患图片（必填、拍照/相册、≤20MB、原图落盘且保留原文件名）、相关规范/补充建议、绑定项目；项目详情显示真实关联报告与「附加 N 份并导出 / 仅导出检测报告」二选一；导出附页（每份独立成页、9 行两列信息表、导出时现压的图片副本、图片缺失时降级）。
 
@@ -26,7 +28,7 @@ M3 交付：隐患图片（必填、拍照/相册、≤20MB、原图落盘且保
 
 ## 范围
 
-**包含**：立柱 / 横梁截面尺寸检测（每检测面 5 个厚度值，自动计算最小值）· 缺陷检测填报 · 项目管理 · 项目级 Word 报告导出 · 本地 SQLite 存储与本地 Web 部署。
+**包含**：立柱 / 横梁截面尺寸检测（每检测面 5 个厚度值，自动计算最小值）· 缺陷检测填报 · 报告管理 · 项目管理 · 项目级 Word 报告导出 · 本地 SQLite 存储与本地 Web 部署。
 
 **不包含**（已确认范围外）：膜厚检测 · 玻璃面板尺寸及厚度检测 · 速记 · 统计 · 登录 · 结构安全评定 · 原生手机 App。
 
@@ -105,15 +107,16 @@ Capstone/
 │   ├── resources/
 │   │   ├── report_base.docx   Word 报告底座（由样例派生，见下）
 │   │   └── report_layout.json 版式规格（语言中立，供 M5 的前端移植复用）
-│   ├── routes/                pages.py / projects.py / records.py / defects.py
+│   ├── routes/                pages.py / projects.py / records.py / defects.py / reports.py
+│   │                          （defects = 需求 3.3 填报写入；reports = 需求 3.4 报告管理）
 │   ├── services/
 │   │   ├── thickness.py       5 个厚度读数 -> 最小值、格式化
 │   │   ├── projects.py        项目读写、列表统计、删除影响面
 │   │   ├── measurements.py    记录表单解析、事务化增删改、分组读取
-│   │   ├── defects.py         缺陷表单解析、读写、附页渲染数据装配
-│   │   ├── images.py          隐患图片：上传校验、落盘命名、导出时压缩
+│   │   ├── defects.py         缺陷表单解析、读写、附页渲染数据、报告管理查询/删除
+│   │   ├── images.py          隐患图片：上传校验、落盘命名、导出压缩副本、列表缩略图
 │   │   └── word_report.py     A4 底座 + 表格原语 + 检测表/附页构建
-│   ├── templates/             base / index / projects / records / defects
+│   ├── templates/             base / index / projects / records / defects / reports
 │   └── static/                css/app.css · js/{app,record_form,defects_form}.js
 ├── reports/                   导出的 .docx（gitignore）
 ├── uploads/defects/           隐患图片（gitignore）
@@ -133,8 +136,10 @@ Capstone/
 │   ├── test_images.py         图片校验、命名、EXIF 摆正、压缩、降级
 │   ├── test_defects.py        缺陷表单、绑定项目、落盘原子性、附页数据
 │   ├── test_attachment_export.py 附页结构、分页、图片、无附页路径不变
+│   ├── test_reports.py        报告管理：列表/排序/统计/筛选/详情/缩略图/删除
 │   ├── test_text_fit.py       列宽适配度量工具
 │   ├── test_extract_layout_spec.py 版式提取器与规格一致性
+│   ├── test_case_data.py      案例期望行构造（条文列的合并语义）
 │   └── test_web.py            路由与完整链路冒烟
 ├── deliverables/              5 份样例报告 + 对拍报告（章程 Objective 3 的证据）
 ├── tools/                     compare_report_with_sample.py · verify_case_data.py
@@ -197,9 +202,19 @@ Capstone/
 - 项目详情在有关联报告时提供二选一：「附加 N 份并导出」/「仅导出检测报告」
 - **无附页路径与 M2 完全一致**：`add_trailing_empty` 已移到文档末尾，对无附页输出是恒等变换（对拍主闸门与回归基线继续生效）
 
+### 报告管理与缩略图（M4）
+
+- 模块边界严格对齐需求：**3.3 填报**留在 `/defects/*`（写入），**3.4 报告管理**在 `/reports/*`（查看 + 管理）；旧的 `/defects/<id>` 用 **308** 永久重定向兜住
+- 顶部统计与筛选是**两件事**：统计恒为全量（`COUNT(*)` + `COALESCE(SUM(CASE WHEN ...))`，空表时 `SUM` 会返回 NULL，不写 `COALESCE` 就会显示「高 None」），筛选只影响列表
+- 列表排序 `created_at DESC, id DESC`：`created_at` 只到秒，同秒内必须靠 `id` 兜底，否则顺序会抖动
+- 缩略图**不复用**导出的 1600px 压缩副本：`images.thumbnail_bytes()` 内存现压 240px JPEG，配合 `Cache-Control: immutable`（落盘名含 uuid、系统无"改图"路径 → 同一 URL 字节永不变化）。**不落盘、不落库**，与「最小值不落库」同一原则；两个尺寸共用 `_oriented_rgb()`，EXIF 摆正行为不会两处分叉
+- 删除顺序**先删库、后删文件**：反过来的话一旦 DELETE 失败就会留下指向不存在图片的记录（用户可见的数据损坏），按此顺序最坏只是一个不可见的孤儿文件
+- 需求 3.4e 的「删除后自动解除项目关联」不需要 `UPDATE ... SET project_id = NULL` —— 关联就在这一行上，删除即解绑
+- 列表页所有派生字段（徽标类名、时间文案、缩略图 URL、项目标签、图片是否存在）由 `routes/reports.py::_card()` 统一装配，模板只做 `{{ }}` 输出 —— 这是给 UI 阶段/ M5 前端渲染留的交接面（同一份 dict 可直接 `jsonify`）
+
 ## 文档索引
 
 - `docs/requirements/` 需求报告（原始需求全文）
-- `docs/management/` 项目章程、开发计划、M1 设计、阶段交接记录
+- `docs/management/` 项目章程、开发计划、M1/M2/M4 设计、阶段交接记录
 - `docs/management/signed/` 签署类文档（含签名与联系方式，不入仓库）
 - `docs/samples/` 检测结果案例（Excel + 截图）

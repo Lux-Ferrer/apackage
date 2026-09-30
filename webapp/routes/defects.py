@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-"""缺陷检测填报（M3：补齐隐患图片、相关规范、补充建议、绑定项目）。
+"""缺陷检测填报（需求报告 3.3；M3 补齐隐患图片、相关规范、补充建议、绑定项目）。
+
+模块边界：这里只负责**写入**（表单 + 提交）与 M0 迁移过来的单条导出工具；
+查看 / 管理（列表、详情、图片、缩略图、删除）都在 ``routes/reports.py``（需求 3.4）。
 
 校验分工与 M1 一致：**前端只做即时反馈，服务端才是权威**。
 """
@@ -8,8 +11,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from flask import (Blueprint, abort, current_app, redirect, render_template,
-                   request, send_file, url_for)
+from flask import (Blueprint, abort, current_app, flash, redirect,
+                   render_template, request, send_file, url_for)
 
 from .. import config
 from ..services import defects as defect_service
@@ -54,7 +57,8 @@ def create():
                                **_form_context(request.form, errors)), 400
 
     defect_id = defect_service.create(data, image)
-    return redirect(url_for("defects.detail", defect_id=defect_id))
+    flash("报告已保存")
+    return redirect(url_for("reports.detail", report_id=defect_id))
 
 
 def _get_defect(defect_id: int):
@@ -65,23 +69,13 @@ def _get_defect(defect_id: int):
 
 
 @bp.get("/<int:defect_id>")
-def detail(defect_id: int):
-    return render_template("defects/success.html", defect=_get_defect(defect_id))
+def legacy_detail(defect_id: int):
+    """M3 期间的旧详情链接 → 报告管理详情。
 
-
-@bp.get("/<int:defect_id>/image")
-def image(defect_id: int):
-    """隐患图片原图（供详情页预览；路径越界或文件缺失一律 404）。"""
-    defect = _get_defect(defect_id)
-    if not defect["image_path"]:
-        abort(404)
-    try:
-        path = images.absolute_path(defect["image_path"])
-    except ValueError:
-        abort(404)
-    if not path.exists():
-        abort(404)
-    return send_file(path)
+    需求 3.4 把"查看报告"划归报告管理，所以详情页搬到了 ``/reports/<id>``；
+    这里用 308（永久重定向，保留请求方法）兜住旧书签与历史链接。
+    """
+    return redirect(url_for("reports.detail", report_id=defect_id), code=308)
 
 
 @bp.get("/<int:defect_id>/export")

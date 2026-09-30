@@ -32,6 +32,14 @@ def test_home_page(client):
     assert "模块进度" in response.get_data(as_text=True)
 
 
+def test_home_page_has_no_stale_todo_text(client):
+    """首页是演示时会被看到的地方：已完成的里程碑不能还挂着「待开发」。"""
+    html = client.get("/").get_data(as_text=True)
+    assert "待开发" not in html
+    assert "报告管理" in html
+    assert "M4" in html
+
+
 def test_projects_page_reachable(client):
     """M1 之后 /projects/ 已是真实列表页（此处为空态）。"""
     response = client.get("/projects/")
@@ -47,9 +55,10 @@ def test_form_page_lists_preset_defect_types(client):
 
 
 def test_submit_saves_and_redirects(client, make_image):
+    """M4 起填报提交后落到「报告管理」的详情页（需求 3.4d 的查看报告）。"""
     response = post_defect(client, make_image)
     assert response.status_code == 302
-    assert "/defects/1" in response.headers["Location"]
+    assert response.headers["Location"].endswith("/reports/1")
 
 
 def test_submit_rejects_missing_required_field(client, make_image):
@@ -70,18 +79,20 @@ def test_submit_accepts_custom_defect_type(client, make_image):
                            custom_defect_type="幕墙开启扇脱落")
     assert response.status_code == 302
 
-    detail = client.get("/defects/1").get_data(as_text=True)
+    detail = client.get("/reports/1").get_data(as_text=True)
     assert "幕墙开启扇脱落" in detail
 
 
 def test_detail_records_reporter_snapshot(client, make_image):
     post_defect(client, make_image)
-    html = client.get("/defects/1").get_data(as_text=True)
+    html = client.get("/reports/1").get_data(as_text=True)
     assert config.DEFAULT_REPORTER["name"] in html
 
 
 def test_detail_404_for_unknown_id(client):
-    assert client.get("/defects/999").status_code == 404
+    assert client.get("/reports/999").status_code == 404
+    # 旧的详情路径仍可用：308 到报告管理详情，跟随后 404
+    assert client.get("/defects/999", follow_redirects=True).status_code == 404
 
 
 def test_export_returns_a4_docx(client, make_image):
@@ -104,7 +115,7 @@ def test_risk_level_default_is_medium(client, make_image):
     """表单未选等级时按默认「中」处理。"""
     response = post_defect(client, make_image, risk_level="")
     assert response.status_code == 302
-    assert "中" in client.get("/defects/1").get_data(as_text=True)
+    assert "中" in client.get("/reports/1").get_data(as_text=True)
 
 
 def test_invalid_risk_level_rejected(client, make_image):

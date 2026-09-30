@@ -13,6 +13,7 @@
             <nav>
                 <a href="{{ url_for('pages.index') }}">首页</a>
                 <a href="{{ url_for('projects.index') }}">项目</a>
+                <a href="{{ url_for('reports.index') }}">报告管理</a>
                 <a href="{{ url_for('defects.new') }}">缺陷填报</a>
             </nav>
         </div>
@@ -31,7 +32,7 @@
     </main>
 
     <footer class="wrap foot">
-        本期范围：立柱 / 横梁截面尺寸检测（5 个厚度值自动计算最小值）· 缺陷检测填报 · 项目级 Word 导出
+        本期范围：立柱 / 横梁截面尺寸检测（5 个厚度值自动计算最小值）· 缺陷检测填报 · 项目级 Word 导出 · 报告管理
     </footer>
 
     {# 应用内确认弹窗：带 data-confirm 的表单提交前会走这里 #}

@@ -1,0 +1,34 @@
+{# 一张报告卡。列表页循环 include 它；将来前端渲染器以此作为 1:1 的标记参照物。
+   本文件不含任何业务逻辑：所有派生字段（徽标类、时间文案、URL、是否有图）都由
+   routes/reports.py::_card() 预先算好。 #}
+<li class="report-card">
+    <a class="report-thumb" href="{{ card.detail_url }}" aria-label="查看报告 #{{ card.id }}">
+        {% if card.has_image %}
+        <img src="{{ card.thumbnail_url }}" alt="隐患图片缩略图" loading="lazy" width="72" height="72">
+        {% else %}
+        <span class="thumb-empty">无图</span>
+        {% endif %}
+    </a>
+
+    <div class="report-body">
+        <div class="report-title">
+            <a class="link strong" href="{{ card.detail_url }}">{{ card.defect_type }}</a>
+            <span class="badge {{ card.badge_class }}">{{ card.risk_level }}</span>
+        </div>
+        <p class="report-meta">{{ card.project_part }}</p>
+        {% if card.project_label %}
+        <p class="report-meta muted">{{ card.project_label }}</p>
+        {% endif %}
+        <p class="report-meta muted">{{ card.created_at_text }}</p>
+    </div>
+
+    <div class="report-actions">
+        <a class="link" href="{{ card.detail_url }}">详情</a>
+        <form method="post" class="inline-form"
+              action="{{ url_for('reports.delete', report_id=card.id) }}"
+              data-confirm="确认删除报告 #{{ card.id }}（{{ card.defect_type }}）？隐患图片会一并删除，此操作不可恢复。{% if card.project_label %}项目「{{ card.project_label }}」的关联会同时解除。{% endif %}"
+              data-confirm-ok="确认删除">
+            <button type="submit" class="link danger-link">删除</button>
+        </form>
+    </div>
+</li>

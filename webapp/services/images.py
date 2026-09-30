@@ -6,12 +6,14 @@
 1. **原图是证据**：上传时只做校验与落盘，不做任何有损处理；
 2. **压缩副本是渲染产物，不落库**：像"最小厚度值"一样在导出时现算 ——
    参数改了历史报告立即跟随，也不需要第二种存储状态或 schema 变更；
+   列表缩略图同理，只是尺寸不同（导出 1600px / 列表 240px），共用 :func:`_oriented_rgb`；
 3. **原文件名可追溯且不需要额外字段**：落盘名为 ``<uuid>_<清洗后的原名>.<ext>``，
    从路径即可反推原名（uuid 前缀同时防重名与路径穿越）。
 """
 
 from __future__ import annotations
 
+import io
 import re
 import uuid
 from pathlib import Path
@@ -141,8 +143,21 @@ def remove(relative_path: str | None) -> None:
         pass
 
 
+def exists(relative_path: str | None) -> bool:
+    """图片文件是否真的存在（只做 stat，不解码）。
+
+    列表页据此决定渲染真图还是「图片缺失」占位块 —— 比让浏览器显示碎图图标友好。
+    """
+    if not relative_path:
+        return False
+    try:
+        return absolute_path(relative_path).exists()
+    except (ValueError, OSError):
+        return False
+
+
 # --------------------------------------------------------------------------
-# 导出时派生压缩副本
+# 图片读取：导出副本（1600px）与列表缩略图（240px）共用同一套摆正 / 降采样
 # --------------------------------------------------------------------------
 def _flatten_to_rgb(image: Image.Image) -> Image.Image:
     """转成 RGB：JPEG 不支持透明通道，透明区域用白底合成而不是留黑。"""
@@ -154,6 +169,31 @@ def _flatten_to_rgb(image: Image.Image) -> Image.Image:
     return image.convert("RGB")
 
 
+def _oriented_rgb(relative_path: str | None, max_pixels: int):
+    """打开原图 → 按 EXIF 摆正 → 超过 ``max_pixels`` 就等比缩小 → 转 RGB。
+
+    返回 ``(image, was_large)``；原图缺失或路径越界返回 ``(None, False)``。
+    设备无关的图片读取只此一处，导出的压缩副本与列表缩略图都走它，
+    将来调整 EXIF/降采样策略不会漏改一处。
+    """
+    if not relative_path:
+        return None, False
+    source = absolute_path(relative_path)
+    if not source.exists():
+        return None, False
+
+    with Image.open(source) as raw:
+        oriented = ImageOps.exif_transpose(raw)        # 手机竖拍必须按 EXIF 摆正
+        was_large = max(oriented.size) > max_pixels
+        if was_large:
+            oriented = oriented.copy()
+            oriented.thumbnail((max_pixels, max_pixels), Image.LANCZOS)
+        return _flatten_to_rgb(oriented), was_large
+
+
+# --------------------------------------------------------------------------
+# 导出时派生压缩副本
+# --------------------------------------------------------------------------
 def export_copy(relative_path: str | None, workdir: Path,
                 max_pixels: int = 1600, quality: int = 80) -> dict | None:
     """生成导出用的压缩副本，返回 ``{path, width_px, height_px, compressed}``。
@@ -164,17 +204,9 @@ def export_copy(relative_path: str | None, workdir: Path,
     if not relative_path:
         return None
     try:
-        source = absolute_path(relative_path)
-        if not source.exists():
+        rgb, was_large = _oriented_rgb(relative_path, max_pixels)
+        if rgb is None:
             return None
-
-        with Image.open(source) as raw:
-            oriented = ImageOps.exif_transpose(raw)        # 手机竖拍必须按 EXIF 摆正
-            was_large = max(oriented.size) > max_pixels
-            if was_large:
-                oriented = oriented.copy()
-                oriented.thumbnail((max_pixels, max_pixels), Image.LANCZOS)
-            rgb = _flatten_to_rgb(oriented)
 
         workdir = Path(workdir)
         workdir.mkdir(parents=True, exist_ok=True)
@@ -186,5 +218,27 @@ def export_copy(relative_path: str | None, workdir: Path,
             "height_px": rgb.height,
             "compressed": was_large,
         }
+    except Exception:
+        return None
+
+
+def thumbnail_bytes(relative_path: str | None,
+                    max_pixels: int | None = None,
+                    quality: int | None = None) -> bytes | None:
+    """报告管理列表用的缩略图：内存现压，直接返回 JPEG 字节。
+
+    与 :func:`export_copy` 的分工：那个是给 Word 嵌图用的 1600px 落盘副本，
+    这个是给列表用的 240px 响应体。**不落盘也不落库** —— 与「最小值不落库」
+    同构，参数改了立刻生效。任何失败返回 None，由渲染层降级为占位块。
+    """
+    max_pixels = config.THUMBNAIL_MAX_PIXELS if max_pixels is None else max_pixels
+    quality = config.THUMBNAIL_JPEG_QUALITY if quality is None else quality
+    try:
+        rgb, _was_large = _oriented_rgb(relative_path, max_pixels)
+        if rgb is None:
+            return None
+        buffer = io.BytesIO()
+        rgb.save(buffer, "JPEG", quality=int(quality), optimize=True)
+        return buffer.getvalue()
     except Exception:
         return None

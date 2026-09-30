@@ -56,11 +56,21 @@ DEFECT_TYPES = (
 RISK_LEVELS = ("高", "中", "低")
 DEFAULT_RISK_LEVEL = "中"
 
+# 隐患等级 -> CSS 徽标类名。报告管理列表卡 / 详情页 / 顶部统计块三处都用它，
+# 单一真相源，避免模板里各写一份内联字典。
+# 键同时用作 services/defects.py::stats() 返回字典的字段名（high/medium/low），
+# 所以模板里写 stats[risk_badge_classes['高']] 是有意为之，不是巧合。
+RISK_BADGE_CLASSES = {"高": "high", "中": "medium", "低": "low"}
+
 MAX_IMAGE_BYTES = 20 * 1024 * 1024                      # 单张隐患图片 ≤20MB
 
 # 隐患图片上传白名单（扩展名 + Pillow 识别出的真实格式，双重校验）
 ALLOWED_IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png")
 ALLOWED_IMAGE_FORMATS = ("JPEG", "PNG")
+
+# 报告管理列表的缩略图（渲染参数，不落库不落盘：导出用的 1600px 副本不能塞进列表）
+THUMBNAIL_MAX_PIXELS = 240
+THUMBNAIL_JPEG_QUALITY = 75
 
 # 登录功能不在本期范围，报告人/部门先取配置常量（将来接入登录再替换）
 DEFAULT_REPORTER = {

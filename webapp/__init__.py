@@ -30,14 +30,19 @@ def create_app(test_config: dict | None = None) -> Flask:
     _ensure_directories(app)
     db.init_db(app.config["DB_PATH"])
 
-    from .routes import defects, pages, projects, records
+    from .routes import defects, pages, projects, records, reports
 
     app.register_blueprint(pages.bp)
     app.register_blueprint(projects.bp)
     app.register_blueprint(records.bp)
     app.register_blueprint(defects.bp)
+    app.register_blueprint(reports.bp)
 
     app.teardown_appcontext(db.close_db)
+
+    # 模板全局：隐患等级 → 徽标类名。报告管理列表 / 详情 / 项目详情三处都用它，
+    # 做成全局常量而不是每个路由各传一次，避免漏传导致模板渲染报错。
+    app.jinja_env.globals["risk_badge_classes"] = config.RISK_BADGE_CLASSES
     return app
 
 

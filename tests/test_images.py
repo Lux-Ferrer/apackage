@@ -173,3 +173,82 @@ def test_export_copy_returns_none_when_missing_or_broken(tmp_path, monkeypatch):
     broken = tmp_path / "broken.png"
     broken.write_bytes(b"garbage")
     assert images.export_copy(images.stored_path("broken.png"), tmp_path) is None
+
+
+# --------------------------------------------------------------------------
+# M4：列表缩略图（内存现压，不落盘）+ 存在性检查
+#
+# 与 export_copy 共用 _oriented_rgb，所以这里也要覆盖 EXIF 摆正 ——
+# 两处行为必须一致，否则列表方向对了、Word 里却是躺着的。
+# --------------------------------------------------------------------------
+def test_exists_reflects_reality(tmp_path, monkeypatch):
+    relative = _store(tmp_path, monkeypatch, (40, 30))
+    assert images.exists(relative) is True
+
+    images.absolute_path(relative).unlink()
+    assert images.exists(relative) is False
+    assert images.exists(None) is False
+    assert images.exists("uploads/defects/../../secret.png") is False
+
+
+def test_thumbnail_bytes_downscales_and_is_jpeg(tmp_path, monkeypatch):
+    relative = _store(tmp_path, monkeypatch, (3000, 2000))
+
+    data = images.thumbnail_bytes(relative)
+    assert data is not None
+    assert data[:2] == b"\xff\xd8"                       # JPEG SOI
+
+    with Image.open(io.BytesIO(data)) as thumb:
+        assert thumb.format == "JPEG"
+        assert max(thumb.size) == config.THUMBNAIL_MAX_PIXELS == 240
+        assert thumb.size == (240, 160)                  # 保持比例
+
+
+def test_thumbnail_bytes_does_not_upscale_small_images(tmp_path, monkeypatch):
+    """小图原样输出 —— 放大会糊且白白增大体积。"""
+    relative = _store(tmp_path, monkeypatch, (60, 40))
+
+    with Image.open(io.BytesIO(images.thumbnail_bytes(relative))) as thumb:
+        assert thumb.size == (60, 40)
+
+
+def test_thumbnail_bytes_applies_exif_orientation(tmp_path, monkeypatch):
+    """只测摆正，不掺降采样 —— 所以源图取小于缩略图上限的尺寸。"""
+    exif = Image.Exif()
+    exif[274] = 6                                        # Orientation = 旋转 90°
+    relative = _store(tmp_path, monkeypatch, (200, 100), image_format="JPEG", exif=exif)
+
+    with Image.open(io.BytesIO(images.thumbnail_bytes(relative))) as thumb:
+        assert thumb.size == (100, 200)                  # 宽高互换，与 export_copy 一致
+
+
+def test_thumbnail_bytes_flattens_transparency_to_white(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "UPLOADS_DIR", tmp_path)
+    buffer = io.BytesIO()
+    Image.new("RGBA", (50, 50), (255, 0, 0, 0)).save(buffer, "PNG")     # 全透明
+    relative = images.save_upload(_fake_upload(buffer.getvalue(), "alpha.png"))
+
+    with Image.open(io.BytesIO(images.thumbnail_bytes(relative))) as thumb:
+        assert thumb.mode == "RGB"
+        assert thumb.getpixel((5, 5)) == (255, 255, 255)                # 白底而非黑底
+
+
+def test_thumbnail_bytes_returns_none_when_missing_or_broken(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "UPLOADS_DIR", tmp_path)
+    assert images.thumbnail_bytes(None) is None
+    assert images.thumbnail_bytes("uploads/defects/不存在.png") is None
+    assert images.thumbnail_bytes("uploads/defects/../../secret.png") is None
+
+    broken = tmp_path / "broken.png"
+    broken.write_bytes(b"garbage")
+    assert images.thumbnail_bytes(images.stored_path("broken.png")) is None
+
+
+def test_thumbnail_is_much_smaller_than_the_export_copy(tmp_path, monkeypatch):
+    """这条锁住"两个函数为什么不能合并"：列表缩略图必须显著小于 Word 用的副本。"""
+    relative = _store(tmp_path, monkeypatch, (3000, 2000))
+
+    exported = images.export_copy(relative, tmp_path / "work")
+    thumb_bytes = images.thumbnail_bytes(relative)
+
+    assert exported["path"].stat().st_size > len(thumb_bytes) * 3

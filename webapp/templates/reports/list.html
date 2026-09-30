@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}报告管理 - 建筑幕墙检测报告工具{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="page-head">
+        <h1>报告管理</h1>
+        <a class="btn" href="{{ url_for('defects.new') }}">+ 新建报告</a>
+    </div>
+
+    {# 顶部统计：同时就是筛选控件（需求 3.4b + 3.4c 的自然合并，移动端最省空间）。
+       统计恒为全量，不随筛选变化 —— 否则"全部"会跟着变，用户会以为数据被删了。 #}
+    <nav class="stats" aria-label="按隐患等级筛选">
+        <a class="stat {{ 'active' if not level }}" href="{{ url_for('reports.index') }}">
+            <span class="stat-value">{{ stats.total }}</span>
+            <span class="stat-label">全部</span>
+        </a>
+        {% for name in levels %}
+        <a class="stat {{ risk_badge_classes[name] }} {{ 'active' if level == name }}"
+           href="{{ url_for('reports.index', level=name) }}">
+            <span class="stat-value">{{ stats[risk_badge_classes[name]] }}</span>
+            <span class="stat-label">{{ name }}</span>
+        </a>
+        {% endfor %}
+    </nav>
+
+    {% if level_warning %}
+    <p class="hint warn">{{ level_warning }}</p>
+    {% endif %}
+
+    {% if cards %}
+    <ul class="report-list">
+        {% for card in cards %}
+            {% include "reports/_card.html" %}
+        {% endfor %}
+    </ul>
+    {% else %}
+        {% if level %}
+        <p class="hint">没有「{{ level }}」等级的报告。<a class="link" href="{{ url_for('reports.index') }}">查看全部</a></p>
+        {% else %}
+        <p class="hint">还没有报告。</p>
+        <p><a class="btn" href="{{ url_for('defects.new') }}">填写第一份缺陷报告</a></p>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}
