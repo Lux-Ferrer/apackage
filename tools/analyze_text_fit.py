@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-"""排版度量：用真实字体预测"样例列宽能否装下真实数据"。
+"""排版度量：用真实字体预测"客户模板列宽能否装下真实数据"。
 
 为什么需要它
 ------------
-样例 `tests/fixtures/金骐智谷_金骐_检测报告.docx` 的列宽是按它自己的演示数据
-（楼层=1、尺寸结果=1、读数=1.00）调的。拿真实案例数据（`63×164`、`二十三层`、
-长条文）去套，某些列会折行。本工具把这件事**量化**，用于与客户/导师讨论列宽是否需要调整。
+现基准（`tests/fixtures/检测表_真实裁剪.docx`，实测自真实报告）的列宽是按客户自己的
+演示数据调的。拿真实案例数据（`63×164`、`二十三层`、长条文）去套，某些列会折行。
+本工具把这件事**量化**，用于与客户/导师讨论列宽是否需要调整。
 
 度量方式
 --------
 按文档的字体设置分段度量后相加：西文用 Times New Roman、中文用主题字体（等线），
-字号取 `report_layout.json` 的值（表格正文继承 10pt、要求列 8pt），
+字号取 `report_layout.json` 的值（表格正文继承 10pt、要求列继承），
 再与"列宽 − 左右边距"比较，得出需要几行。
 
 用法::
@@ -39,16 +39,33 @@ CJK_FONTS = (r"C:\Windows\Fonts\Deng.ttf", r"C:\Windows\Fonts\simsun.ttc",
 
 MEASURE_PX = 1000          # 以 1000px 度量再按比例换算，避免小字号的取整误差
 
-# 各列的测量配置：(列下标, 名称, 字号, 左右边距)
+# 各列的测量配置：(列下标, 名称, 字号来源)
 COLUMN_SPECS = (
-    (wr.COLUMN_INDEX["floor"], "楼层", "inherited", wr.CELL_MARGIN_HORIZONTAL),
-    (wr.COLUMN_INDEX["position"], "构件位置", "inherited", wr.CELL_MARGIN_HORIZONTAL),
-    (wr.COLUMN_INDEX["size"], "尺寸结果", "inherited", wr.CELL_MARGIN_HORIZONTAL),
-    (wr.COLUMN_INDEX["face"], "检测面", "inherited", wr.CELL_MARGIN_HORIZONTAL),
-    (wr.COLUMN_INDEX["readingFirst"], "读数 1（1~5 同宽）", "inherited", wr.CELL_MARGIN_HORIZONTAL),
-    (wr.COLUMN_INDEX["minimum"], "最小值", "inherited", wr.CELL_MARGIN_HORIZONTAL),
-    (wr.COLUMN_INDEX["requirement"], "截面尺寸要求", "requirement", wr.REQUIREMENT_MARGIN),
+    (wr.COLUMN_INDEX["floor"], "楼层", "inherited"),
+    (wr.COLUMN_INDEX["position"], "构件位置", "inherited"),
+    (wr.COLUMN_INDEX["size"], "尺寸结果", "inherited"),
+    (wr.COLUMN_INDEX["face"], "检测面", "inherited"),
+    (wr.COLUMN_INDEX["readingFirst"], "读数 1（1~5 同宽）", "inherited"),
+    (wr.COLUMN_INDEX["minimum"], "最小值", "inherited"),
+    (wr.COLUMN_INDEX["requirement"], "截面尺寸要求", "requirement"),
 )
+
+
+def cell_margin_twips() -> int:
+    """单元格左右内边距：优先用单元格级 tcMar，否则用表级 tblCellMar。
+
+    真实报告的表级内边距是左右各 57 twips，单元格上不再单独设置。
+    """
+    if wr.CELL_MARGIN_HORIZONTAL:
+        return int(wr.CELL_MARGIN_HORIZONTAL)
+    return int(wr.SPEC["table"]["tableCellMargin"]["left"])
+
+
+def column_pt(size_kind: str) -> float:
+    """该列字号：要求列若显式设了字号就用它，否则用表格正文的继承字号。"""
+    if size_kind == "requirement" and wr.REQUIREMENT_PT:
+        return float(wr.REQUIREMENT_PT)
+    return float(wr.INHERITED_TABLE_PT)
 
 
 # --------------------------------------------------------------------------
@@ -107,7 +124,7 @@ def make_measurer():
 # --------------------------------------------------------------------------
 def load_samples() -> dict:
     """从案例数据里取各列的真实文本样本；案例不可用时只用表头与预置条文。"""
-    samples = {name: [] for _, name, _, _ in COLUMN_SPECS}
+    samples = {name: [] for _, name, _ in COLUMN_SPECS}
     try:
         from case_data import BEAM_SHEET, COLUMN_SHEET, read_case
     except SystemExit as error:                        # 缺 openpyxl
@@ -129,7 +146,7 @@ def load_samples() -> dict:
 
 
 def header_samples() -> dict:
-    """表头文字（含样例里的空格写法）。"""
+    """表头文字（含模板里的空格写法）。"""
     fixed = wr.HEADER_FIXED
     return {
         "楼层": [fixed[0]],
@@ -145,6 +162,18 @@ def header_samples() -> dict:
 # --------------------------------------------------------------------------
 # 分析
 # --------------------------------------------------------------------------
+def lines_needed(text: str, measure, pt: float, usable: int) -> int:
+    """一个单元格需要几行。
+
+    文本里的 ``\\n`` 是真实表格中的**多个段落**（如「检测构件」/「位置」），
+    段落之间不共享行，所以逐段度量再求和。
+    """
+    total = 0
+    for paragraph in str(text).split("\n"):
+        total += max(1, math.ceil(measure(paragraph, pt) / usable))
+    return max(1, total)
+
+
 def analyze(measure) -> list:
     table_samples = load_samples()
     headers = header_samples()
@@ -154,19 +183,20 @@ def analyze(measure) -> list:
         table_samples["截面尺寸要求"] += list(config.REQUIREMENT_OPTIONS[template_type])
 
     rows = []
-    for index, name, size_kind, margin in COLUMN_SPECS:
+    margin = cell_margin_twips()
+    for index, name, size_kind in COLUMN_SPECS:
         width = wr.GRID_COLS[index]
-        pt = wr.INHERITED_TABLE_PT if size_kind == "inherited" else wr.REQUIREMENT_PT
+        pt = column_pt(size_kind)
         usable = width - margin * 2
 
         header = max(headers.get(name, [""]), key=lambda t: measure(t, pt), default="")
-        header_width = measure(header, pt)
-        header_lines = max(1, math.ceil(header_width / usable))
+        header_width = max((measure(line, pt) for line in str(header).split("\n")), default=0)
+        header_lines = lines_needed(header, measure, pt, usable)
 
         data = table_samples.get(name) or [""]
         longest = max(data, key=lambda t: measure(t, pt))
-        data_width = measure(longest, pt)
-        data_lines = max(1, math.ceil(data_width / usable))
+        data_width = max((measure(line, pt) for line in str(longest).split("\n")), default=0)
+        data_lines = lines_needed(longest, measure, pt, usable)
 
         rows.append({
             "column": index,
@@ -208,8 +238,8 @@ def render_console(rows) -> None:
                                                       row["width"], row["usable"]))
         print()
         print("说明：行高是「至少」语义，折行只会让行变高，不会截断内容；")
-        print("      但表头/数据行会比样例的演示数据高，属于样例列宽与真实数据不匹配，")
-        print("      不是导出实现的问题。")
+        print("      但表头/数据行会比客户模板的演示数据高，属于客户列宽与真实数据不匹配，")
+        print("      不是导出实现的问题（我们照抄版式，不擅自改列宽）。")
     else:
         print("所有列都能单行容纳表头与真实数据。")
 
@@ -243,9 +273,11 @@ def render_markdown(rows) -> str:
                             row["header_lines"], row["data_lines"]))
         lines += [
             "",
-            "根因：样例的列宽是按它自己的演示数据（楼层 `1`、尺寸结果 `1`、读数 `1.00`）"
-            "调整的，换成真实数据（`二十三层`、`63×164`、长条文）后必然折行。",
-            "这是**样例模板本身的适配问题**，不是导出实现的问题。",
+            "根因：列宽是从**客户模板**照抄来的，客户是按它自己的演示数据（楼层 `1`、"
+            "尺寸结果 `1`、读数 `1.00`）调的，换成真实数据（`二十三层`、`63×164`、长条文）"
+            "后必然折行。",
+            "这是**客户模板本身的适配问题**，不是导出实现的问题 —— 我们照抄版式，"
+            "不擅自改列宽。",
         ]
     else:
         lines.append("所有列都能单行容纳。")
@@ -261,7 +293,7 @@ def _escape(text: str) -> str:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="用真实字体分析样例列宽的适配情况")
+    parser = argparse.ArgumentParser(description="用真实字体分析客户模板列宽的适配情况")
     parser.add_argument("--report", help="把结果写成 markdown 证据文件")
     args = parser.parse_args()
 

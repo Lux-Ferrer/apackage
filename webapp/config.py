@@ -3,8 +3,9 @@
 
 约定：
 - 业务预置选项集中在这里，路由/服务不散落硬编码字符串；
-- Word 版式常量全部实测自对拍基准 ``tests/fixtures/金骐智谷_金骐_检测报告.docx``，
-  M2 拼装立柱/横梁表时直接引用，避免"凭肉眼调格式"。
+- **版式**常量实测自对拍基准 ``tests/fixtures/检测表_真实裁剪.docx``（真实客户报告裁剪版），
+  由 ``webapp/resources/report_layout.json`` 承载，M2/M3 拼装时直接引用；
+- **字体/主题**仍以 ``tests/fixtures/金骐智谷_金骐_检测报告.docx`` 为准（本次不改字体）。
 """
 
 from pathlib import Path
@@ -22,8 +23,12 @@ UPLOADS_DIR = BASE_DIR / "uploads" / "defects"           # 隐患图片
 
 # 报告底座模板（由样例派生：保留其 theme/styles/sectPr，清空正文）
 REPORT_BASE_TEMPLATE = RESOURCE_DIR / "report_base.docx"
-# 对拍基准样例（勿删、勿改动）
-GOLDEN_SAMPLE = BASE_DIR / "tests" / "fixtures" / "金骐智谷_金骐_检测报告.docx"
+# 对拍基准（勿删、勿改动）：由真实报告第 12-13 页裁剪而成，只保留两张检测表
+# 生成方式：python tools/build_fixture.py
+GOLDEN_SAMPLE = BASE_DIR / "tests" / "fixtures" / "检测表_真实裁剪.docx"
+# 字体/主题基准：真实报告的 docDefaults 是 SimSun/10.5pt，本次范围不采纳；
+# 底座的 theme（等线）与 styles 仍从这份样例派生。改字体时才动它。
+FONT_SAMPLE = BASE_DIR / "tests" / "fixtures" / "金骐智谷_金骐_检测报告.docx"
 # 回归基线：M2 验收通过后冻结的生成物，用来捕捉后续改动的意外偏差
 # （重新祝福：python tools/compare_report_with_sample.py --bless）
 GENERATED_BASELINE = BASE_DIR / "tests" / "fixtures" / "generated_baseline.docx"
@@ -109,10 +114,12 @@ TEMPLATE_TITLES = {
     TEMPLATE_BEAM: "幕墙横梁截面尺寸检测结果",
 }
 
-# 表头最后一列的列名（实测自样例表头）
+# 表头最后一列的列名（实测自真实报告表2-4/2-5）
+# ⚠️ 客户模板里「截面」重复了（截面尺寸**截面**要求）——验收标准是与模板一致，故照抄、不修正
+# ⚠️ 横梁表的要求列表头在真实表格里是**两段**（「横梁截面尺寸截面」/「要求（mm）」），用 \n 表示
 REQUIREMENT_LABELS = {
-    TEMPLATE_COLUMN: "立柱截面尺寸要求",
-    TEMPLATE_BEAM: "横梁截面尺寸要求",
+    TEMPLATE_COLUMN: "立柱截面尺寸截面要求（mm）",
+    TEMPLATE_BEAM: "横梁截面尺寸截面\n要求（mm）",
 }
 
 # 检测面标签：短文本，允许自由输入，这里只作为下拉建议值。

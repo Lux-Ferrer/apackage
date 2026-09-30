@@ -21,5 +21,9 @@ package-lock.json
 _work/
 *.bmp
 
+# 客户提供的原始报告（34MB，含真实项目名/地址/委托单位）：已裁剪脱敏为
+# tests/fixtures/检测表_真实裁剪.docx 入库；原始 .doc 不入仓库，需要时向客户索取。
+docs/samples/A06YG*.doc
+
 # 已归档的签署类文档（含签名与联系方式），默认不推送到 GitHub
 docs/management/signed/

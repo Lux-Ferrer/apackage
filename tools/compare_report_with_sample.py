@@ -22,7 +22,7 @@
 - XML 声明与属性顺序：python-docx 重写为单引号 + LF（实测 styles.xml 仅此差异）
 - **run 的切分方式**：样例把长条文按中英文字界拆成多个 run，我们写一个 run；
   渲染完全相同，所以文本按段落拼接后比较，run 只比"属性集合"
-- 样例的玻璃章节（table[2] 及其标题/空段）：范围外，比较前从样例侧剔除
+- 样例的玻璃/膜厚章节：范围外，基准 fixture 已裁掉；另反向断言生成物不含这些内容
 
 用法::
 
@@ -262,30 +262,40 @@ def extract_project(root) -> dict:
 
 
 def extract_groups(root) -> list:
-    """把样例两张表的数据读成我们内部的分组结构（一个构件 = 一条记录 + 多个面）。"""
+    """把基准两张表的数据读成我们内部的分组结构（一个构件 = 一条记录 + 多个面）。
+
+    ⚠️ 必须对**纵向合并的四列**向下填充：同一构件的第 2 个检测面所在行，
+    楼层/检测构件位置/尺寸检测结果/截面尺寸要求 四格是空的（被合并覆盖）。
+    不填充就会把它们当成"另一个空构件"，合成数据后每个构件只剩 1 个面，
+    整表的 vMerge 也随之错位（与当初读案例 xlsx 是同一类坑）。
+    """
     tables = root.find(W + "body").findall(W + "tbl")
     groups = []
     for template_type, tbl in zip(config.TEMPLATE_TYPES, tables):
         members = {}
         order = []
+        last = {"floor": "", "position": "", "size": "", "requirement": ""}
         for tr in tbl.findall(W + "tr")[2:]:
             texts = [text_of(tc) for tc in tr.findall(W + "tc")]
             if len(texts) < len(wr.GRID_COLS):
                 continue
-            floor, position = texts[0], texts[1]
-            key = (floor, position)
-            if key not in members:
-                members[key] = {
+            for key, column in (("floor", 0), ("position", 1), ("size", 2), ("requirement", 10)):
+                if texts[column].strip():
+                    last[key] = texts[column]
+
+            member_key = (last["floor"], last["position"])
+            if member_key not in members:
+                members[member_key] = {
                     "record": {
-                        "floor": floor,
-                        "member_position": position,
-                        "size_result": texts[2],
-                        "requirement_text": texts[10],
+                        "floor": last["floor"],
+                        "member_position": last["position"],
+                        "size_result": last["size"],
+                        "requirement_text": last["requirement"],
                     },
                     "faces": [],
                 }
-                order.append(key)
-            members[key]["faces"].append({
+                order.append(member_key)
+            members[member_key]["faces"].append({
                 "face": texts[3],
                 "readings_text": texts[4:9],
                 "min_text": texts[9],
@@ -303,10 +313,9 @@ def extract_groups(root) -> list:
 def apply_spec_widths(table_fingerprint, spec_widths) -> dict:
     """把样例指纹里的列宽换成**规格值**（并重算跨列格的 tcW）。
 
-    背景：楼层列与读数列是对样例的**有意偏离**（见 report_layout.json 的
-    ``columns._widthOverrides`` —— 样例的 492 twips 连"二十三层"都放不下）。
-    因此对拍的几何期望改为"样例的其余一切 + 我们的列宽"，
-    这样"除列宽以外任何一处偏差"依然会被抓住。
+    背景：基准是真实报告裁剪版，规格值就取自它（表2-4）。表2-5 的列宽有 ≤4 twips 的
+    Word 自动重算偏差，因此两侧都归一到 ``report_layout.json`` 的列宽，
+    "除列宽以外任何一处偏差"依然会被抓住。
     """
     patched = copy.deepcopy(table_fingerprint)
     patched["grid"] = list(spec_widths)
@@ -360,7 +369,7 @@ def run_comparison(sample_path=None, output_docx=None) -> dict:
     diffs += diff(expected_children, actual["children"], "body")
 
     # 2) 每张表的全部版式属性（列宽/行高/边框/边距/合并/文本）
-    #    列宽以**规格**为准（含对样例的有意偏离），其余属性以样例为准
+    #    列宽以**规格**为准（表2-5 的 Word 重算偏差需归一），其余属性以样例为准
     spec_widths = list(wr.GRID_COLS)
     for index in range(min(len(expected["tables"]), len(actual["tables"]))):
         reference = apply_spec_widths(expected["tables"][index], spec_widths)
@@ -413,15 +422,15 @@ def build_markdown(result, sample_name: str) -> str:
             "",
             "- 表格：总宽、居中方式、固定布局、六边边框、表级单元格边距、tblLook",
             "- 行：行高（含 hRule 语义）、行内居中",
-            "- 单元格：gridSpan、vMerge、tcMar、vAlign、段落对齐、run 属性",
-            "- 合并结构：表头跨 7 列 +（多面构件）四列纵向合并的逻辑网格",
+            "- 单元格：gridSpan、vMerge、tcMar、vAlign、表头行距、段落对齐、run 属性",
+            "- 合并结构：表头跨 7 列 + 四列纵向合并 +「截面尺寸要求」按同一条文合并的逻辑网格",
             "- 正文：信息段 / 章节标题 / 表格后空段 / 备注 / 文末空段的顺序与间距",
             "",
-            "> 列宽以 `report_layout.json` 的**规格值**为准：楼层列与读数列是对样例的"
-            "**有意偏离**（样例 492 twips 连「二十三层」都放不下），已在 `columns._widthOverrides` 记录；"
-            "除这几列外任何一处偏差仍会被本报告抓住。",
+            "> 基准即**真实客户报告**第 12-13 页的裁剪版，规格值见 `webapp/resources/report_layout.json`，"
+            "两侧都归一到该规格（表2-5 的列宽有 ≤4 twips 的 Word 重算偏差），因此不存在"
+            "「对样例的有意偏离」；任何一处偏差都会被本报告抓住。",
             "",
-            "> 样例的玻璃章节不在范围内，比较前已从样例侧剔除，并反向断言生成物不含玻璃表。",
+            "> 基准已裁掉玻璃/膜厚等范围外章节；同时反向断言生成物不含这些内容。",
         ]
     return "\n".join(lines) + "\n"
 

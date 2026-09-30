@@ -118,7 +118,8 @@ Capstone/
 ├── reports/                   导出的 .docx（gitignore）
 ├── uploads/defects/           隐患图片（gitignore）
 ├── tests/
-│   ├── fixtures/              金骐智谷_金骐_检测报告.docx（对拍基准，勿改）
+│   ├── fixtures/              检测表_真实裁剪.docx（对拍基准，勿改）
+│   │                          金骐智谷_金骐_检测报告.docx（字体/主题来源）
 │   │                          generated_baseline.docx（回归基线）
 │   ├── js/record_form.test.js 前端功能测试（jsdom）
 │   ├── test_db.py             表结构、约束、级联语义
@@ -144,19 +145,23 @@ Capstone/
 
 ## Word 报告底座说明（重要）
 
-报告必须与客户样例 `tests/fixtures/金骐智谷_金骐_检测报告.docx` 排版一致。样例的关键参数（均为实测值）：
+**版式**对齐真实客户报告第 12-13 页（表2-4 立柱 / 表2-5 横梁）。对拍基准是它的裁剪版
+`tests/fixtures/检测表_真实裁剪.docx`（由 `python tools/build_fixture.py` 生成），
+所有数值集中在 `webapp/resources/report_layout.json`，由 `tests/test_word_report.py` 上锁：
 
 | 项目 | 值 |
 | --- | --- |
-| 页面 | A4 `11906 × 16838` twips，四边页边距 `1440` |
-| 字体 | 西文 Times New Roman；中文走主题字体（`eastAsiaTheme="minorEastAsia"`） |
-| 立柱/横梁表 | 表宽 `8800` twips，固定布局，11 列 `492/553/614/480/760×6/2101` |
-| 表头 | 2 行；「厚度检测结果 (mm)」横跨 7 列；其余 4 列纵向合并 |
-| 行高 | 表头 600、数据 400（"至少"语义） |
-| 单元格边距 | 上下 60 / 左右 80 twips |
-| 边框 | single / sz=4 / auto，含内部横竖线 |
+| 页面 | A4 `11907 × 16839` twips；上边距 `1440`、下 `1843`、左右 `907`；页眉距离 `850`、页脚 `964`（取自真实报告里含立柱/横梁表的那一节） |
+| 字体 | 西文 Times New Roman；中文走主题字体（`eastAsiaTheme="minorEastAsia"`，等线）。**字体不在本次对齐范围**，真实报告的 SimSun/10.5pt 不采纳 |
+| 立柱/横梁表 | 表宽 `10833` twips，固定布局，居中（比正文区 10093 宽 → 两侧对称溢出），11 列 `1077/850/1416/789/790×3/789/790×2/1962` |
+| 表头 | 2 行，「不加粗」；「厚度检测结果（mm）」横跨 7 列；「检测构件\n位置」「尺寸检测结果m×n\n（mm×mm）」是多段落 |
+| 行高 | 表头 567；数据行立柱 522 / 横梁 567（均为"至少"语义） |
+| 单元格边距 | 单元格上不写 `tcMar`，只由表级 `tblCellMar`（左右 57）与默认值决定 |
+| 边框 | 外框 single / sz=12 / 000000，内部横竖线 sz=6 |
 
-**为什么底座要从样例派生**：python-docx 自带模板的主题把中文字体映射成**宋体**，样例是**等线**。若新建文档后再"设置字体"，中文就会落到宋体上。`webapp/resources/report_base.docx` 保留了样例的 `theme1.xml` / `styles.xml` / `sectPr` 并清空正文，因此生成的新文档天然沿用样例字体，代码里不硬编码任何中文字体名。
+换基准的取证工具：`python tools/extract_layout_spec.py <报告.docx>` —— 一条命令列出"新报告与当前规格的每一处不同"，并可 `--json` 输出候选规格（**不会自动覆盖**）。
+
+**为什么底座要从旧样例派生**：python-docx 自带模板的主题把中文字体映射成**宋体**，`金骐智谷_金骐_检测报告.docx` 是**等线**。若新建文档后再"设置字体"，中文就会落到宋体上。`webapp/resources/report_base.docx` 保留了该样例的 `theme1.xml` / `styles.xml` 并清空正文（`python tools/make_report_template.py` 从 `config.FONT_SAMPLE` 重生），因此生成的新文档天然沿用其字体，代码里不硬编码任何中文字体名。
 
 ## 关键业务规则
 

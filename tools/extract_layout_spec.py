@@ -84,6 +84,42 @@ def spacing_map(paragraph) -> dict:
             if etree.QName(key).localname in ("before", "after")}
 
 
+def paragraph_texts(tc) -> list:
+    """单元格的逐段文本（表头里「检测构件」/「位置」是两段，不是自动折行）。"""
+    texts = [text_of(p) for p in tc.findall(W + "p")]
+    while texts and not texts[-1]:
+        texts.pop()
+    return texts
+
+
+def cell_text(tc) -> str:
+    """单元格文本，段落之间用 ``\\n`` 连接 —— 与 report_layout.json 的写法一致。"""
+    return "\n".join(paragraph_texts(tc))
+
+
+def line_spacing_indexes(row) -> tuple:
+    """该行里被显式设了 ``w:spacing[@w:line]`` 的单元格下标，以及那个行距值。
+
+    客户模板里表头前几格被手工设过固定行距；数值本身对版面无影响，
+    但为了"逐属性一致"要照抄，因此提取器必须能读出它。
+    """
+    indexes, line, rule = [], None, None
+    for index, tc in enumerate(row.findall(W + "tc")):
+        hit = False
+        for paragraph in tc.findall(W + "p"):
+            ppr = paragraph.find(W + "pPr")
+            spacing = ppr.find(W + "spacing") if ppr is not None else None
+            if spacing is None or spacing.get(W + "line") is None:
+                continue
+            hit = True
+            if line is None:
+                line = int(spacing.get(W + "line"))
+                rule = spacing.get(W + "lineRule")
+        if hit:
+            indexes.append(index)
+    return indexes, line, rule
+
+
 def cell_props(tc) -> dict:
     tcpr = tc.find(W + "tcPr")
     if tcpr is None:
@@ -107,6 +143,27 @@ def find_detection_tables(root) -> list:
         if any("楼层" in text_of(tc) for tc in element.findall(W + "tr")[0].findall(W + "tc")):
             found.append((index, element))
     return found
+
+
+def section_for(children, table_index: int):
+    """求某张表所属的 ``sectPr``。
+
+    多节文档里正文末尾那个 ``sectPr`` 往往属于**最后一节**（封面/落款那节），
+    直接拿它当"本表的页面设置"会读出一堆无关差异。OOXML 的规则是：
+    段落 ``pPr`` 里的 ``sectPr`` 结束它**前面**那一节，所以本表所属的节
+    就是"从本表往后第一个带 sectPr 的段落"（没有则用正文末尾的 sectPr）。
+    """
+    for tag, element in children[table_index + 1:]:
+        if tag != "p":
+            continue
+        ppr = element.find(W + "pPr")
+        sect = ppr.find(W + "sectPr") if ppr is not None else None
+        if sect is not None:
+            return sect
+    for tag, element in children:
+        if tag == "sectPr":
+            return element
+    return None
 
 
 # --------------------------------------------------------------------------
@@ -141,12 +198,12 @@ def extract(path, table_ordinal: int | None = None) -> dict:
         raise SystemExit("表头第一行里没有跨列单元格，无法定位「厚度检测结果」块")
 
     span = cell_props(row0_cells[spanned_at])["span"]
-    before = [text_of(tc) for tc in row0_cells[:spanned_at]]
-    after = [text_of(tc) for tc in row0_cells[spanned_at + 1:]]
-    thickness_header = text_of(row0_cells[spanned_at])
+    before = [cell_text(tc) for tc in row0_cells[:spanned_at]]
+    after = [cell_text(tc) for tc in row0_cells[spanned_at + 1:]]
+    thickness_header = cell_text(row0_cells[spanned_at])
 
     row1_cells = rows[1].findall(W + "tc")
-    sub_headers = [text_of(tc) for tc in row1_cells[spanned_at:spanned_at + span]]
+    sub_headers = [cell_text(tc) for tc in row1_cells[spanned_at:spanned_at + span]]
 
     grid = [int(g.get(W + "w")) for g in tbl.find(W + "tblGrid").findall(W + "gridCol")]
     total_columns = len(grid)
@@ -163,18 +220,32 @@ def extract(path, table_ordinal: int | None = None) -> dict:
         "requirement": total_columns - 1,
     }
 
+    # ---- 列名映射（mergedInBody 用名字而不是下标，与本 JSON 的可读性一致）----
+    name_by_index = {
+        index_map["floor"]: "floor",
+        index_map["position"]: "position",
+        index_map["size"]: "size",
+        index_map["face"]: "face",
+        index_map["minimum"]: "minimum",
+        index_map["requirement"]: "requirement",
+    }
+    for offset in range(index_map["readingCount"]):
+        name_by_index[index_map["readingFirst"] + offset] = "reading%d" % (offset + 1)
+
     # ---- 数据行：行高 + 纵向合并的列 ----
     data_rows = rows[2:]
-    merged_columns = []
-    if data_rows:
-        for column, tc in enumerate(data_rows[0].findall(W + "tc")):
+    # 扫**所有**数据行：多面构件可能不在第一行（横梁表常见），只看首行会漏检
+    seen = set()
+    for tr in data_rows:
+        for column, tc in enumerate(tr.findall(W + "tc")):
             if cell_props(tc)["vmerge"] == "restart":
-                merged_columns.append(column)
-        if not merged_columns:
-            # 该报告的构件可能都只有 1 个面 → 检不出要合并哪几列，保留当前规格值
-            merged_columns = list(wr.MERGED_IN_BODY)
-            warnings.append("数据行里没有 vMerge —— 该报告的构件可能都只有 1 个检测面，"
-                            "无法据此确认'多面构件合并哪几列'，已沿用当前规格值")
+                seen.add(column)
+    merged_columns = [name_by_index.get(column, "column%d" % column) for column in sorted(seen)]
+    if not merged_columns:
+        # 该报告的检测表完全没有纵向合并（或没有数据行）→ 保留当前规格值并提示
+        merged_columns = list(wr.MERGED_IN_BODY)
+        warnings.append("数据行里没有 vMerge —— 该报告的检测表可能没有多面构件，"
+                        "无法据此确认'多面构件合并哪几列'，已沿用当前规格值")
 
     def row_height(tr):
         trpr = tr.find(W + "trPr")
@@ -183,6 +254,28 @@ def extract(path, table_ordinal: int | None = None) -> dict:
 
     header_heights = [row_height(tr) for tr in rows[:2]]
     data_height = row_height(data_rows[0]) if data_rows else None
+
+    # ---- 两张检测表的数据行高不同（立柱 / 横梁），按模板各取一份 ----
+    # 用「截面尺寸要求」表头的**文案**判定模板类型：报告里还有膜厚/玻璃/铝板/石材
+    # 等十几张同样含「楼层」的表，它们不是我们的模板，不能混进来（否则行高被覆盖）。
+    label_to_template = {label.replace("\n", ""): name
+                         for name, label in config.REQUIREMENT_LABELS.items()}
+
+    def template_type_of(other):
+        header_cells = other.findall(W + "tr")[0].findall(W + "tc")
+        if not header_cells:
+            return None
+        return label_to_template.get(cell_text(header_cells[-1]).replace("\n", ""))
+
+    height_by_template = {"column": None, "beam": None}
+    for _index, other in tables:
+        other_rows = other.findall(W + "tr")
+        if len(other_rows) < 3:
+            continue
+        template = template_type_of(other)
+        if template is None:
+            continue
+        height_by_template[template] = row_height(other_rows[2])
 
     # ---- 单元格边距 ----
     normal_margins = cell_props(row0_cells[0])["margins"] or {}
@@ -225,8 +318,8 @@ def extract(path, table_ordinal: int | None = None) -> dict:
         else:
             inherited_pt = explicit
 
-    # ---- 页面 ----
-    sect_pr = next((element for tag, element in children if tag == "sectPr"), None)
+    # ---- 页面（取本表所属的那一节，而不是正文末尾那节）----
+    sect_pr = section_for(children, table_index)
     page = {}
     if sect_pr is not None:
         pg_sz = attr_map(sect_pr.find(W + "pgSz"))
@@ -236,13 +329,22 @@ def extract(path, table_ordinal: int | None = None) -> dict:
             "widthTwips": int(pg_sz.get("w", 0)),
             "heightTwips": int(pg_sz.get("h", 0)),
             "marginTwips": int(pg_mar.get("top", 0)),
+            "marginBottomTwips": int(pg_mar.get("bottom", 0)),
+            "marginHorizontalTwips": int(pg_mar.get("left", 0)),
             "headerFooterTwips": int(pg_mar.get("header", 0)),
+            "footerTwips": int(pg_mar.get("footer", 0)),
             "docGridLinePitch": coerce(grid_el.get("linePitch")),
         }
 
     borders = tbl_pr.find(W + "tblBorders")
-    borders_map = attr_map(borders.find(W + "top")) if borders is not None else {}
+    outer = attr_map(borders.find(W + "top")) if borders is not None else {}
+    inner = attr_map(borders.find(W + "insideH")) if borders is not None else {}
     table_cell_margin = tbl_pr.find(W + "tblCellMar")
+
+    row0_spacing_cells, line_value, line_rule = line_spacing_indexes(rows[0])
+    row1_spacing_cells, line_value_1, line_rule_1 = line_spacing_indexes(rows[1])
+    line_value = line_value if line_value is not None else line_value_1
+    line_rule = line_rule if line_rule is not None else line_rule_1
 
     spec = {
         "page": page,
@@ -250,19 +352,24 @@ def extract(path, table_ordinal: int | None = None) -> dict:
             "widthTwips": int(tbl_pr.find(W + "tblW").get(W + "w")),
             "align": val_of(tbl_pr.find(W + "jc")),
             "layout": attr_map(tbl_pr.find(W + "tblLayout")).get("type"),
-            "border": {"val": borders_map.get("val"), "sz": int(borders_map.get("sz", 0)),
-                       "space": int(borders_map.get("space", 0)), "color": borders_map.get("color")},
+            "border": {"val": outer.get("val"), "space": int(outer.get("space", 0)),
+                       "color": outer.get("color"),
+                       "outerSz": int(outer.get("sz", 0)), "innerSz": int(inner.get("sz", 0))},
             "tableCellMargin": ({etree.QName(e).localname: int(e.get(W + "w")) for e in table_cell_margin}
                                 if table_cell_margin is not None else {}),
-            "look": {etree.QName(k).localname: coerce(v)
+            # w:val 是 "0000" 这样的位串，不能当数字（否则前导零丢失）
+            "look": {etree.QName(k).localname: (v if etree.QName(k).localname == "val" else coerce(v))
                      for k, v in tbl_pr.find(W + "tblLook").attrib.items()},
         },
         "columns": {"widths": grid, "index": index_map, "mergedInBody": merged_columns},
-        "rows": {"headerHeightTwips": header_heights[0], "dataHeightTwips": data_height},
+        "rows": {"headerHeightTwips": header_heights[0], "dataHeightTwips": data_height,
+                 "dataHeightByTemplate": height_by_template},
         "cell": {
             "marginVerticalTwips": normal_margins.get("top"),
             "marginHorizontalTwips": normal_margins.get("left"),
             "requirementMarginTwips": (requirement_margins or {}).get("left"),
+            "headerLineSpacing": {"line": line_value, "lineRule": line_rule,
+                                  "row0Cells": row0_spacing_cells, "row1Cells": row1_spacing_cells},
         },
         "fonts": {
             "inheritedTablePt": inherited_pt,
@@ -308,16 +415,19 @@ def flatten(data, prefix="") -> dict:
     return flat
 
 
-# 不从检测报告里提取的段落：附页的渲染参数属于我们自己的实现规格（需求报告 4.4 + M3 决策），
-# 检测报告里没有这些值，参与比对只会产生"缺失"噪音。
-IGNORED_PREFIXES = ("attachment.",)
+# 不从检测报告里提取的键：
+# - ``attachment.*``：缺陷报告附页的渲染参数，属我们自己的实现规格（需求报告 4.4 + M3 决策）；
+# - ``paragraphSpacing.*`` 与 ``fonts.bodyPt/titlePt``：信息段/标题/空段/备注这套**段落骨架**
+#   是我们按需求报告 4.2 自己定的，客户报告的正文结构在范围之外，比它只会产生"缺失"噪音。
+IGNORED_PREFIXES = ("attachment.", "paragraphSpacing.")
+IGNORED_KEYS = ("fonts.bodyPt", "fonts.titlePt")
 
 
 def compare(current, candidate) -> list:
     left, right = flatten(current), flatten(candidate)
     diffs = []
     for key in sorted(set(left) | set(right)):
-        if key.startswith(IGNORED_PREFIXES):
+        if key.startswith(IGNORED_PREFIXES) or key in IGNORED_KEYS:
             continue
         old, new = left.get(key, "（缺）"), right.get(key, "（缺）")
         if old != new:
@@ -354,6 +464,8 @@ def main() -> int:
     parser.add_argument("--table", type=int, help="用第几张检测表（默认第一张）")
     parser.add_argument("--json", help="把候选规格写到指定路径")
     parser.add_argument("--report-md", dest="report_md", help="把差异写成 markdown")
+    parser.add_argument("--label", help="候选来源的显示名（默认用文件名；"
+                                        "从 .doc 转出来的中间文件可在这里写原始文件名）")
     parser.add_argument("--quiet", action="store_true", help="只输出差异")
     args = parser.parse_args()
 
@@ -362,10 +474,11 @@ def main() -> int:
         raise SystemExit("找不到文件：%s" % path)
 
     candidate = extract(path, args.table)
+    label = args.label or path.name
     diffs = compare(wr.SPEC, candidate)
 
     if not args.quiet:
-        print("提取自：%s" % path.name)
+        print("提取自：%s" % label)
         print("检测表数量：%d；列数：%d；跨列块：第 %d 列起 %d 列"
               % (candidate["_detectionTables"], len(candidate["columns"]["widths"]),
                  candidate["columns"]["index"]["face"], candidate["spans"]["thickness"]))
@@ -401,7 +514,7 @@ def main() -> int:
 
     if args.report_md:
         lines = ["# 版式规格差异（候选报告 vs 当前基准）", "",
-                 "- 候选来源：`%s`" % path.name,
+                 "- 候选来源：`%s`" % label,
                  "- 检测表数量：%d；列数：%d" % (candidate["_detectionTables"],
                                                  len(candidate["columns"]["widths"])), ""]
         if diffs:

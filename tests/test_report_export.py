@@ -127,8 +127,8 @@ def test_export_produces_a4(client, ctx):
     _project(client)
     root = _document_root(client.get("/projects/1/export"))
     sect = root.find(W + "body").find(W + "sectPr")
-    assert sect.find(W + "pgSz").get(W + "w") == "11906"
-    assert sect.find(W + "pgSz").get(W + "h") == "16838"
+    assert sect.find(W + "pgSz").get(W + "w") == "11907"
+    assert sect.find(W + "pgSz").get(W + "h") == "16839"
     assert sect.find(W + "pgMar").get(W + "top") == "1440"
 
 

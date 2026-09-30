@@ -92,7 +92,7 @@ def test_export_returns_a4_docx(client, make_image):
 
     with zipfile.ZipFile(io.BytesIO(response.data)) as archive:
         document = archive.read("word/document.xml").decode("utf-8")
-        assert 'w:w="11906"' in document      # A4 宽，不是 Letter 的 12240
+        assert 'w:w="11907"' in document      # A4 宽，不是 Letter 的 12240
         assert "密封胶开裂" in document
 
 

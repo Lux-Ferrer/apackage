@@ -13,4 +13,6 @@
 
 - 范围冲突时以 `management/03 ProjectCharter 3.0.docx` 为准；
 - `samples/检测结果案例.xlsx` 是 M2 的验收数据来源，Word 导出必须能用它灌出与样例一致的表格；
-- Word 版式的**对拍基准**不是这里的截图，而是 `tests/fixtures/金骐智谷_金骐_检测报告.docx`，请勿修改该文件。
+- Word 版式的**对拍基准**不是这里的截图，而是真实客户报告 `A06YG-2026-001…doc` 第 12-13 页的裁剪版
+  `tests/fixtures/检测表_真实裁剪.docx`（用 `python tools/build_fixture.py` 从该 .doc 重新裁出），请勿修改该文件；
+  `tests/fixtures/金骐智谷_金骐_检测报告.docx` 现在只作**字体/主题**来源（见 `config.FONT_SAMPLE`）。

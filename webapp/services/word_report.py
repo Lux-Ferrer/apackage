@@ -2,21 +2,27 @@
 """Word 报告生成：底座 + 版式规格 + 立柱/横梁表构建 + 项目级报告装配。
 
 版式规格不写死在代码里，而是放在 ``webapp/resources/report_layout.json``：
-所有数值实测自对拍基准 ``tests/fixtures/金骐智谷_金骐_检测报告.docx``，
-并由 ``tests/test_word_report.py::test_layout_spec_matches_sample`` 上锁。
+所有数值实测自对拍基准 ``tests/fixtures/检测表_真实裁剪.docx``
+（真实客户报告 A06YG-2026-001 第 12-13 页「表2-4 立柱 / 表2-5 横梁」裁剪而成），
+并由 ``tests/test_word_report.py::test_layout_spec_matches_fixture`` 上锁。
 该 JSON 语言中立——将来把导出逻辑移植到前端（docx JS）时可直接复用同一份数值。
 
 底座（:func:`new_document`）：
-优先从 ``webapp/resources/report_base.docx`` 继承（样例派生，保留 theme/styles/sectPr），
-因此 A4 纸张、页边距、以及**西文 Times New Roman + 中文主题字体（等线）**与样例一致，
-代码里不硬编码任何中文字体名。
+从 ``webapp/resources/report_base.docx`` 继承（由 ``config.FONT_SAMPLE`` 派生，
+保留 theme/styles），因此**西文 Times New Roman + 中文主题字体（等线）**不变，
+代码里不硬编码任何中文字体名。注意：字体不在"对齐真实报告"的范围内，
+真实报告的 docDefaults（SimSun / 10.5pt）**不采纳**。
 
-复刻要点（均为实测，容易做错的地方）：
-- 表头「厚度检测结果 (mm)」横向跨 7 列 → 该行只写 5 个 ``w:tc``；
-- 纵向合并的 continue 单元格是"裸格"：只有 ``tcW + vMerge``，无 ``tcMar``/``vAlign``，
-  段落是不带 ``pPr`` 的空 ``<w:p/>``；
-- 「截面尺寸要求」列的数据格用 8pt + 左右 60 边距（为长条文挤空间，样例原样如此）；
-- 其余单元格不写字号（继承，Word 下为 10pt）；普通数据格的 run **不带 ``rPr``**。
+复刻要点（均为实测自真实报告，容易做错的地方）：
+- 表头「厚度检测结果（mm）」横向跨 7 列 → 该行只写 5 个 ``w:tc``；
+- 左右页边距 907（比上下 1440 窄），表宽 10833 因此**超出正文区**并居中溢出；
+- 外框 sz=12 / 内线 sz=6，颜色 000000；单元格上**不写** ``tcMar``，
+  内边距只由表级 ``tblCellMar``（左右 57）与默认值决定；
+- 表头**不加粗**；所有单元格**不写** ``w:sz``（继承 Normal = 10pt）；
+- 「检测构件\n位置」「尺寸检测结果m×n\n（mm×mm）」是**多段落**，不是自动折行；
+- 表头部分单元格带固定行距 ``line=280 atLeast``（第一行前 2 格、第二行前 5 格），
+  对视觉无影响，但为逐属性一致而照抄；
+- 数据行高按模板不同：立柱 522、横梁 567（表头 567）。
 """
 
 from __future__ import annotations
@@ -49,10 +55,11 @@ SPEC = load_spec()
 
 
 def sample_reference_widths(spec=None) -> tuple:
-    """由**生效列宽**还原出样例的原始列宽。
+    """由**生效列宽**还原出对拍基准的原始列宽。
 
-    生效列宽里含对样例的有意偏离（见 ``columns._widthOverrides``）。测试与对拍工具
-    需要"样例侧"的期望值时用本函数，避免在各处重复抄写样例原值。
+    生效列宽里可能含对基准的有意偏离（见 ``columns._widthOverrides``）。测试与对拍工具
+    需要"基准侧"的期望值时用本函数，避免在各处重复抄写基准原值。
+    当前基准即真实报告，无偏离，故返回生效列宽本身。
     """
     spec = spec or SPEC
     widths = list(spec["columns"]["widths"])
@@ -70,11 +77,15 @@ def sample_reference_widths(spec=None) -> tuple:
             widths[index] = override["sampleTwips"]
     return tuple(widths)
 
+
 # —— 页面 ——
 PAGE_WIDTH_TWIPS = SPEC["page"]["widthTwips"]
 PAGE_HEIGHT_TWIPS = SPEC["page"]["heightTwips"]
-PAGE_MARGIN_TWIPS = SPEC["page"]["marginTwips"]
+PAGE_MARGIN_TWIPS = SPEC["page"]["marginTwips"]                  # 上
+PAGE_MARGIN_BOTTOM_TWIPS = SPEC["page"].get("marginBottomTwips", PAGE_MARGIN_TWIPS)
+PAGE_MARGIN_HORIZONTAL_TWIPS = SPEC["page"].get("marginHorizontalTwips", PAGE_MARGIN_TWIPS)
 HEADER_FOOTER_TWIPS = SPEC["page"]["headerFooterTwips"]
+FOOTER_TWIPS = SPEC["page"].get("footerTwips", HEADER_FOOTER_TWIPS)
 DOC_GRID_LINE_PITCH = SPEC["page"]["docGridLinePitch"]
 
 # —— 表格 ——
@@ -86,26 +97,28 @@ THICKNESS_FIRST_COL = COLUMN_INDEX["face"]
 THICKNESS_SPAN = SPEC["spans"]["thickness"]
 HEADER_ROW_TWIPS = SPEC["rows"]["headerHeightTwips"]
 DATA_ROW_TWIPS = SPEC["rows"]["dataHeightTwips"]
-BORDER_SIZE = SPEC["table"]["border"]["sz"]
+BORDER_SIZE = SPEC["table"]["border"].get("outerSz", SPEC["table"]["border"].get("sz", 12))
+BORDER_INNER_SIZE = SPEC["table"]["border"].get("innerSz", BORDER_SIZE)
 BORDER_COLOR = SPEC["table"]["border"]["color"]
 
+# None = 不写 tcMar（真实表格不在单元格上设内边距）
 CELL_MARGIN_VERTICAL = SPEC["cell"]["marginVerticalTwips"]
 CELL_MARGIN_HORIZONTAL = SPEC["cell"]["marginHorizontalTwips"]
 REQUIREMENT_MARGIN = SPEC["cell"]["requirementMarginTwips"]
 
 # —— 字号（pt）——
 INHERITED_TABLE_PT = SPEC["fonts"]["inheritedTablePt"]   # 表格正文继承值，文档用，不写入 XML
-REQUIREMENT_PT = SPEC["fonts"]["requirementPt"]
+REQUIREMENT_PT = SPEC["fonts"]["requirementPt"]          # None = 继承（真实表格不显式设字号）
 BODY_PT = SPEC["fonts"]["bodyPt"]
 TITLE_PT = SPEC["fonts"]["titlePt"]
 TITLE_SIZE = Pt(TITLE_PT)
 BODY_SIZE = Pt(BODY_PT)
-REQUIREMENT_SIZE = Pt(REQUIREMENT_PT)
+REQUIREMENT_SIZE = Pt(REQUIREMENT_PT) if REQUIREMENT_PT else None
 
 # —— 段落间距（w:spacing 的单位是 1/20 pt）——
 SPACING = SPEC["paragraphSpacing"]
 
-# —— 表头文案（照抄样例，含空格）——
+# —— 表头文案（实测自真实报告 表2-4/2-5）——
 HEADER_FIXED = tuple(SPEC["headers"]["fixed"])
 HEADER_THICKNESS = SPEC["headers"]["thickness"]
 HEADER_THICKNESS_SUB = tuple(SPEC["headers"]["thicknessSub"])
@@ -192,30 +205,38 @@ def clear_body(doc) -> None:
 
 
 def new_document():
-    """新建报告文档（继承样例的页面与字体设置）。"""
+    """新建报告文档。
+
+    底座模板提供 theme / styles（字体与默认段落行为）；**页面参数一律由规格覆盖**，
+    这样换对拍基准时只改 JSON 即可，不必重新派生底座。
+    """
     template = config.REPORT_BASE_TEMPLATE
     if template.exists():
         doc = Document(str(template))
         clear_body(doc)
-        return doc
-
-    doc = Document()                      # 兜底：底座缺失时按样例参数手工设置
+    else:
+        doc = Document()
+        apply_default_fonts(doc)
     apply_a4_layout(doc)
-    apply_default_fonts(doc)
     return doc
 
 
 def apply_a4_layout(doc) -> None:
-    """A4 纸张 + 四边 1440 twips 页边距 + docGrid（与样例 sectPr 一致）。"""
+    """A4 纸张 + 页边距 + docGrid（与对拍基准的 sectPr 一致）。
+
+    四个方向的边距**互不相同**（取自真实报告里含立柱/横梁表的那一节）：
+    上 1440、下 1843、左右 907、页眉距离 850、页脚距离 964。
+    左右更窄 → 表格（10833）比版心（10093）更宽，向两侧对称溢出，与真实报告一致。
+    """
     for section in doc.sections:
         section.page_width = Twips(PAGE_WIDTH_TWIPS)
         section.page_height = Twips(PAGE_HEIGHT_TWIPS)
-        section.left_margin = Twips(PAGE_MARGIN_TWIPS)
-        section.right_margin = Twips(PAGE_MARGIN_TWIPS)
+        section.left_margin = Twips(PAGE_MARGIN_HORIZONTAL_TWIPS)
+        section.right_margin = Twips(PAGE_MARGIN_HORIZONTAL_TWIPS)
         section.top_margin = Twips(PAGE_MARGIN_TWIPS)
-        section.bottom_margin = Twips(PAGE_MARGIN_TWIPS)
+        section.bottom_margin = Twips(PAGE_MARGIN_BOTTOM_TWIPS)
         section.header_distance = Twips(HEADER_FOOTER_TWIPS)
-        section.footer_distance = Twips(HEADER_FOOTER_TWIPS)
+        section.footer_distance = Twips(FOOTER_TWIPS)
         grid = _get_or_add(section._sectPr, "w:docGrid", _SECTPR_ORDER)
         grid.set(qn("w:linePitch"), str(DOC_GRID_LINE_PITCH))
 
@@ -282,6 +303,7 @@ def _add_run(paragraph_element, text: str, *, bold: bool = False,
 def _add_paragraph(container, text: str = "", *, bold: bool = False,
                    size_pt: float | None = None, align: str | None = "center",
                    before: int | None = None, after: int | None = None,
+                   line: int | None = None, line_rule: str | None = None,
                    with_props: bool = True, page_break_before: bool = False):
     """在 tc / body 内追加一个段落。
 
@@ -297,12 +319,15 @@ def _add_paragraph(container, text: str = "", *, bold: bool = False,
         ppr = OxmlElement("w:pPr")
         if page_break_before:
             _insert_ordered(ppr, OxmlElement("w:pageBreakBefore"), _PPR_ORDER)
-        if before is not None or after is not None:
+        if before is not None or after is not None or line is not None:
             spacing = OxmlElement("w:spacing")
             if before is not None:
                 spacing.set(qn("w:before"), str(before))
             if after is not None:
                 spacing.set(qn("w:after"), str(after))
+            if line is not None:
+                spacing.set(qn("w:line"), str(line))
+                spacing.set(qn("w:lineRule"), line_rule or "atLeast")
             _insert_ordered(ppr, spacing, _PPR_ORDER)
         if align is not None:
             jc = OxmlElement("w:jc")
@@ -377,6 +402,7 @@ class Cell:
     size_pt: float | None = None         # None = 继承（不写 w:sz）
     align: str | None = "center"
     plain: bool = False                  # True = 段落不写 pPr（continue 裸格）
+    line_twips: int | None = None        # 固定行距（客户模板里表头部分格手工设定）
 
 
 @dataclass
@@ -386,16 +412,21 @@ class Row:
 
 
 def continuation_cell(width: int) -> Cell:
-    """纵向合并的后续格：裸格（只有 tcW + vMerge + 空段落）。"""
-    return Cell(text="", width=width, vmerge="continue",
-                margin_h=None, margin_v=None, vcenter=False, plain=True)
+    """纵向合并的后续格：**空文本的普通格**。
+
+    真实报告的续行格并非"裸格"——它同样有 ``vAlign=center`` 与居中的空段落，
+    只是没有文本、也没有 tcMar 与逐格边框。
+    """
+    return Cell(text="", width=width, vmerge="continue")
 
 
 def requirement_cell(text: str, *, vmerge: str | None = None) -> Cell:
-    """「截面尺寸要求」列的数据格：8pt + 左右 60 边距（样例原样）。"""
-    return Cell(text=text, width=GRID_COLS[COLUMN_INDEX["requirement"]],
-                vmerge=vmerge, margin_h=REQUIREMENT_MARGIN, margin_v=REQUIREMENT_MARGIN,
-                size_pt=REQUIREMENT_PT)
+    """「截面尺寸要求」列的数据格。
+
+    真实报告里它与普通数据格**完全一致**：不设 tcMar、不显式设字号（继承）。
+    保留这个工厂只为可读性与将来可能的差异化。
+    """
+    return Cell(text=text, width=GRID_COLS[COLUMN_INDEX["requirement"]], vmerge=vmerge)
 
 
 def _apply_table_properties(table, widths) -> None:
@@ -413,10 +444,12 @@ def _apply_table_properties(table, widths) -> None:
     if old_borders is not None:
         tbl_pr.remove(old_borders)
     borders = OxmlElement("w:tblBorders")
+    outer = SPEC["table"]["border"].get("outerSz", SPEC["table"]["border"].get("sz"))
+    inner = SPEC["table"]["border"].get("innerSz", outer)
     for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
         element = OxmlElement("w:%s" % edge)
         element.set(qn("w:val"), SPEC["table"]["border"]["val"])
-        element.set(qn("w:sz"), str(SPEC["table"]["border"]["sz"]))
+        element.set(qn("w:sz"), str(inner if edge.startswith("inside") else outer))
         element.set(qn("w:space"), str(SPEC["table"]["border"]["space"]))
         element.set(qn("w:color"), SPEC["table"]["border"]["color"])
         borders.append(element)
@@ -494,7 +527,9 @@ def _write_cell(tc, cell: Cell) -> None:
     lines = str(cell.text).split("\n") if cell.text else [""]
     for line in lines:
         _add_paragraph(tc, line, bold=cell.bold, size_pt=cell.size_pt,
-                       align=cell.align, with_props=not cell.plain)
+                       align=cell.align, line=cell.line_twips,
+                       line_rule=HEADER_LINE_SPACING.get("lineRule"),
+                       with_props=not cell.plain)
 
 
 def build_table(doc, rows, widths=GRID_COLS):
@@ -520,40 +555,86 @@ def build_table(doc, rows, widths=GRID_COLS):
 # 立柱 / 横梁表
 # --------------------------------------------------------------------------
 def _header_rows(template_type: str):
+    """表头两行。
+
+    真实表格的表头**不加粗**，部分文案是多段落（见 headers._note），
+    且部分单元格被手工设了固定行距（见 cell.headerLineSpacing）。
+    """
     requirement_label = config.REQUIREMENT_LABELS[template_type]
+    first_specs = (
+        (HEADER_FIXED[0], GRID_COLS[0], 1, "restart"),
+        (HEADER_FIXED[1], GRID_COLS[1], 1, "restart"),
+        (HEADER_FIXED[2], GRID_COLS[2], 1, "restart"),
+        (HEADER_THICKNESS, sum(GRID_COLS[THICKNESS_FIRST_COL:THICKNESS_FIRST_COL + THICKNESS_SPAN]),
+         THICKNESS_SPAN, None),
+        (requirement_label, GRID_COLS[COLUMN_INDEX["requirement"]], 1, "restart"),
+    )
     first = [
-        Cell(text=HEADER_FIXED[0], width=GRID_COLS[0], vmerge="restart", bold=True),
-        Cell(text=HEADER_FIXED[1], width=GRID_COLS[1], vmerge="restart", bold=True),
-        Cell(text=HEADER_FIXED[2], width=GRID_COLS[2], vmerge="restart", bold=True),
-        Cell(text=HEADER_THICKNESS, width=sum(GRID_COLS[THICKNESS_FIRST_COL:THICKNESS_FIRST_COL + THICKNESS_SPAN]),
-             span=THICKNESS_SPAN, bold=True),
-        Cell(text=requirement_label, width=GRID_COLS[COLUMN_INDEX["requirement"]],
-             vmerge="restart", bold=True),
+        Cell(text=text, width=width, span=span, vmerge=vmerge,
+             line_twips=_header_line_spacing(0, index))
+        for index, (text, width, span, vmerge) in enumerate(first_specs)
     ]
-    second = [
-        continuation_cell(GRID_COLS[0]),
-        continuation_cell(GRID_COLS[1]),
-        continuation_cell(GRID_COLS[2]),
+
+    second_specs = [
+        (None, GRID_COLS[0], "continue"),
+        (None, GRID_COLS[1], "continue"),
+        (None, GRID_COLS[2], "continue"),
     ]
-    second += [Cell(text=label, width=GRID_COLS[THICKNESS_FIRST_COL + offset], bold=True)
-               for offset, label in enumerate(HEADER_THICKNESS_SUB)]
-    second.append(continuation_cell(GRID_COLS[COLUMN_INDEX["requirement"]]))
+    second_specs += [(label, GRID_COLS[THICKNESS_FIRST_COL + offset], None)
+                     for offset, label in enumerate(HEADER_THICKNESS_SUB)]
+    second_specs.append((None, GRID_COLS[COLUMN_INDEX["requirement"]], "continue"))
+
+    second = []
+    for index, (text, width, vmerge) in enumerate(second_specs):
+        line = _header_line_spacing(1, index)
+        if vmerge == "continue":
+            cell = continuation_cell(width)
+            cell.line_twips = line
+            second.append(cell)
+        else:
+            second.append(Cell(text=text, width=width, line_twips=line))
+
     return [
         Row(cells=first, height=HEADER_ROW_TWIPS),
         Row(cells=second, height=HEADER_ROW_TWIPS),
     ]
 
 
-def _member_rows(item) -> list:
-    """一个构件 → 每个检测面一行。
+def data_row_height(template_type: str) -> int:
+    """数据行高：真实报告里立柱表与横梁表不同（见 rows.dataHeightByTemplate）。"""
+    return SPEC["rows"].get("dataHeightByTemplate", {}).get(template_type, DATA_ROW_TWIPS)
 
-    只有**真正需要合并**（该构件有 ≥2 个检测面）时才写 ``vMerge``：
-    单面构件与样例一样不带任何 vMerge —— 一条 vMerge=restart 本身不构成合并，
-    但会让文档与样例产生无谓差异。
+
+# —— 表头部分单元格的手工固定行距（客户模板设定，为逐属性一致而照抄）——
+HEADER_LINE_SPACING = SPEC["cell"].get("headerLineSpacing") or {}
+_HEADER_LINE_KEYS = {0: "row0Cells", 1: "row1Cells"}
+
+
+def _header_line_spacing(row_index: int, cell_index: int):
+    """该表头单元格是否带固定行距；不在配置清单里则返回 None。"""
+    configured = HEADER_LINE_SPACING.get(_HEADER_LINE_KEYS.get(row_index, ""), ())
+    return HEADER_LINE_SPACING.get("line") if cell_index in configured else None
+
+
+def _member_rows(item, template_type: str, previous_requirement=None) -> tuple:
+    """一个构件 → 每个检测面一行，返回 ``(行列表, 该构件的条文文本)``。
+
+    **两类纵向合并的粒度不同**（实测自真实报告表2-4/2-5）：
+
+    - 楼层 / 检测构件位置 / 尺寸检测结果：**按构件**合并（首行 restart，其余 continue）；
+    - 截面尺寸要求：按**连续相同条文**合并 —— 真实报告里 5 个构件共用同一句条文，
+      该列被合并成整块（首行 restart、其后全部 continue）；条文不同时自然分段。
+      这也与案例 Excel 的 K 列整列合并一致。
+
+    ``previous_requirement`` 是上一个构件的条文，用于判断本构件的首行该 restart 还是 continue。
     """
     record = item["record"]
     faces = item["faces"] or []
     merged = len(faces) > 1
+    requirement = record["requirement_text"] or config.EMPTY_TEXT
+    requirement_continues = (previous_requirement is not None
+                             and previous_requirement == requirement)
+
     rows = []
     for index, face in enumerate(faces):
         first = index == 0
@@ -574,22 +655,28 @@ def _member_rows(item) -> list:
                   for offset, text in enumerate(face["readings_text"])]
         cells.append(Cell(text=face["min_text"], width=GRID_COLS[COLUMN_INDEX["minimum"]]))
 
-        REQUIREMENT_INDEX = COLUMN_INDEX["requirement"]
         if first:
-            requirement = record["requirement_text"] or config.EMPTY_TEXT
-            cells.append(requirement_cell(requirement, vmerge=vmerge))
+            if requirement_continues:
+                # 与上一个构件共用同一条文 → 本格只是合并的续格，**不能带文本**
+                cells.append(continuation_cell(GRID_COLS[COLUMN_INDEX["requirement"]]))
+            else:
+                cells.append(requirement_cell(requirement, vmerge="restart"))
         else:
-            cells.append(continuation_cell(GRID_COLS[REQUIREMENT_INDEX]))
+            cells.append(continuation_cell(GRID_COLS[COLUMN_INDEX["requirement"]]))
 
-        rows.append(Row(cells=cells, height=DATA_ROW_TWIPS))
-    return rows
+        rows.append(Row(cells=cells, height=data_row_height(template_type)))
+    return rows, requirement
 
 
 def build_detection_table(doc, group):
     """一张立柱/横梁检测表（表头 2 行 + 每检测面 1 行）。"""
-    rows = _header_rows(group["template_type"])
+    template_type = group["template_type"]
+    rows = _header_rows(template_type)
+    previous_requirement = None
     for item in group["records"]:
-        rows.extend(_member_rows(item))
+        member_rows, previous_requirement = _member_rows(item, template_type,
+                                                         previous_requirement)
+        rows.extend(member_rows)
     return build_table(doc, rows)
 
 
@@ -753,7 +840,10 @@ def even_widths(cols: int, total: int = TABLE_WIDTH_TWIPS):
 
 
 def create_table(doc, rows: int, cols: int, widths=None):
-    """建一张普通表格（等宽或指定列宽），供旧调用与测试使用。"""
+    """建一张普通表格（等宽或指定列宽），供旧调用与测试使用。
+
+    与导出主路径一致：**不写单元格 tcMar**（内边距由表级 tblCellMar 决定）。
+    """
     spec_widths = tuple(widths) if widths is not None else even_widths(cols)
     if len(spec_widths) != cols:
         raise ValueError("列宽数量(%d)与列数(%d)不一致" % (len(spec_widths), cols))
@@ -782,8 +872,8 @@ def apply_table_borders(table, size: int = BORDER_SIZE, color: str = BORDER_COLO
     _insert_ordered(tbl_pr, borders, _TBLPR_ORDER)
 
 
-def set_cell_margins(cell, top=CELL_MARGIN_VERTICAL, left=CELL_MARGIN_HORIZONTAL,
-                     bottom=CELL_MARGIN_VERTICAL, right=CELL_MARGIN_HORIZONTAL) -> None:
+def set_cell_margins(cell, top=60, left=80, bottom=60, right=80) -> None:
+    """显式设置单元格内边距（导出主路径不用它，仅为旧接口保留）。"""
     tc_mar = _get_or_add(cell._tc.get_or_add_tcPr(), "w:tcMar", _TCPR_ORDER)
     for tag, value in (("top", top), ("left", left), ("bottom", bottom), ("right", right)):
         element = _get_or_add(tc_mar, "w:%s" % tag, ("top", "left", "bottom", "right"))

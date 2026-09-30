@@ -6,7 +6,9 @@
 
 - **结构与数值**以本文件解析结果为准；
 - **条文文字**以需求报告（``docs/requirements/幕墙检测APP需求报告.docx``）为准；
-- 字体与版式以样例 ``tests/fixtures/金骐智谷_金骐_检测报告.docx`` 为准。
+- **表格版式**以真实报告裁剪基准 ``tests/fixtures/检测表_真实裁剪.docx`` 为准
+  （数值见 ``webapp/resources/report_layout.json``）；
+- **字体/主题**以 ``tests/fixtures/金骐智谷_金骐_检测报告.docx`` 为准（本次不改字体）。
 """
 
 from __future__ import annotations
@@ -126,14 +128,22 @@ def submit(client, project_id, template_type, cases, order):
 def expected_rows(cases, order):
     """把案例数据摊平成"一行一个检测面"的期望文本行（与 Word 表格的数据行一一对应）。
 
-    多面构件：首个面带 楼层/构件位置/尺寸结果/条文，后续面的这四列为空
+    多面构件：首个面带 楼层/构件位置/尺寸结果，后续面的这三列为空
     （对应 Word 里的纵向合并 continue 格）。
+
+    「截面尺寸要求」列的合并粒度不同：按**连续相同的条文**合并（不是按构件），
+    所以只有"本行条文与上一行不同"时才带文本 —— 同一条文横跨多个构件时，
+    第 2 个构件的首行同样是 continue 空格式。
     """
     rows = []
+    previous_requirement = None
     for (floor, position), keys in group_by_member(cases, order).items():
         for index, key in enumerate(keys):
             first = index == 0
             case = cases[key]
+            requirement = str(case["requirement"] or "")
+            clause_here = requirement if requirement != previous_requirement else ""
+            previous_requirement = requirement
             rows.append([
                 floor if first else "",
                 position if first else "",
@@ -141,6 +151,6 @@ def expected_rows(cases, order):
                 key[2],
                 *["%.2f" % float(value) for value in case["readings"]],
                 case["expected_min"],
-                str(case["requirement"] or "") if first else "",
+                clause_here,
             ])
     return rows

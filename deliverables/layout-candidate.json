@@ -1,0 +1,139 @@
+{
+  "page": {
+    "widthTwips": 11907,
+    "heightTwips": 16839,
+    "marginTwips": 1440,
+    "marginBottomTwips": 1843,
+    "marginHorizontalTwips": 907,
+    "headerFooterTwips": 850,
+    "footerTwips": 964,
+    "docGridLinePitch": 312
+  },
+  "table": {
+    "widthTwips": 10833,
+    "align": "center",
+    "layout": "fixed",
+    "border": {
+      "val": "single",
+      "space": 0,
+      "color": "000000",
+      "outerSz": 12,
+      "innerSz": 6
+    },
+    "tableCellMargin": {
+      "left": 57,
+      "right": 57
+    },
+    "look": {
+      "val": "0000",
+      "firstRow": 0,
+      "lastRow": 0,
+      "firstColumn": 0,
+      "lastColumn": 0,
+      "noHBand": 0,
+      "noVBand": 0
+    }
+  },
+  "columns": {
+    "widths": [
+      1077,
+      850,
+      1416,
+      789,
+      790,
+      790,
+      789,
+      790,
+      790,
+      790,
+      1962
+    ],
+    "index": {
+      "floor": 0,
+      "position": 1,
+      "size": 2,
+      "face": 3,
+      "readingFirst": 4,
+      "readingCount": 5,
+      "minimum": 9,
+      "requirement": 10
+    },
+    "mergedInBody": [
+      "floor",
+      "position",
+      "size",
+      "requirement"
+    ]
+  },
+  "rows": {
+    "headerHeightTwips": 567,
+    "dataHeightTwips": 522,
+    "dataHeightByTemplate": {
+      "column": 522,
+      "beam": 567
+    }
+  },
+  "cell": {
+    "marginVerticalTwips": null,
+    "marginHorizontalTwips": null,
+    "requirementMarginTwips": null,
+    "headerLineSpacing": {
+      "line": 280,
+      "lineRule": "atLeast",
+      "row0Cells": [
+        0,
+        1
+      ],
+      "row1Cells": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    }
+  },
+  "fonts": {
+    "inheritedTablePt": 10,
+    "requirementPt": null,
+    "bodyPt": null,
+    "titlePt": null
+  },
+  "paragraphSpacing": {
+    "infoAfter": null,
+    "titleBefore": null,
+    "titleAfter": null,
+    "spacerBefore": null,
+    "spacerAfter": null,
+    "noteBefore": null
+  },
+  "headers": {
+    "fixed": [
+      "楼层",
+      "检测构件\n位置",
+      "尺寸检测结果m×n\n（mm×mm）"
+    ],
+    "thickness": "厚度检测结果（mm）",
+    "thicknessSub": [
+      "检测面",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "最小值"
+    ]
+  },
+  "spans": {
+    "thickness": 7
+  },
+  "_extractedFrom": "A06YG_full.docx",
+  "_detectionTables": 10,
+  "_warnings": [
+    "文档里有 10 张检测表，但列宽互不相同（下表取第一张；可用 --table 指定）",
+    "普通数据单元格未显式写字号（继承）—— 已保留当前值 10pt，请用 Word 人工确认"
+  ],
+  "_extraHeaderColumns": [
+    "立柱截面尺寸截面要求（mm）"
+  ]
+}
