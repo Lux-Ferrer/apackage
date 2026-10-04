@@ -3,9 +3,19 @@
 
 版面
 ----
-    左侧 A~G   WBS 表：ID / Task Name / Duration / Start / Finish / Predecessors / Resource
-    右侧 H~CP  甘特图：**每个自然日一列**，2026-09-10 → 2026-12-05 共 87 列
-    表格下方   图例：Summary / Task / Milestone
+    左侧 A~H   WBS 表：ID / Task Mode / Task Name / Duration / Start / Finish /
+               Predecessors / Resource
+    右侧 I~CQ  甘特图：**每个自然日一列**，2026-09-10 → 2026-12-05 共 87 列
+    表格下方   图例：Task / Summary / Project Summary / Milestone / External Task
+
+样式对齐 MS Project 的用语
+--------------------------
+    1        Project Summary  顶层项目汇总，黑色加粗条
+    1.1~1.8  Summary          普通汇总，深蓝条
+    叶子任务  Task             浅蓝条
+    1.9      Milestone        0 工期，菱形 ◆
+    1.10     External Task    对客户的外部依赖，灰色条
+只列这 5 种 —— 本项目的表里没有 Inactive Task / Split / Deadline 之类，图例里不出现。
 
 为什么按自然日排、且不区分周末
 ------------------------------
@@ -88,6 +98,26 @@ TASKS = [
 CHART_START = date(2026, 9, 10)
 CHART_END = date(2026, 12, 5)
 
+# 原表没有 Resource 列：本项目只有一位执行人，1.10 是对客户的外部依赖
+EXTERNAL_TASK_IDS = {"1.10"}
+OWNER = "Zeyu Jin"
+TASK_MODE = "Auto Scheduled"
+
+# --------------------------------------------------------------------------
+# 列位置（用具名常量，避免插列之后满屏 magic number 对不上）
+# --------------------------------------------------------------------------
+TABLE_HEADERS = ["ID", "Task Mode", "Task Name", "Duration", "Start", "Finish",
+                 "Predecessors", "Resource"]
+TABLE_WIDTHS = [6.5, 15, 48, 9.5, 12.5, 12.5, 13, 15]
+
+(COL_ID, COL_MODE, COL_NAME, COL_DURATION,
+ COL_START, COL_FINISH, COL_PRED, COL_RESOURCE) = range(1, 9)
+
+HEADER_ROWS = 3          # 1 标题 / 2 月份+副标题 / 3 列头+日期
+FIRST_TASK_ROW = HEADER_ROWS + 1
+CHART_FIRST_COL = len(TABLE_HEADERS) + 1          # I 列
+DAY_WIDTH = 2.4
+
 # --------------------------------------------------------------------------
 # 样式
 # --------------------------------------------------------------------------
@@ -95,9 +125,12 @@ INK = "1F2937"
 MUTED = "6B7280"
 LINE = "BFC7D1"
 
-FILL_SUMMARY_BAR = PatternFill("solid", fgColor="1F4E79")      # 汇总：深色横条
-FILL_TASK_BAR = PatternFill("solid", fgColor="9DC3E6")         # 子任务：浅色横条
-FILL_SUMMARY_ROW = PatternFill("solid", fgColor="DDEBF7")      # 汇总行底色
+FILL_PROJECT_BAR = PatternFill("solid", fgColor="000000")       # Project Summary：黑条
+FILL_SUMMARY_BAR = PatternFill("solid", fgColor="1F4E79")       # Summary：深蓝条
+FILL_TASK_BAR = PatternFill("solid", fgColor="9DC3E6")          # Task：浅蓝条
+FILL_EXTERNAL_BAR = PatternFill("solid", fgColor="A6A6A6")      # External Task：灰条
+
+FILL_SUMMARY_ROW = PatternFill("solid", fgColor="DDEBF7")       # 汇总行底色
 FILL_HEADER = PatternFill("solid", fgColor="1F4E79")
 FILL_BAND_A = PatternFill("solid", fgColor="FFFFFF")
 FILL_BAND_B = PatternFill("solid", fgColor="F7F9FC")
@@ -107,6 +140,7 @@ FONT_SUB = Font(name="Calibri", size=10, color=MUTED)
 FONT_HEADER = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
 FONT_CELL = Font(name="Calibri", size=10, color=INK)
 FONT_SUMMARY = Font(name="Calibri", size=10, bold=True, color="1F3864")
+FONT_PROJECT = Font(name="Calibri", size=10, bold=True, color="000000")
 FONT_MONTH = Font(name="Calibri", size=9, bold=True, color="1F4E79")
 FONT_DAY = Font(name="Calibri", size=7, color=MUTED)
 FONT_WEEKDAY = Font(name="Calibri", size=6, color="9AA3AF")
@@ -116,27 +150,41 @@ FONT_MILESTONE = Font(name="Calibri", size=11, bold=True, color="C00000")
 THIN = Side(style="thin", color=LINE)
 HAIR = Side(style="hair", color="D6DBE1")
 BOX = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
-GRID = Border(left=HAIR, right=HAIR, top=HAIR, bottom=HAIR)
 
 LEFT = Alignment(horizontal="left", vertical="center")
 CENTER = Alignment(horizontal="center", vertical="center")
-RIGHT = Alignment(horizontal="right", vertical="center")
 
-TABLE_HEADERS = ["ID", "Task Name", "Duration", "Start", "Finish", "Predecessors", "Resource"]
-TABLE_WIDTHS = [6.5, 52, 9.5, 10.5, 10.5, 13, 15]
-DAY_WIDTH = 2.4
+# 图例顺序：Task / Summary / Project Summary / Milestone / External Task
+LEGEND = (
+    ("Task", FILL_TASK_BAR, None),
+    ("Summary", FILL_SUMMARY_BAR, None),
+    ("Project Summary", FILL_PROJECT_BAR, None),
+    ("Milestone", None, "◆"),
+    ("External Task", FILL_EXTERNAL_BAR, None),
+)
 
-HEADER_ROWS = 3          # 1 标题 / 2 月份+副标题 / 3 列头+日期
-FIRST_TASK_ROW = HEADER_ROWS + 1
-CHART_FIRST_COL = len(TABLE_HEADERS) + 1          # H
+WEEKDAY_ABBR = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 
 
 # --------------------------------------------------------------------------
 # 派生
 # --------------------------------------------------------------------------
 def parse_date(text: str) -> date:
+    """``"9/10/26"`` → ``date(2026, 9, 10)``（源表是 m/d/yy）。"""
     month, day, year = text.split("/")
     return date(2000 + int(year), int(month), int(day))
+
+
+def ms_date(value: date) -> str:
+    """MS Project 风格的日期文本：``Thu 9/10/26``。
+
+    写成**文本**而不是"日期值 + 数字格式"：``ddd`` 这类格式码会跟随 Excel 的界面语言
+    （中文环境显示"周四 9/10/26"），而这份交付物要求固定显示 ``Thu``。文本能保证任何
+    环境、任何阅读器打开都是同一个样子。代价是这两列不能按日期排序/筛选 ——
+    数据源是静态 WBS，用不上日期运算。
+    """
+    return "%s %d/%d/%d" % (WEEKDAY_ABBR[value.weekday()], value.month, value.day,
+                            value.year % 100)
 
 
 def chart_days() -> list:
@@ -157,23 +205,43 @@ def is_summary(task_id: str, all_ids: set) -> bool:
     return any(other.startswith(prefix) for other in all_ids)
 
 
+def is_project_summary(task_id: str) -> bool:
+    return "." not in task_id
+
+
 def is_milestone(duration: str) -> bool:
     return duration.strip().startswith("0 ")
 
 
+def is_external(task_id: str) -> bool:
+    return task_id in EXTERNAL_TASK_IDS
+
+
 def kind_of(task_id: str, duration: str, all_ids: set) -> str:
+    """``project`` / ``summary`` / ``milestone`` / ``task``（External Task 是 task 的一种样式）。"""
+    if is_project_summary(task_id):
+        return "project"
     if is_summary(task_id, all_ids):
         return "summary"
     return "milestone" if is_milestone(duration) else "task"
 
 
-# 原表没有 Resource 列：本项目只有一位执行人，1.10 是对客户的外部依赖
-EXTERNAL_TASK_IDS = {"1.10"}
-OWNER = "Zeyu Jin"
+BAR_FILL_BY_KIND = {
+    "project": FILL_PROJECT_BAR,
+    "summary": FILL_SUMMARY_BAR,
+    "task": FILL_TASK_BAR,
+}
+
+
+def bar_fill(task_id: str, kind: str):
+    """该行的横条填充色；里程碑返回 None（用菱形符号）。"""
+    if kind == "milestone":
+        return None
+    return FILL_EXTERNAL_BAR if is_external(task_id) else BAR_FILL_BY_KIND[kind]
 
 
 def resource_for(task_id: str) -> str:
-    return "Client" if task_id in EXTERNAL_TASK_IDS else OWNER
+    return "Client" if is_external(task_id) else OWNER
 
 
 # --------------------------------------------------------------------------
@@ -189,20 +257,21 @@ def build(output: Path) -> Path:
     ws.title = "WBS & Gantt"
     ws.sheet_view.showGridLines = False
 
-    last_col = CHART_FIRST_COL + len(days) - 1
     last_task_row = FIRST_TASK_ROW + len(TASKS) - 1
 
     # ---- 标题与副标题 ----
-    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=7)
-    title = ws.cell(row=1, column=1, value="WBS & Gantt Chart — Curtain Wall Inspection Report Tool")
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=COL_RESOURCE)
+    title = ws.cell(row=1, column=1,
+                    value="WBS & Gantt Chart — Curtain Wall Inspection Report Tool")
     title.font = FONT_TITLE
     title.alignment = LEFT
     ws.row_dimensions[1].height = 24
 
-    ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=7)
+    ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=COL_RESOURCE)
     subtitle = ws.cell(
         row=2, column=1,
-        value="Zeyu Jin · NYU MS in Management and Systems · 310h (330–350h with buffer) · "
+        value="Zeyu Jin · NYU MS in Management and Systems · "
+              "310h identified + 20–40h contingency = 330–350h total · "
               "chart covers 9/10/26–12/5/26 (every calendar day, 87 columns; "
               "weekends are working days, no holidays)",
     )
@@ -229,8 +298,7 @@ def build(output: Path) -> Path:
             end_col = CHART_FIRST_COL + position - 1
             if end_col > first_col:
                 ws.merge_cells(start_row=1, start_column=first_col, end_row=1, end_column=end_col)
-            label = days[month_start].strftime("%b %Y")
-            cell = ws.cell(row=1, column=first_col, value=label)
+            cell = ws.cell(row=1, column=first_col, value=days[month_start].strftime("%b %Y"))
             cell.font = FONT_MONTH
             cell.alignment = CENTER
             month_start = position
@@ -258,58 +326,62 @@ def build(output: Path) -> Path:
         row = FIRST_TASK_ROW + offset
         start, finish = parse_date(start_text), parse_date(finish_text)
         kind = kind_of(task_id, duration, all_ids)
-        level = level_of(task_id)
-        band = FILL_BAND_A if level == 0 or level == 1 else FILL_BAND_B
+        summary_like = kind in ("project", "summary")
+        band = FILL_BAND_A if level_of(task_id) <= 1 else FILL_BAND_B
 
-        values = [task_id, name, duration, start, finish, predecessors, resource_for(task_id)]
+        values = [
+            task_id,                                    # ID
+            TASK_MODE,                                  # Task Mode
+            name,                                       # Task Name
+            duration,                                   # Duration
+            ms_date(start),                             # Start（MS Project 文本格式）
+            ms_date(finish),                            # Finish
+            predecessors,                               # Predecessors
+            resource_for(task_id),                      # Resource
+        ]
         for index, value in enumerate(values, start=1):
             cell = ws.cell(row=row, column=index, value=value)
-            cell.font = FONT_SUMMARY if kind == "summary" else FONT_CELL
+            if kind == "project":
+                cell.font = FONT_PROJECT
+            elif kind == "summary":
+                cell.font = FONT_SUMMARY
+            else:
+                cell.font = FONT_CELL
             cell.border = BOX
-            cell.alignment = CENTER if index in (1, 3, 4, 5, 6) else LEFT
-        ws.cell(row=row, column=4).number_format = "m/d/yy"
-        ws.cell(row=row, column=5).number_format = "m/d/yy"
+            cell.alignment = LEFT if index in (COL_NAME, COL_RESOURCE) else CENTER
 
         # 子任务缩进（层级 2 再缩一格），汇总行与里程碑不缩进
-        name_cell = ws.cell(row=row, column=2)
+        name_cell = ws.cell(row=row, column=COL_NAME)
         name_cell.alignment = Alignment(horizontal="left", vertical="center",
-                                        indent=0 if kind != "task" else level)
-        if kind == "summary":
-            for index in range(1, 8):
-                ws.cell(row=row, column=index).fill = FILL_SUMMARY_ROW
-        else:
-            for index in range(1, 8):
-                ws.cell(row=row, column=index).fill = band
+                                        indent=0 if summary_like else level_of(task_id))
+
+        for index in range(1, COL_RESOURCE + 1):
+            ws.cell(row=row, column=index).fill = FILL_SUMMARY_ROW if summary_like else band
 
         # ---- 横条 ----
-        if kind == "milestone":
+        fill = bar_fill(task_id, kind)
+        if fill is None:                                 # 里程碑：菱形
             column = CHART_FIRST_COL + day_index[start]
             cell = ws.cell(row=row, column=column, value="◆")
             cell.font = FONT_MILESTONE
             cell.alignment = CENTER
         else:
-            fill = FILL_SUMMARY_BAR if kind == "summary" else FILL_TASK_BAR
             for column_offset in range(day_index[start], day_index[finish] + 1):
                 ws.cell(row=row, column=CHART_FIRST_COL + column_offset).fill = fill
 
         ws.row_dimensions[row].height = 17
 
-    # ---- 冻结窗格：滚动时表头与左侧 7 列保持可见 ----
+    # ---- 冻结窗格：滚动时表头与左侧 8 列保持可见 ----
     ws.freeze_panes = ws.cell(row=FIRST_TASK_ROW, column=CHART_FIRST_COL)
 
-    # ---- 图例 ----
+    # ---- 图例：本项目实际用到的 5 种 ----
     legend_row = last_task_row + 2
     label = ws.cell(row=legend_row, column=1, value="Legend / 图例")
     label.font = Font(name="Calibri", size=11, bold=True, color="1F4E79")
 
     legend_row += 1
-    entries = [
-        ("Summary", FILL_SUMMARY_BAR, None),
-        ("Task", FILL_TASK_BAR, None),
-        ("Milestone", None, "◆"),
-    ]
     column = 1
-    for name, fill, glyph in entries:
+    for name, fill, glyph in LEGEND:
         swatch = ws.cell(row=legend_row, column=column)
         swatch.border = BOX
         if fill is not None:
@@ -324,19 +396,23 @@ def build(output: Path) -> Path:
         column += 4
 
     notes = [
+        "Dates use the MS Project text format (Thu 9/10/26) so they look identical in any "
+        "locale; they are stored as text, so these two columns do not sort as dates.",
         "Axis: every calendar day from 9/10/26 to 12/5/26 (87 columns). Weekends are treated as "
         "normal working days and no holidays are excluded, so weekend columns are not shaded; "
         "date numbers are printed on Mondays, on the 1st of each month and on the first column.",
         "Durations, dates and predecessors are copied verbatim from the source WBS "
-        "(the 62-day total for 1.0 corresponds to the weekdays in 9/10–12/5).",
+        "(the 62-day total for 1.0 corresponds to the weekdays in 9/10–12/5). "
+        "Task Mode is Auto Scheduled for every row; there is no baseline in this project, "
+        "so no Baseline Start column is included.",
         "Resource column was not in the source list: internal tasks are assigned to Zeyu Jin; "
-        "1.10 is an external dependency on the client.",
-        "Summary rows are bold with a dark bar; leaf tasks are indented with a light bar; "
-        "0-day items are milestones (◆).",
+        "1.10 is an external dependency on the client (External Task, grey bar).",
+        "Bar styles: Project Summary is a bold black bar, Summary a dark blue bar, Task a light "
+        "blue bar, Milestone a red diamond, External Task a grey bar.",
     ]
     for index, text in enumerate(notes):
         row = legend_row + 1 + index
-        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=12)
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=14)
         cell = ws.cell(row=row, column=1, value=("· " + text))
         cell.font = FONT_SUB
         cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=False)
@@ -361,9 +437,9 @@ def main() -> int:
     path = build(Path(args.output))
     days = chart_days()
     print("已生成：%s" % path)
-    print("  任务 %d 行；甘特图 %s → %s，共 %d 列（%d 个工作日）"
-          % (len(TASKS), CHART_START.isoformat(), CHART_END.isoformat(),
-             len(days), sum(1 for d in days if d.weekday() < 5)))
+    print("  任务 %d 行；甘特图 %s → %s，共 %d 列（%d 个工作日），起始列 %s"
+          % (len(TASKS), CHART_START.isoformat(), CHART_END.isoformat(), len(days),
+             sum(1 for d in days if d.weekday() < 5), get_column_letter(CHART_FIRST_COL)))
     return 0
 
 
