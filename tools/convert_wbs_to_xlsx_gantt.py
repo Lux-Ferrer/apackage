@@ -63,11 +63,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from openpyxl import load_workbook                                          # noqa: E402
 from xlsx_gantt import GanttChart, GanttTheme                               # noqa: E402
 
-from tools.make_wbs_gantt import (COL_BASELINE, COL_DURATION, COL_FINISH,   # noqa: E402
-                                  COL_ID, COL_NAME, COL_PRED, COL_RESOURCE,
-                                  COL_START, DEFAULT_OUTPUT, TASKS,
-                                  is_external, kind_of, parse_date,
-                                  resource_for)
+from tools.make_wbs_gantt import (COL_DURATION, COL_FINISH, COL_ID,        # noqa: E402
+                                  COL_NAME, COL_RESOURCE, COL_START,
+                                  DEFAULT_OUTPUT, TASKS, is_external,
+                                  kind_of, parse_date, resource_for)
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_TARGET = ROOT / "deliverables" / "WBS_Gantt_ZeyuJin_xlsxgantt.xlsx"

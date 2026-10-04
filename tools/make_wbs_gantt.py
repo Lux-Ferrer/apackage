@@ -3,9 +3,10 @@
 
 版面
 ----
-    左侧 A~I   WBS 表：ID / Task Mode / Task Name / Duration / Start / Finish /
-               Predecessors / Baseline Start / Resource Names
-    右侧 J~CQ  甘特图：**每个自然日一列**，2026-09-10 → 2026-12-05 共 87 列
+    左侧 A~L   WBS 表：ID / Task Mode / Task Name / Duration / Start / Finish /
+               Predecessors / Baseline Start / Baseline Finish / Baseline Duration /
+               Finish Variance / Resource Names
+    右侧 M~CU  甘特图：**每个自然日一列**，2026-09-10 → 2026-12-05 共 87 列
     表格下方   图例：Task / Summary / Project Summary / Milestone / External Task
 
 样式对齐 MS Project 的用语
@@ -102,22 +103,26 @@ CHART_END = date(2026, 12, 5)
 EXTERNAL_TASK_IDS = {"1.10"}
 OWNER = "Zeyu Jin"
 TASK_MODE = "Auto Scheduled"
-# 只做「计划基线」意义上的基线管理：本项目没有正式基线，这一列恒为 NA
-BASELINE_TEXT = "NA"
+# 本项目无正式变更：baseline 就是当前批准的计划，所以 Finish Variance 恒为 0 days，
+# 四个 baseline 列直接照抄当前值。
+FINISH_VARIANCE = "0 days"
 
 # --------------------------------------------------------------------------
 # 列位置（用具名常量，避免插列之后满屏 magic number 对不上）
 # --------------------------------------------------------------------------
 TABLE_HEADERS = ["ID", "Task Mode", "Task Name", "Duration", "Start", "Finish",
-                 "Predecessors", "Baseline Start", "Resource Names"]
-TABLE_WIDTHS = [6.5, 15, 46, 9.5, 12.5, 12.5, 13, 13, 15]
+                 "Predecessors", "Baseline Start", "Baseline Finish",
+                 "Baseline Duration", "Finish Variance", "Resource Names"]
+TABLE_WIDTHS = [6.5, 15, 46, 9.5, 12.5, 12.5, 13, 14, 16, 17, 15, 15]
 
 (COL_ID, COL_MODE, COL_NAME, COL_DURATION,
- COL_START, COL_FINISH, COL_PRED, COL_BASELINE, COL_RESOURCE) = range(1, 10)
+ COL_START, COL_FINISH, COL_PRED,
+ COL_BASELINE_START, COL_BASELINE_FINISH, COL_BASELINE_DURATION,
+ COL_VARIANCE, COL_RESOURCE) = range(1, 13)
 
 HEADER_ROWS = 3          # 1 标题 / 2 月份+副标题 / 3 列头+日期
 FIRST_TASK_ROW = HEADER_ROWS + 1
-CHART_FIRST_COL = len(TABLE_HEADERS) + 1          # J 列
+CHART_FIRST_COL = len(TABLE_HEADERS) + 1          # M 列
 DAY_WIDTH = 2.4
 
 # --------------------------------------------------------------------------
@@ -339,7 +344,10 @@ def build(output: Path) -> Path:
             ms_date(start),                             # Start（MS Project 文本格式）
             ms_date(finish),                            # Finish
             predecessors,                               # Predecessors
-            BASELINE_TEXT,                              # Baseline Start（无正式基线 → NA）
+            ms_date(start),                             # Baseline Start = 当前 Start
+            ms_date(finish),                            # Baseline Finish = 当前 Finish
+            duration,                                   # Baseline Duration = 当前 Duration
+            FINISH_VARIANCE,                            # Finish Variance（无变更 → 0 days）
             resource_for(task_id),                      # Resource Names
         ]
         for index, value in enumerate(values, start=1):
@@ -407,8 +415,9 @@ def build(output: Path) -> Path:
         "Durations, dates and predecessors are copied verbatim from the source WBS "
         "(the 62-day total for 1.0 corresponds to the weekdays in 9/10–12/5). "
         "Task Mode is Auto Scheduled for every row.",
-        "There is no formal baseline management in this project, so Baseline Start is NA for "
-        "every row (the column is kept because the client's MS Project template includes it).",
+        "There are no formal change requests in this project: the baseline is the currently "
+        "approved plan, so the baseline columns mirror the current Start / Finish / Duration "
+        "and Finish Variance is 0 days for every row.",
         "Resource Names was not in the source list: internal tasks are assigned to Zeyu Jin; "
         "1.10 is an external dependency on the client (External Task, grey bar).",
         "Bar styles: Project Summary is a bold black bar, Summary a dark blue bar, Task a light "

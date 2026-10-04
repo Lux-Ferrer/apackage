@@ -21,13 +21,15 @@ from datetime import date                                                  # noq
 
 from openpyxl import load_workbook                                         # noqa: E402
 
-from tools.make_wbs_gantt import (BASELINE_TEXT, CHART_END, CHART_FIRST_COL,  # noqa: E402
-                                  CHART_START, COL_BASELINE, COL_DURATION,
-                                  COL_FINISH, COL_ID, COL_MODE, COL_NAME, COL_PRED,
-                                  COL_RESOURCE, COL_START, DEFAULT_OUTPUT,
-                                  FIRST_TASK_ROW, LEGEND, TASK_MODE, TABLE_HEADERS,
-                                  TASKS, bar_fill, chart_days, is_external, kind_of,
-                                  ms_date, parse_date, resource_for)
+from tools.make_wbs_gantt import (CHART_END, CHART_FIRST_COL, CHART_START,  # noqa: E402
+                                  COL_BASELINE_DURATION, COL_BASELINE_FINISH,
+                                  COL_BASELINE_START, COL_DURATION, COL_FINISH,
+                                  COL_ID, COL_MODE, COL_NAME, COL_PRED,
+                                  COL_RESOURCE, COL_START, COL_VARIANCE,
+                                  DEFAULT_OUTPUT, FINISH_VARIANCE, FIRST_TASK_ROW,
+                                  LEGEND, TASK_MODE, TABLE_HEADERS, TASKS, bar_fill,
+                                  chart_days, is_external, kind_of, ms_date,
+                                  parse_date, resource_for)
 
 BLACK = "000000"
 DARK = "1F4E79"
@@ -84,27 +86,47 @@ def test_axis_covers_every_calendar_day(sheet, days):
     assert sheet.max_column == CHART_FIRST_COL + len(days) - 1
 
 
-def test_table_has_nine_columns_with_task_mode_after_id(sheet):
+def test_table_has_twelve_columns_with_task_mode_after_id(sheet):
     assert [sheet.cell(row=3, column=i).value for i in range(1, COL_RESOURCE + 1)] == \
         TABLE_HEADERS
     assert TABLE_HEADERS == ["ID", "Task Mode", "Task Name", "Duration", "Start",
-                             "Finish", "Predecessors", "Baseline Start", "Resource Names"]
+                             "Finish", "Predecessors", "Baseline Start",
+                             "Baseline Finish", "Baseline Duration", "Finish Variance",
+                             "Resource Names"]
     assert COL_MODE == COL_ID + 1                       # Task Mode 紧跟 ID
 
 
-def test_baseline_start_column_sits_between_predecessors_and_resource(sheet):
-    """Baseline Start 插在 Predecessors 与 Resource Names 之间。"""
-    assert COL_BASELINE == COL_PRED + 1
-    assert COL_RESOURCE == COL_BASELINE + 1
-    assert sheet.cell(row=3, column=COL_BASELINE).value == "Baseline Start"
+def test_baseline_columns_sit_between_predecessors_and_resource(sheet):
+    """列顺序：... | Predecessors | Baseline Start | Baseline Finish |
+    Baseline Duration | Finish Variance | Resource Names |"""
+    assert COL_BASELINE_START == COL_PRED + 1
+    assert COL_BASELINE_FINISH == COL_BASELINE_START + 1
+    assert COL_BASELINE_DURATION == COL_BASELINE_FINISH + 1
+    assert COL_VARIANCE == COL_BASELINE_DURATION + 1
+    assert COL_RESOURCE == COL_VARIANCE + 1
+
+    assert sheet.cell(row=3, column=COL_BASELINE_FINISH).value == "Baseline Finish"
+    assert sheet.cell(row=3, column=COL_BASELINE_DURATION).value == "Baseline Duration"
+    assert sheet.cell(row=3, column=COL_VARIANCE).value == "Finish Variance"
 
 
-def test_baseline_start_is_na_for_every_row(sheet):
-    """本项目没有正式的基线管理，Baseline Start 全为 NA。"""
-    assert BASELINE_TEXT == "NA"
+def test_baseline_columns_mirror_the_current_plan(sheet):
+    """本项目无正式变更：baseline 即当前批准的计划，四列分别照抄 Start/Finish/Duration。"""
     for offset, row_spec in enumerate(TASKS):
-        cell = sheet.cell(row=FIRST_TASK_ROW + offset, column=COL_BASELINE)
-        assert cell.value == "NA", "%s 的 Baseline Start 应为 NA" % row_spec[0]
+        row = FIRST_TASK_ROW + offset
+        assert sheet.cell(row=row, column=COL_BASELINE_START).value == \
+            sheet.cell(row=row, column=COL_START).value, row_spec[0]
+        assert sheet.cell(row=row, column=COL_BASELINE_FINISH).value == \
+            sheet.cell(row=row, column=COL_FINISH).value, row_spec[0]
+        assert sheet.cell(row=row, column=COL_BASELINE_DURATION).value == \
+            sheet.cell(row=row, column=COL_DURATION).value, row_spec[0]
+
+
+def test_finish_variance_is_zero_days_for_every_row(sheet):
+    assert FINISH_VARIANCE == "0 days"
+    for offset, row_spec in enumerate(TASKS):
+        cell = sheet.cell(row=FIRST_TASK_ROW + offset, column=COL_VARIANCE)
+        assert cell.value == "0 days", "%s 的 Finish Variance 应为 0 days" % row_spec[0]
 
 
 def test_all_source_rows_are_present_verbatim(sheet):
@@ -320,12 +342,12 @@ def test_notes_explain_axis_dates_and_missing_columns(sheet):
                     for row in range(FIRST_TASK_ROW, sheet.max_row + 1))
     assert "Thu 9/10/26" in text                    # 日期格式说明
     assert "Weekends are treated as" in text
-    assert "no formal baseline management" in text  # 说明为何 Baseline Start 全是 NA
-    assert "Baseline Start is NA" in text
+    assert "no formal change requests" in text      # 说明为何 baseline 等于当前计划
+    assert "Finish Variance is 0 days" in text
     assert "Resource Names was not in the source list" in text
     assert "External Task, grey bar" in text
 
 
 def test_freeze_panes_keeps_header_and_table_visible(sheet):
     from openpyxl.utils import get_column_letter
-    assert sheet.freeze_panes == "%s4" % get_column_letter(CHART_FIRST_COL) == "J4"
+    assert sheet.freeze_panes == "%s4" % get_column_letter(CHART_FIRST_COL) == "M4"
