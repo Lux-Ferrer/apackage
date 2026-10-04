@@ -4,8 +4,12 @@
 #
 # 在运行时依赖之上追加：
 #   - pytest    : Python 测试套件
-#   - openpyxl  : tools/verify_case_data.py 读取 docs/samples 的案例 Excel
+#   - openpyxl  : tools/verify_case_data.py 读取 docs/samples 的案例 Excel；
+#                 以及 tools/make_wbs_gantt.py 生成 WBS 甘特图
+#   - xlsx-gantt: 可选。只有 tools/convert_wbs_to_xlsx_gantt.py（另一种视图）用它；
+#                 没装时 tests/test_xlsxgantt_view.py 会自动跳过，不影响主测试套件
 -r requirements.txt
 
 pytest>=8.0
 openpyxl>=3.1
+xlsx-gantt>=0.2.3
