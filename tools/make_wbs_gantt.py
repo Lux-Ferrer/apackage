@@ -3,9 +3,9 @@
 
 版面
 ----
-    左侧 A~H   WBS 表：ID / Task Mode / Task Name / Duration / Start / Finish /
-               Predecessors / Resource
-    右侧 I~CQ  甘特图：**每个自然日一列**，2026-09-10 → 2026-12-05 共 87 列
+    左侧 A~I   WBS 表：ID / Task Mode / Task Name / Duration / Start / Finish /
+               Predecessors / Baseline Start / Resource Names
+    右侧 J~CQ  甘特图：**每个自然日一列**，2026-09-10 → 2026-12-05 共 87 列
     表格下方   图例：Task / Summary / Project Summary / Milestone / External Task
 
 样式对齐 MS Project 的用语
@@ -49,7 +49,7 @@ DEFAULT_OUTPUT = ROOT / "deliverables" / "WBS_Gantt_ZeyuJin.xlsx"
 # --------------------------------------------------------------------------
 # 数据（ID / Task Name / Duration / Start / Finish / Predecessors）
 #
-# Resource 未在原表里给出：本项目只有一位执行人，所以内部任务填 Zeyu Jin，
+# Resource Names 未在原表里给出：本项目只有一位执行人，所以内部任务填 Zeyu Jin，
 # 外部依赖（客户提供 Word 模板）填 Client。
 # --------------------------------------------------------------------------
 TASKS = [
@@ -98,24 +98,26 @@ TASKS = [
 CHART_START = date(2026, 9, 10)
 CHART_END = date(2026, 12, 5)
 
-# 原表没有 Resource 列：本项目只有一位执行人，1.10 是对客户的外部依赖
+# 原表没有 Resource Names 列：本项目只有一位执行人，1.10 是对客户的外部依赖
 EXTERNAL_TASK_IDS = {"1.10"}
 OWNER = "Zeyu Jin"
 TASK_MODE = "Auto Scheduled"
+# 只做「计划基线」意义上的基线管理：本项目没有正式基线，这一列恒为 NA
+BASELINE_TEXT = "NA"
 
 # --------------------------------------------------------------------------
 # 列位置（用具名常量，避免插列之后满屏 magic number 对不上）
 # --------------------------------------------------------------------------
 TABLE_HEADERS = ["ID", "Task Mode", "Task Name", "Duration", "Start", "Finish",
-                 "Predecessors", "Resource"]
-TABLE_WIDTHS = [6.5, 15, 48, 9.5, 12.5, 12.5, 13, 15]
+                 "Predecessors", "Baseline Start", "Resource Names"]
+TABLE_WIDTHS = [6.5, 15, 46, 9.5, 12.5, 12.5, 13, 13, 15]
 
 (COL_ID, COL_MODE, COL_NAME, COL_DURATION,
- COL_START, COL_FINISH, COL_PRED, COL_RESOURCE) = range(1, 9)
+ COL_START, COL_FINISH, COL_PRED, COL_BASELINE, COL_RESOURCE) = range(1, 10)
 
 HEADER_ROWS = 3          # 1 标题 / 2 月份+副标题 / 3 列头+日期
 FIRST_TASK_ROW = HEADER_ROWS + 1
-CHART_FIRST_COL = len(TABLE_HEADERS) + 1          # I 列
+CHART_FIRST_COL = len(TABLE_HEADERS) + 1          # J 列
 DAY_WIDTH = 2.4
 
 # --------------------------------------------------------------------------
@@ -337,7 +339,8 @@ def build(output: Path) -> Path:
             ms_date(start),                             # Start（MS Project 文本格式）
             ms_date(finish),                            # Finish
             predecessors,                               # Predecessors
-            resource_for(task_id),                      # Resource
+            BASELINE_TEXT,                              # Baseline Start（无正式基线 → NA）
+            resource_for(task_id),                      # Resource Names
         ]
         for index, value in enumerate(values, start=1):
             cell = ws.cell(row=row, column=index, value=value)
@@ -403,9 +406,10 @@ def build(output: Path) -> Path:
         "date numbers are printed on Mondays, on the 1st of each month and on the first column.",
         "Durations, dates and predecessors are copied verbatim from the source WBS "
         "(the 62-day total for 1.0 corresponds to the weekdays in 9/10–12/5). "
-        "Task Mode is Auto Scheduled for every row; there is no baseline in this project, "
-        "so no Baseline Start column is included.",
-        "Resource column was not in the source list: internal tasks are assigned to Zeyu Jin; "
+        "Task Mode is Auto Scheduled for every row.",
+        "There is no formal baseline management in this project, so Baseline Start is NA for "
+        "every row (the column is kept because the client's MS Project template includes it).",
+        "Resource Names was not in the source list: internal tasks are assigned to Zeyu Jin; "
         "1.10 is an external dependency on the client (External Task, grey bar).",
         "Bar styles: Project Summary is a bold black bar, Summary a dark blue bar, Task a light "
         "blue bar, Milestone a red diamond, External Task a grey bar.",

@@ -21,13 +21,13 @@ from datetime import date                                                  # noq
 
 from openpyxl import load_workbook                                         # noqa: E402
 
-from tools.make_wbs_gantt import (CHART_END, CHART_FIRST_COL, CHART_START,  # noqa: E402
-                                  COL_DURATION, COL_FINISH, COL_ID, COL_MODE,
-                                  COL_NAME, COL_PRED, COL_RESOURCE, COL_START,
-                                  DEFAULT_OUTPUT, FIRST_TASK_ROW, LEGEND,
-                                  TASK_MODE, TABLE_HEADERS, TASKS, bar_fill,
-                                  chart_days, is_external, kind_of, ms_date,
-                                  parse_date, resource_for)
+from tools.make_wbs_gantt import (BASELINE_TEXT, CHART_END, CHART_FIRST_COL,  # noqa: E402
+                                  CHART_START, COL_BASELINE, COL_DURATION,
+                                  COL_FINISH, COL_ID, COL_MODE, COL_NAME, COL_PRED,
+                                  COL_RESOURCE, COL_START, DEFAULT_OUTPUT,
+                                  FIRST_TASK_ROW, LEGEND, TASK_MODE, TABLE_HEADERS,
+                                  TASKS, bar_fill, chart_days, is_external, kind_of,
+                                  ms_date, parse_date, resource_for)
 
 BLACK = "000000"
 DARK = "1F4E79"
@@ -84,18 +84,27 @@ def test_axis_covers_every_calendar_day(sheet, days):
     assert sheet.max_column == CHART_FIRST_COL + len(days) - 1
 
 
-def test_table_has_eight_columns_with_task_mode_after_id(sheet):
+def test_table_has_nine_columns_with_task_mode_after_id(sheet):
     assert [sheet.cell(row=3, column=i).value for i in range(1, COL_RESOURCE + 1)] == \
         TABLE_HEADERS
     assert TABLE_HEADERS == ["ID", "Task Mode", "Task Name", "Duration", "Start",
-                             "Finish", "Predecessors", "Resource"]
+                             "Finish", "Predecessors", "Baseline Start", "Resource Names"]
     assert COL_MODE == COL_ID + 1                       # Task Mode 紧跟 ID
 
 
-def test_there_is_no_baseline_column(sheet):
-    """本项目没有基线管理（样例里 Baseline Start 全是 NA），所以不设这一列。"""
-    headers = [sheet.cell(row=3, column=i).value for i in range(1, sheet.max_column + 1)]
-    assert not [h for h in headers if h and "baseline" in str(h).lower()]
+def test_baseline_start_column_sits_between_predecessors_and_resource(sheet):
+    """Baseline Start 插在 Predecessors 与 Resource Names 之间。"""
+    assert COL_BASELINE == COL_PRED + 1
+    assert COL_RESOURCE == COL_BASELINE + 1
+    assert sheet.cell(row=3, column=COL_BASELINE).value == "Baseline Start"
+
+
+def test_baseline_start_is_na_for_every_row(sheet):
+    """本项目没有正式的基线管理，Baseline Start 全为 NA。"""
+    assert BASELINE_TEXT == "NA"
+    for offset, row_spec in enumerate(TASKS):
+        cell = sheet.cell(row=FIRST_TASK_ROW + offset, column=COL_BASELINE)
+        assert cell.value == "NA", "%s 的 Baseline Start 应为 NA" % row_spec[0]
 
 
 def test_all_source_rows_are_present_verbatim(sheet):
@@ -259,7 +268,8 @@ def test_milestone_is_a_diamond(sheet, days):
     assert sheet.cell(row=row, column=COL_DURATION).value == "0 days"
 
 
-def test_resource_column_fills_every_row(sheet):
+def test_resource_names_column_fills_every_row(sheet):
+    assert sheet.cell(row=3, column=COL_RESOURCE).value == "Resource Names"
     for task_id, _n, _d, _s, _f, _p in TASKS:
         assert sheet.cell(row=_row_of(task_id), column=COL_RESOURCE).value == \
             resource_for(task_id)
@@ -310,11 +320,12 @@ def test_notes_explain_axis_dates_and_missing_columns(sheet):
                     for row in range(FIRST_TASK_ROW, sheet.max_row + 1))
     assert "Thu 9/10/26" in text                    # 日期格式说明
     assert "Weekends are treated as" in text
-    assert "no baseline" in text                    # 说明为何没有 Baseline 列
-    assert "Resource column was not in the source list" in text
+    assert "no formal baseline management" in text  # 说明为何 Baseline Start 全是 NA
+    assert "Baseline Start is NA" in text
+    assert "Resource Names was not in the source list" in text
     assert "External Task, grey bar" in text
 
 
 def test_freeze_panes_keeps_header_and_table_visible(sheet):
     from openpyxl.utils import get_column_letter
-    assert sheet.freeze_panes == "%s4" % get_column_letter(CHART_FIRST_COL) == "I4"
+    assert sheet.freeze_panes == "%s4" % get_column_letter(CHART_FIRST_COL) == "J4"
