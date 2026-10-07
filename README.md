@@ -18,7 +18,18 @@ Existing Curtain Wall Inspection Data Recording and Report Generation Tool —�
 | M3 | 缺陷填报完善（图片/规范/建议/绑定项目）+ 附页导出 | ✅ 完成 |
 | M4 | 报告管理（列表/筛选/详情/删除） | ✅ 完成 |
 | UI | 移动优先响应式改造（静态壳 + 客户端渲染，为 M5 铺路） | ✅ 完成 |
-| M5 | 前端本地化改造（IndexedDB + docx JS + 纯静态 PWA，移除 Flask） | ⏳ 待开发 |
+| M5 | 前端本地化改造（IndexedDB + docx JS + 纯静态 PWA） | 🚧 进行中：**数据层 ✅ / 导出引擎 ✅（0 差异）** / 图片与附页、UI 接线、PWA 待做 |
+
+**M5 已完成的部分**（新代码全在 `web/`，与 `webapp/` 并存）：
+
+- **数据层**：`web/app/db.js`（IndexedDB 连接/建库/事务纪律）+ `web/app/repo/*`（含**手写级联**——
+  IndexedDB 没有外键）+ `web/tests/`（fake-indexeddb，89 项，断言逐条对应 Python 数据层测试）；
+- **导出引擎**：`web/app/report/{spec,engine,postprocess}.js` —— 数据 → docx，再由 11 个补丁
+  补齐到与对拍基线**逐属性一致**。**闸门 A（复刻冻结基线）与闸门 B（对齐真实报告）都是 0 差异**；
+- **生成物同步**：`tools/export_web_assets.py`（config.js / spec.js ← Python 侧）、
+  `tools/export_fixture_data.py`（基准数据 → 语言中立 JSON，于是 JS 只需实现"数据 → docx"）；
+- **Flask 版本未受影响**：`webapp/` / `app.py` / `tests/` / `requirements*.txt` 一行未改，
+  348 项 Python 测试与四条基线闸门保持全绿（它是中期展示的演示素材）。
 
 UI 交付：底部 3 Tab（项目 / 报告 / 我的）+ 桌面顶栏导航（同一个 partial 两处渲染）、检测面「摘要行 + 下级编辑」（原生 `<details>`，**无 JS 也能录入并提交**）、三态着色与警告灯双通道、构件信息横向表格布局、表单页固定底部操作条、`/` 落地到项目 Tab、模块进度搬到 `/about`、「我的」页（报告人卡 / 数据概览 / 清除全部报告 / 应用信息）。三档断点，**只有 ≥960px 一处做结构性变化**。
 
@@ -127,17 +138,25 @@ python tools/make_report_template.py
 > ⚠️ 装 JS 依赖用 `npm install`（清单在 `package.json`），**不要**用 `npm install --no-save <包>`：
 > npm 会按 `package.json` 修剪 `node_modules`，装 B 会把先前装的 A 删掉（这个坑踩过两次）。
 
-M5 侦察验证（可选，需要 Node.js。结论见 `docs/management/M5-设计.md` 1.4 节）：
+M5 移植验收（可选，需要 Node.js。设计见 `docs/management/M5-设计.md`）：
 
 ```powershell
-# 生成样例 → 用 JSZip 打 6 个补丁 → 用闸门自己的比较口径核对到与基线一致
-node tools/js/prototype_postprocess.mjs
-python tools/verify_docx_patches.py     # 6 项全绿则退出码 0
-```
+npm test                                     # 数据层 + 引擎（99 项）+ 既有 UI 测试（58 项）
 
-> 这一步锁的是"docx JS 库的输出能否补齐到与对拍基线逐属性一致"。**升级 `docx` 后要重跑** ——
-> 库的内部行为（`hRule`、`tblCellMar` 的 `top/bottom`、`tblLook` 的 `val`）不属于它的公开 API 契约，
-> 一旦变化这个验证器会红。
+# 闸门 A：JS 引擎产物 vs Python 引擎冻结的基线（要求 0 差异）
+node tools/js/generate_from_fixture.mjs
+python tools/compare_report_with_sample.py --expected tests/fixtures/generated_baseline.docx --actual _work/js_generated.docx
+
+# 闸门 B：JS 引擎产物 vs 真实客户报告裁剪版（要求 0 差异）
+python tools/compare_report_with_sample.py --expected tests/fixtures/检测表_真实裁剪.docx --actual _work/js_generated.docx
+
+# M5-0 侦察的补丁验证（升 docx 库后要重跑）
+node tools/js/prototype_postprocess.mjs
+python tools/verify_docx_patches.py
+
+# 生成物与真相源同步（改了 webapp/config.py 或 report_layout.json 之后）
+python tools/export_web_assets.py --check
+```
 
 ## 交付物
 
@@ -175,12 +194,27 @@ Capstone/
 │   ├── templates/             base / _nav / about / index 占位
 │   │                          projects / records / defects / reports / me
 │   └── static/                css/app.css · js/{app,record_form,defects_form}.js
+├── web/                       M5：纯前端版（浏览器里跑，数据存 IndexedDB）
+│   ├── app/
+│   │   ├── db.js              IndexedDB 连接 / 建库 / 事务纪律 / 错误翻译
+│   │   ├── repo/              数据层：projects · measurements · defects · images
+│   │   ├── thickness.js       5 个厚度读数 -> 最小值（对齐 Python 版）
+│   │   ├── clauses.js         截面尺寸归一化与条文解析
+│   │   ├── config.js          生成物（源自 webapp/config.py，勿手改）
+│   │   └── report/
+│   │       ├── engine.js      数据 -> docx（docx JS 库）
+│   │       ├── postprocess.js 11 个补丁：把库的输出补齐到与基线逐属性一致
+│   │       └── spec.js        生成物（源自 report_layout.json，勿手改）
+│   ├── assets/                report_layout.json · fixture_data.json（生成物）
+│   ├── tests/                 db / projects / measurements / defects / rules / engine
+│   └── package.json           仅声明本目录为 ESM 作用域
 ├── reports/                   导出的 .docx（gitignore）
 ├── uploads/defects/           隐患图片（gitignore）
 ├── tests/
 │   ├── fixtures/              检测表_真实裁剪.docx（对拍基准，勿改）
 │   │                          金骐智谷_金骐_检测报告.docx（字体/主题来源）
 │   │                          generated_baseline.docx（回归基线）
+│   │                          generated_baseline.fingerprint.json（基线指纹）
 │   ├── js/record_form.test.js 前端功能测试（jsdom）
 │   ├── test_db.py             表结构、约束、级联语义
 │   ├── test_thickness.py      最小值计算
@@ -203,6 +237,8 @@ Capstone/
 ├── tools/                     compare_report_with_sample.py · verify_case_data.py
 │                              generate_sample_reports.py · make_report_template.py
 │                              case_data.py（案例解析，多工具共用）
+│                              export_web_assets.py · export_fixture_data.py（M5 生成物）
+│                              js/generate_from_fixture.mjs · js/prototype_postprocess.mjs
 └── docs/                      需求、计划、章程、案例资料、设计文档
 ```
 
