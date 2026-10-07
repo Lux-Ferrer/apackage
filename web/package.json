@@ -1,0 +1,7 @@
+{
+  "name": "curtain-wall-web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "//": "M5 前端（IndexedDB + docx JS + PWA）的作用域标记：只让 web/ 下的 .js 按 ESM 解析，根目录（含既有的 CommonJS 前端测试）不受影响。"
+}

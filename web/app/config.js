@@ -1,0 +1,143 @@
+/* 本文件由 tools/export_web_assets.py 生成，请勿手改。
+ * 真相源：webapp/config.py
+ * 重新生成：python tools/export_web_assets.py
+ */
+
+export const CONFIG = Object.freeze({
+  "TEMPLATE_COLUMN": "column",
+  "TEMPLATE_BEAM": "beam",
+  "TEMPLATE_TYPES": [
+    "column",
+    "beam"
+  ],
+  "TEMPLATE_NAMES": {
+    "column": "幕墙立柱",
+    "beam": "幕墙横梁"
+  },
+  "TEMPLATE_TITLES": {
+    "column": "幕墙立柱截面尺寸检测结果",
+    "beam": "幕墙横梁截面尺寸检测结果"
+  },
+  "TEMPLATE_SHORT_NAMES": {
+    "column": "立柱",
+    "beam": "横梁"
+  },
+  "REQUIREMENT_LABELS": {
+    "column": "立柱截面尺寸截面要求（mm）",
+    "beam": "横梁截面尺寸截面\n要求（mm）"
+  },
+  "REQUIREMENT_OPTIONS": {
+    "column": [
+      "立柱铝型材开口部位的厚度不应小于3.0mm，闭口部位的厚度不应小于2.5mm",
+      "立柱铝型材开口部位的厚度不应小于5.0mm，闭口部位的厚度不应小于3mm"
+    ],
+    "beam": [
+      "当横梁跨度不大于1.2m时，铝型材截面主要受力部位的厚度不应小于2.0mm",
+      "当横梁跨度大于1.2m时，其截面主要受力部位的厚度不应小于2.5mm",
+      "当横梁跨度不大于1.2m时，铝型材截面主要受力部位的厚度不应小于2.0mm；当横梁跨度大于1.2m时，其截面主要受力部位的厚度不应小于2.5mm"
+    ]
+  },
+  "FACE_SUGGESTIONS": {
+    "column": [
+      "B",
+      "H"
+    ],
+    "beam": [
+      "t"
+    ]
+  },
+  "THICKNESS_VALUE_COUNT": 5,
+  "FACE_MAX_COUNT": 6,
+  "RISK_LEVELS": [
+    "高",
+    "中",
+    "低"
+  ],
+  "DEFAULT_RISK_LEVEL": "中",
+  "DEFECT_TYPES": [
+    "玻璃面板碎裂缺失",
+    "密封胶开裂",
+    "幕墙面板缺陷（玻璃）",
+    "幕墙面板缺陷（石材）",
+    "幕墙面板缺陷（铝板）",
+    "半隐框外表面损伤",
+    "明框外框外表面损伤",
+    "广告立牌缺陷",
+    "红外热成像异常",
+    "其他（自定义输入）"
+  ],
+  "CUSTOM_DEFECT_OPTION": "其他（自定义输入）",
+  "RISK_BADGE_CLASSES": {
+    "高": "high",
+    "中": "medium",
+    "低": "low"
+  },
+  "EMPTY_TEXT": "无",
+  "REPORT_FILENAME": "{project_no}_{house_name}_检测报告.docx",
+  "ATTACHMENT_LABELS": {
+    "defect_type": "缺陷类型",
+    "project_part": "工程部位",
+    "risk_level": "隐患等级",
+    "rectification_plan": "整改方案",
+    "extra_advice": "补充建议",
+    "related_standards": "相关规范",
+    "reporter": "报告人",
+    "reported_at": "报告时间",
+    "image_file": "图片文件"
+  },
+  "ATTACHMENT_ORDER": [
+    "defect_type",
+    "project_part",
+    "risk_level",
+    "rectification_plan",
+    "extra_advice",
+    "related_standards",
+    "reporter",
+    "reported_at",
+    "image_file"
+  ],
+  "ATTACHMENT_EMPTY_FIELDS": [
+    "extra_advice",
+    "related_standards",
+    "image_file"
+  ],
+  "ATTACHMENT_TITLE": "检测报告附页（{index}/{total}）",
+  "DEFAULT_REPORTER": {
+    "name": "Zeyu Jin",
+    "department": "结构工程部",
+    "department_code": "KJGL",
+    "employee_no": ""
+  },
+  "MAX_IMAGE_BYTES": 20971520,
+  "ALLOWED_IMAGE_EXTENSIONS": [
+    ".jpg",
+    ".jpeg",
+    ".png"
+  ],
+  "ALLOWED_IMAGE_FORMATS": [
+    "JPEG",
+    "PNG"
+  ],
+  "THUMBNAIL_MAX_PIXELS": 240,
+  "THUMBNAIL_JPEG_QUALITY": 75,
+  "PROJECT_FIELD_LIMITS": {
+    "project_no": [
+      50,
+      "项目编号"
+    ],
+    "house_name": [
+      100,
+      "房屋名称"
+    ],
+    "house_address": [
+      200,
+      "房屋地点"
+    ],
+    "client_org": [
+      100,
+      "委托单位"
+    ]
+  }
+});
+
+export default CONFIG;
