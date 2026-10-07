@@ -386,8 +386,10 @@ def build(output: Path) -> Path:
     ws.freeze_panes = ws.cell(row=FIRST_TASK_ROW, column=CHART_FIRST_COL)
 
     # ---- 图例：本项目实际用到的 5 种 ----
+    # 标题用纯英文：整份文件的说明行都是英文，保持一致。
+    # （原来是 "Legend / 图例"，交付时被手工改成 "Legend"，这里采纳该改动）
     legend_row = last_task_row + 2
-    label = ws.cell(row=legend_row, column=1, value="Legend / 图例")
+    label = ws.cell(row=legend_row, column=1, value="Legend")
     label.font = Font(name="Calibri", size=11, bold=True, color="1F4E79")
 
     legend_row += 1

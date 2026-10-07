@@ -304,7 +304,7 @@ def test_resource_names_column_fills_every_row(sheet):
 # --------------------------------------------------------------------------
 def test_legend_lists_exactly_the_five_used_types(sheet):
     legend_rows = [row for row in range(FIRST_TASK_ROW, sheet.max_row + 1)
-                   if sheet.cell(row=row, column=1).value == "Legend / 图例"]
+                   if sheet.cell(row=row, column=1).value == "Legend"]
     assert len(legend_rows) == 1
 
     row = legend_rows[0] + 1
@@ -321,7 +321,7 @@ def test_legend_lists_exactly_the_five_used_types(sheet):
 
 def test_legend_swatches_match_the_bars(sheet):
     legend_row = [row for row in range(FIRST_TASK_ROW, sheet.max_row + 1)
-                  if sheet.cell(row=row, column=1).value == "Legend / 图例"][0] + 1
+                  if sheet.cell(row=row, column=1).value == "Legend"][0] + 1
     assert _rgb(sheet.cell(row=legend_row, column=1)) == LIGHT        # Task
     assert _rgb(sheet.cell(row=legend_row, column=5)) == DARK         # Summary
     assert _rgb(sheet.cell(row=legend_row, column=9)) == BLACK        # Project Summary
