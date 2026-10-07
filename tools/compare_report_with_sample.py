@@ -36,6 +36,7 @@ from __future__ import annotations
 import argparse
 import copy
 import io
+import json
 import sys
 import tempfile
 import zipfile
@@ -186,6 +187,20 @@ def render_grid(grid) -> str:
 # --------------------------------------------------------------------------
 # 指纹与比较
 # --------------------------------------------------------------------------
+def normalize_for_json(value):
+    """把指纹里的 tuple 归一成 list，供 JSON 落盘。
+
+    为什么必须做：``run_props()`` 产出的是 tuple 的列表，``json.dumps`` 会把 tuple 写成数组，
+    读回来就变成 list —— 不先归一，重新载入的指纹与现场算出的指纹会处处不等
+    （``("a","b") != ["a","b"]``），产生一整屏假差异。
+    """
+    if isinstance(value, dict):
+        return {key: normalize_for_json(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [normalize_for_json(item) for item in value]
+    return value
+
+
 def document_fingerprint(path) -> dict:
     with zipfile.ZipFile(path) as archive:
         root = etree.fromstring(archive.read("word/document.xml"))
@@ -435,6 +450,100 @@ def build_markdown(result, sample_name: str) -> str:
     return "\n".join(lines) + "\n"
 
 
+# --------------------------------------------------------------------------
+# 直接比两个文件（M5 移植验收：JS 生成物 vs 冻结基线）
+# --------------------------------------------------------------------------
+def run_pair_comparison(expected_path, actual_path) -> dict:
+    """把 ``expected_path`` 当作期望、``actual_path`` 当作实际，逐属性对拍。
+
+    与"回灌样例"模式（:func:`run_comparison`）的区别只在于**期望从哪来**：
+    那边是"用我们的引擎从样例重生"，这边是"直接读一个已冻结的文件"。
+
+    用途（见 docs/management/M5-设计.md 第 4 节）：
+      - 闸门 A：JS 生成物 vs ``tests/fixtures/generated_baseline.docx``（Python 引擎冻结产物）；
+      - 闸门 B：JS 生成物 vs ``tests/fixtures/检测表_真实裁剪.docx``（真实报告裁剪版）。
+    两侧的列宽都归一到 ``report_layout.json`` 的规格值 —— 这样无论期望是基线还是裁剪版，
+    "除列宽以外的任何一处偏差"都会被抓住。
+    """
+    expected_path, actual_path = Path(expected_path), Path(actual_path)
+    for label, path in (("期望文件", expected_path), ("实际文件", actual_path)):
+        if not path.exists():
+            raise SystemExit("找不到%s：%s" % (label, path))
+
+    expected = document_fingerprint(expected_path)
+    actual = document_fingerprint(actual_path)
+    expected_root = sample_root(expected_path)
+    actual_root = sample_root(actual_path)
+    expected_grids = [layout_grid(tbl) for tbl in expected_root.find(W + "body").findall(W + "tbl")]
+    actual_grids = [layout_grid(tbl) for tbl in actual_root.find(W + "body").findall(W + "tbl")]
+
+    diffs = list(diff(drop_out_of_scope(expected["children"]), actual["children"], "body"))
+
+    spec_widths = list(wr.GRID_COLS)
+    compared = min(len(expected["tables"]), len(actual["tables"]))
+    for index in range(compared):
+        reference = apply_spec_widths(expected["tables"][index], spec_widths)
+        diffs += diff(reference, actual["tables"][index], "table[%d]" % index)
+
+    if len(expected["tables"]) != len(actual["tables"]):
+        diffs.append(("table_count", len(expected["tables"]), len(actual["tables"])))
+
+    for index in range(min(len(expected_grids), len(actual_grids))):
+        if expected_grids[index] != actual_grids[index]:
+            diffs.append(("grid[%d]" % index, expected_grids[index], actual_grids[index]))
+
+    # 表格数量不影响网格比较；把"表格数不同"也算进合并网格条数
+    return {
+        "diffs": diffs,
+        "compared_tables": compared,
+        "expected_grids": expected_grids,
+        "actual_grids": actual_grids,
+        "expected_name": expected_path.name,
+        "actual_name": actual_path.name,
+    }
+
+
+def build_pair_markdown(result) -> str:
+    """两个文件对拍的 markdown 报告（差异按路径归类，便于当 TODO 用）。"""
+    diffs = result["diffs"]
+    lines = [
+        "# M5 移植验收对拍（JS 生成物 vs 期望文件）",
+        "",
+        "- 期望：`%s`" % result["expected_name"],
+        "- 实际：`%s`" % result["actual_name"],
+        "- 比对项：正文序列、表格级属性、行级属性、单元格级属性、合并网格",
+        "",
+    ]
+    if not diffs:
+        lines.append("**结果：全部一致 ✅**")
+        return "\n".join(lines) + "\n"
+
+    lines.append("**结果：不一致 %d 处**" % len(diffs))
+    lines.append("")
+
+    # 按路径前缀归类，给出"每类多少处"，这就是 M5-2 收敛的 TODO
+    buckets = {}
+    for path, _expected, _actual in diffs:
+        key = path.split(".")[0]
+        if key.startswith("table[") or key.startswith("grid["):
+            key = key.split(".")[0]
+        buckets[key] = buckets.get(key, 0) + 1
+    lines += ["## 差异归类（按收敛优先级）", "",
+              "| 位置 | 处数 |", "| --- | --- |"]
+    for key, count in sorted(buckets.items(), key=lambda item: -item[1]):
+        lines.append("| `%s` | %d |" % (key, count))
+    lines.append("")
+
+    lines += ["## 明细", "", "| # | 路径 | 期望 | 实际 |", "| --- | --- | --- | --- |"]
+    for index, (path, expected, actual) in enumerate(diffs[:200], 1):
+        lines.append("| %d | `%s` | `%s` | `%s` |"
+                     % (index, path, repr(expected)[:60], repr(actual)[:60]))
+    if len(diffs) > 200:
+        lines.append("")
+        lines.append("> 其余 %d 处略。" % (len(diffs) - 200))
+    return "\n".join(lines) + "\n"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Word 报告与客户样例逐单元格对拍")
     parser.add_argument("--sample", default=str(config.GOLDEN_SAMPLE), help="对拍基准（样例 docx）")
@@ -443,11 +552,43 @@ def main() -> int:
     parser.add_argument("--output", help="把生成的文档另存到指定路径（便于人工查看）")
     parser.add_argument("--bless", action="store_true",
                         help="重新冻结回归基线 tests/fixtures/generated_baseline.docx")
+    parser.add_argument("--expected", help="直接比两个文件：期望文件（如冻结基线）")
+    parser.add_argument("--actual", help="直接比两个文件：实际文件（如 JS 生成物）")
     args = parser.parse_args()
+
+    if bool(args.expected) != bool(args.actual):
+        parser.error("--expected 与 --actual 必须成对给出")
+
+    if args.expected:
+        result = run_pair_comparison(args.expected, args.actual)
+        if args.report:
+            Path(args.report).parent.mkdir(parents=True, exist_ok=True)
+            Path(args.report).write_text(build_pair_markdown(result), encoding="utf-8")
+            print("报告已写入 %s" % args.report)
+
+        diffs = result["diffs"]
+        print("比对：%s（期望） vs %s（实际）" % (result["expected_name"], result["actual_name"]))
+        print("比对项：正文序列 + %d 张表（含每格属性）+ 合并网格" % result["compared_tables"])
+        if not diffs:
+            print("结果：全部一致 ✅")
+            return 0
+        print("结果：不一致 %d 处" % len(diffs))
+        shown = diffs if args.verbose else diffs[:MAX_SHOWN_DIFFS]
+        for path, exp, act in shown:
+            print("  %-46s 期望=%-28s 实际=%s" % (path, repr(exp)[:28], repr(act)[:40]))
+        if len(diffs) > len(shown):
+            print("  …（其余 %d 处，用 --verbose 查看）" % (len(diffs) - len(shown)))
+        return 1
 
     if args.bless:
         path = build_from_sample(config.GENERATED_BASELINE, args.sample)
         print("回归基线已重新冻结：%s" % path)
+        # 语言中立的指纹一并落盘（M5 闸门 C 用；见 M5 设计 4.3）
+        fingerprint_path = config.GENERATED_BASELINE.with_suffix(".fingerprint.json")
+        fingerprint_path.write_text(
+            json.dumps(normalize_for_json(document_fingerprint(config.GENERATED_BASELINE)),
+                       ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print("基线指纹已写入：%s" % fingerprint_path)
 
     result = run_comparison(args.sample, args.output)
     diffs = result["diffs"]

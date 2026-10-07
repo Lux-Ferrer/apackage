@@ -72,6 +72,8 @@ def config_payload() -> dict:
         "RISK_BADGE_CLASSES": dict(config.RISK_BADGE_CLASSES),
         # 文案与文件名
         "EMPTY_TEXT": config.EMPTY_TEXT,
+        "NOTE_TEXT": config.NOTE_TEXT,
+        "PROJECT_INFO_FIELDS": [list(item) for item in config.PROJECT_INFO_FIELDS],
         "REPORT_FILENAME": config.REPORT_FILENAME,
         "ATTACHMENT_LABELS": dict(config.ATTACHMENT_LABELS),
         "ATTACHMENT_ORDER": list(config.ATTACHMENT_ORDER),

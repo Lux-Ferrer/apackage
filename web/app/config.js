@@ -73,6 +73,29 @@ export const CONFIG = Object.freeze({
     "低": "low"
   },
   "EMPTY_TEXT": "无",
+  "NOTE_TEXT": "备注：检测构件位置详见检测工作内容附件 18。",
+  "PROJECT_INFO_FIELDS": [
+    [
+      "project_no",
+      "项目编号"
+    ],
+    [
+      "house_name",
+      "房屋名称"
+    ],
+    [
+      "house_address",
+      "房屋地点"
+    ],
+    [
+      "client_org",
+      "委托单位"
+    ],
+    [
+      "test_date",
+      "检测日期"
+    ]
+  ],
   "REPORT_FILENAME": "{project_no}_{house_name}_检测报告.docx",
   "ATTACHMENT_LABELS": {
     "defect_type": "缺陷类型",

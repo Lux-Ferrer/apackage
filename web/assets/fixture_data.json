@@ -1,0 +1,289 @@
+{
+  "_source": "检测表_真实裁剪.docx",
+  "_note": "由 tools/export_fixture_data.py 从对拍基准导出；JS 引擎只消费这份数据，不实现「从文档里认表」的逻辑（那是测试设施）。",
+  "project": {
+    "project_no": "A06YG-2026-001",
+    "house_name": "示例项目（脱敏）",
+    "house_address": "",
+    "client_org": "",
+    "test_date": ""
+  },
+  "attachments": null,
+  "groups": [
+    {
+      "template_type": "column",
+      "records": [
+        {
+          "record": {
+            "floor": "六层",
+            "member_position": "1",
+            "size_result": "63164",
+            "requirement_text": "立柱铝型材开口部位的厚度不应小于3.0mm，闭口部位的厚度不应小于2.5mm"
+          },
+          "faces": [
+            {
+              "face": "B",
+              "readings_text": [
+                "2.99",
+                "3.02",
+                "3.01",
+                "3.01",
+                "2.99"
+              ],
+              "min_text": "2.99"
+            },
+            {
+              "face": "H",
+              "readings_text": [
+                "2.55",
+                "2.52",
+                "2.52",
+                "2.53",
+                "2.53"
+              ],
+              "min_text": "2.52"
+            }
+          ]
+        },
+        {
+          "record": {
+            "floor": "六层",
+            "member_position": "2",
+            "size_result": "63164",
+            "requirement_text": "立柱铝型材开口部位的厚度不应小于3.0mm，闭口部位的厚度不应小于2.5mm"
+          },
+          "faces": [
+            {
+              "face": "B",
+              "readings_text": [
+                "3.02",
+                "2.99",
+                "3.01",
+                "2.99",
+                "2.99"
+              ],
+              "min_text": "2.99"
+            },
+            {
+              "face": "H",
+              "readings_text": [
+                "2.56",
+                "2.53",
+                "2.55",
+                "2.53",
+                "2.53"
+              ],
+              "min_text": "2.53"
+            }
+          ]
+        },
+        {
+          "record": {
+            "floor": "六层",
+            "member_position": "3",
+            "size_result": "63164",
+            "requirement_text": "立柱铝型材开口部位的厚度不应小于3.0mm，闭口部位的厚度不应小于2.5mm"
+          },
+          "faces": [
+            {
+              "face": "B",
+              "readings_text": [
+                "3.01",
+                "2.99",
+                "3.01",
+                "3.01",
+                "2.99"
+              ],
+              "min_text": "2.99"
+            },
+            {
+              "face": "H",
+              "readings_text": [
+                "2.52",
+                "2.52",
+                "2.52",
+                "2.53",
+                "2.53"
+              ],
+              "min_text": "2.52"
+            }
+          ]
+        },
+        {
+          "record": {
+            "floor": "二十三层",
+            "member_position": "4",
+            "size_result": "63164",
+            "requirement_text": "立柱铝型材开口部位的厚度不应小于3.0mm，闭口部位的厚度不应小于2.5mm"
+          },
+          "faces": [
+            {
+              "face": "B",
+              "readings_text": [
+                "3.01",
+                "2.99",
+                "3.01",
+                "3.01",
+                "2.99"
+              ],
+              "min_text": "2.99"
+            },
+            {
+              "face": "H",
+              "readings_text": [
+                "2.54",
+                "2.52",
+                "2.52",
+                "2.53",
+                "2.52"
+              ],
+              "min_text": "2.52"
+            }
+          ]
+        },
+        {
+          "record": {
+            "floor": "二十三层",
+            "member_position": "5",
+            "size_result": "63164",
+            "requirement_text": "立柱铝型材开口部位的厚度不应小于3.0mm，闭口部位的厚度不应小于2.5mm"
+          },
+          "faces": [
+            {
+              "face": "B",
+              "readings_text": [
+                "2.99",
+                "2.99",
+                "3.01",
+                "3.01",
+                "2.99"
+              ],
+              "min_text": "2.99"
+            },
+            {
+              "face": "H",
+              "readings_text": [
+                "2.54",
+                "2.53",
+                "2.53",
+                "2.54",
+                "2.53"
+              ],
+              "min_text": "2.53"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "template_type": "beam",
+      "records": [
+        {
+          "record": {
+            "floor": "六层",
+            "member_position": "6",
+            "size_result": "8276",
+            "requirement_text": "当横梁跨度不大于1.2m时，铝型材截面主要受力部位的厚度不应小于2.0mm；当横梁跨度大于1.2m时，其截面主要受力部位的厚度不应小于2.5mm"
+          },
+          "faces": [
+            {
+              "face": "t",
+              "readings_text": [
+                "2.14",
+                "2.12",
+                "2.11",
+                "2.10",
+                "2.10"
+              ],
+              "min_text": "2.10"
+            }
+          ]
+        },
+        {
+          "record": {
+            "floor": "六层",
+            "member_position": "7",
+            "size_result": "8276",
+            "requirement_text": "当横梁跨度不大于1.2m时，铝型材截面主要受力部位的厚度不应小于2.0mm；当横梁跨度大于1.2m时，其截面主要受力部位的厚度不应小于2.5mm"
+          },
+          "faces": [
+            {
+              "face": "t",
+              "readings_text": [
+                "2.15",
+                "2.12",
+                "2.18",
+                "2.19",
+                "2.15"
+              ],
+              "min_text": "2.12"
+            }
+          ]
+        },
+        {
+          "record": {
+            "floor": "六层",
+            "member_position": "8",
+            "size_result": "8276",
+            "requirement_text": "当横梁跨度不大于1.2m时，铝型材截面主要受力部位的厚度不应小于2.0mm；当横梁跨度大于1.2m时，其截面主要受力部位的厚度不应小于2.5mm"
+          },
+          "faces": [
+            {
+              "face": "t",
+              "readings_text": [
+                "2.14",
+                "2.15",
+                "2.16",
+                "2.14",
+                "2.15"
+              ],
+              "min_text": "2.14"
+            }
+          ]
+        },
+        {
+          "record": {
+            "floor": "二十三层",
+            "member_position": "9",
+            "size_result": "8276",
+            "requirement_text": "当横梁跨度不大于1.2m时，铝型材截面主要受力部位的厚度不应小于2.0mm；当横梁跨度大于1.2m时，其截面主要受力部位的厚度不应小于2.5mm"
+          },
+          "faces": [
+            {
+              "face": "t",
+              "readings_text": [
+                "2.14",
+                "2.14",
+                "2.14",
+                "2.15",
+                "2.14"
+              ],
+              "min_text": "2.14"
+            }
+          ]
+        },
+        {
+          "record": {
+            "floor": "二十三层",
+            "member_position": "10",
+            "size_result": "8276",
+            "requirement_text": "当横梁跨度不大于1.2m时，铝型材截面主要受力部位的厚度不应小于2.0mm；当横梁跨度大于1.2m时，其截面主要受力部位的厚度不应小于2.5mm"
+          },
+          "faces": [
+            {
+              "face": "t",
+              "readings_text": [
+                "2.17",
+                "2.16",
+                "2.15",
+                "2.13",
+                "2.10"
+              ],
+              "min_text": "2.10"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
