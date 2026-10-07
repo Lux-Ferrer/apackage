@@ -1,0 +1,14 @@
+{
+  "name": "capstone-curtain-wall-tool",
+  "version": "0.0.0",
+  "private": true,
+  "description": "开发期 JS 依赖（运行时不需要 Node）。\n\n- jsdom           : 跑 tests/js/*.test.js 的前端功能测试\n- docx + jszip    : M5 前端导出引擎的原型与 Node 侧生成 CLI（设计见 docs/management/M5-设计.md）\n\n用法：npm install\n（此前仓库没有 package.json，只能用 `npm install --no-save <包>`，\n  而 npm 会按清单修剪 node_modules —— 装 B 会把 A 删掉。这个清单就是为了根治该问题。）",
+  "scripts": {
+    "test:js": "node tests/js/record_form.test.js"
+  },
+  "devDependencies": {
+    "docx": "^9.9.0",
+    "jsdom": "^29.1.1",
+    "jszip": "^3.10.1"
+  }
+}

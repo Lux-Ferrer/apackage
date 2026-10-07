@@ -101,7 +101,7 @@ python -m pytest tests/test_word_report.py -v     # 只跑 Word 版式相关
 ```
 
 ```powershell
-npm install --no-save jsdom
+npm install                                       # 按 package.json 装开发期 JS 依赖
 node tests/js/record_form.test.js                 # 前端功能测试（58 项）
 ```
 
@@ -122,12 +122,22 @@ python tools/generate_sample_reports.py
 python tools/make_report_template.py
 ```
 
-前端 JS 功能测试（可选，需要 Node.js）：
+前端 JS 功能测试（可选，需要 Node.js；命令见上面的「测试」一节）。
+
+> ⚠️ 装 JS 依赖用 `npm install`（清单在 `package.json`），**不要**用 `npm install --no-save <包>`：
+> npm 会按 `package.json` 修剪 `node_modules`，装 B 会把先前装的 A 删掉（这个坑踩过两次）。
+
+M5 侦察验证（可选，需要 Node.js。结论见 `docs/management/M5-设计.md` 1.4 节）：
 
 ```powershell
-npm install --no-save jsdom
-node tests/js/record_form.test.js    # 35 项：实时最小值、非法读数拦截、增删检测面行
+# 生成样例 → 用 JSZip 打 6 个补丁 → 用闸门自己的比较口径核对到与基线一致
+node tools/js/prototype_postprocess.mjs
+python tools/verify_docx_patches.py     # 6 项全绿则退出码 0
 ```
+
+> 这一步锁的是"docx JS 库的输出能否补齐到与对拍基线逐属性一致"。**升级 `docx` 后要重跑** ——
+> 库的内部行为（`hRule`、`tblCellMar` 的 `top/bottom`、`tblLook` 的 `val`）不属于它的公开 API 契约，
+> 一旦变化这个验证器会红。
 
 ## 交付物
 
