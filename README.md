@@ -18,14 +18,21 @@ Existing Curtain Wall Inspection Data Recording and Report Generation Tool —�
 | M3 | 缺陷填报完善（图片/规范/建议/绑定项目）+ 附页导出 | ✅ 完成 |
 | M4 | 报告管理（列表/筛选/详情/删除） | ✅ 完成 |
 | UI | 移动优先响应式改造（静态壳 + 客户端渲染，为 M5 铺路） | ✅ 完成 |
-| M5 | 前端本地化改造（IndexedDB + docx JS + 纯静态 PWA） | 🚧 进行中：**数据层 ✅ / 导出引擎 ✅（0 差异）** / 图片与附页、UI 接线、PWA 待做 |
+| M5 | 前端本地化改造（IndexedDB + docx JS + 纯静态 PWA） | 🚧 进行中：**数据层 ✅ / 导出引擎 ✅（含附页，0 差异）/ 图片管线与配额 ✅** / UI 接线、PWA 待做 |
 
 **M5 已完成的部分**（新代码全在 `web/`，与 `webapp/` 并存）：
 
 - **数据层**：`web/app/db.js`（IndexedDB 连接/建库/事务纪律）+ `web/app/repo/*`（含**手写级联**——
-  IndexedDB 没有外键）+ `web/tests/`（fake-indexeddb，89 项，断言逐条对应 Python 数据层测试）；
+  IndexedDB 没有外键）+ `web/tests/`（fake-indexeddb，断言逐条对应 Python 数据层测试）；
 - **导出引擎**：`web/app/report/{spec,engine,postprocess}.js` —— 数据 → docx，再由 11 个补丁
-  补齐到与对拍基线**逐属性一致**。**闸门 A（复刻冻结基线）与闸门 B（对齐真实报告）都是 0 差异**；
+  补齐到与对拍基线**逐属性一致**。**闸门 A（复刻冻结基线，含附页）与闸门 B（对齐真实报告）都是 0 差异**；
+- **图片管线**：`web/app/image-pipeline.js`（EXIF 摆正 → 等比缩放 → JPEG 现压 → 缩略图，
+  编解码可注入因而在 Node 里可测）+ `web/app/storage.js`（配额/持久化，含 iOS 闲置清理的显式提示）；
+  原图字节原样入库、**只有缩略图落库**（设计文档 3.4 的那一次有意偏离），全尺寸导出副本**导出时现压**；
+- **附页**：`web/app/report/attachments.js` + `engine.js` 的附页部分（两列 9 行信息表、每份独立成页、
+  图片嵌入、缺失降级），并**纳入闸门 A**；
+- **闸门自身的可信度**：`tools/verify_gate_sensitivity.py` 往产物里逐个下毒（图片尺寸/换成别的图/
+  漏嵌/文本/合并/行高/加粗），验证闸门**确实抓得住**，而不是"这个属性根本没被比"；
 - **生成物同步**：`tools/export_web_assets.py`（config.js / spec.js ← Python 侧）、
   `tools/export_fixture_data.py`（基准数据 → 语言中立 JSON，于是 JS 只需实现"数据 → docx"）；
 - **Flask 版本未受影响**：`webapp/` / `app.py` / `tests/` / `requirements*.txt` 一行未改，
@@ -105,9 +112,22 @@ python app.py --lan
 
 ## 测试
 
+**全部闸门一条命令**（推荐；共 14 条，约 17 秒）：
+
+```powershell
+python tools/verify_all.py          # 汇总表 + 任一失败则退出码 1
+python tools/verify_all.py --list   # 只列出会跑什么
+```
+
+它按顺序跑：生成 JS 产物 → 生成物同步（2 条）→ Python 测试 → 前端 JS 测试 →
+4 条 Flask 基线 → 补丁验证 → 附页基线 → 闸门 A（两半）→ 闸门 B → 闸门敏感性。
+**任何代码改动之后都应该跑它**。
+
+逐条手跑（需要看细节时）：
+
 ```powershell
 python -m pip install -r requirements-dev.txt     # pytest + openpyxl
-python -m pytest -q                               # Python 测试套件（306 项）
+python -m pytest -q                               # Python 测试套件（348 项）
 python -m pytest tests/test_word_report.py -v     # 只跑 Word 版式相关
 ```
 
@@ -141,22 +161,37 @@ python tools/make_report_template.py
 M5 移植验收（可选，需要 Node.js。设计见 `docs/management/M5-设计.md`）：
 
 ```powershell
-npm test                                     # 数据层 + 引擎（99 项）+ 既有 UI 测试（58 项）
+npm test                      # 数据层 + 引擎 + 附页 + 图片管线（158 项）+ 既有 UI 测试（58 项）
 
-# 闸门 A：JS 引擎产物 vs Python 引擎冻结的基线（要求 0 差异）
+# 生成两份被测产物：无附页 / 含附页
 node tools/js/generate_from_fixture.mjs
+
+# 闸门 A：JS 引擎产物 vs Python 引擎冻结的基线（两半都要求 0 差异）
 python tools/compare_report_with_sample.py --expected tests/fixtures/generated_baseline.docx --actual _work/js_generated.docx
+python tools/compare_report_with_sample.py --expected tests/fixtures/attachment_baseline.docx --actual _work/js_generated_attachments.docx
 
 # 闸门 B：JS 引擎产物 vs 真实客户报告裁剪版（要求 0 差异）
 python tools/compare_report_with_sample.py --expected tests/fixtures/检测表_真实裁剪.docx --actual _work/js_generated.docx
+
+# 闸门自身可信吗？阴性对照（原样必须 0 差异）+ 7 项下毒必须全部被抓到
+python tools/verify_gate_sensitivity.py
 
 # M5-0 侦察的补丁验证（升 docx 库后要重跑）
 node tools/js/prototype_postprocess.mjs
 python tools/verify_docx_patches.py
 
+# 附页基线与附页夹具（改了附页版式或夹具数据后重跑；--check 只比对）
+python tools/build_attachment_baseline.py
+
 # 生成物与真相源同步（改了 webapp/config.py 或 report_layout.json 之后）
 python tools/export_web_assets.py --check
+python tools/export_fixture_data.py --check
 ```
+
+> ⚠️ **Node 里没有 canvas**，所以闸门 A 的附页部分用了一个**替身编解码器**
+> （`tools/js/fixture-codec.mjs`）：尺寸/方向的计算走**产品代码**，只有"重采样像素"是替身
+> （用夹具的 `_摆正` 副本）。替身**在需要缩放时会直接报错**，因此它不可能祝福一个
+> "我们不会真的交付"的产物。理由与自锁见 `docs/management/M5-设计.md` 4.7。
 
 ## 交付物
 
@@ -200,13 +235,18 @@ Capstone/
 │   │   ├── repo/              数据层：projects · measurements · defects · images
 │   │   ├── thickness.js       5 个厚度读数 -> 最小值（对齐 Python 版）
 │   │   ├── clauses.js         截面尺寸归一化与条文解析
+│   │   ├── image-pipeline.js  EXIF 摆正 / 等比缩放 / JPEG 现压 / 缩略图（编解码可注入）
+│   │   ├── storage.js         配额与持久化：警告线 / 拦截线 / iOS 闲置清理提示
 │   │   ├── config.js          生成物（源自 webapp/config.py，勿手改）
 │   │   └── report/
 │   │       ├── engine.js      数据 -> docx（docx JS 库）
+│   │       ├── attachments.js 附页：版式换算 / 现压图片 / 缺失降级
 │   │       ├── postprocess.js 11 个补丁：把库的输出补齐到与基线逐属性一致
 │   │       └── spec.js        生成物（源自 report_layout.json，勿手改）
 │   ├── assets/                report_layout.json · fixture_data.json（生成物）
-│   ├── tests/                 db / projects / measurements / defects / rules / engine
+│   ├── tests/                 db / projects / measurements / defects / rules /
+│   │                          engine / attachments / image_pipeline / images /
+│   │                          storage / image_headers（158 项）
 │   └── package.json           仅声明本目录为 ESM 作用域
 ├── reports/                   导出的 .docx（gitignore）
 ├── uploads/defects/           隐患图片（gitignore）
@@ -215,6 +255,8 @@ Capstone/
 │   │                          金骐智谷_金骐_检测报告.docx（字体/主题来源）
 │   │                          generated_baseline.docx（回归基线）
 │   │                          generated_baseline.fingerprint.json（基线指纹）
+│   │                          attachment_baseline.docx（附页基线，Python 引擎冻结）
+│   │                          attachment/（附页夹具图片：横拍 / 竖拍 EXIF=6 / 摆正副本）
 │   ├── js/record_form.test.js 前端功能测试（jsdom）
 │   ├── test_db.py             表结构、约束、级联语义
 │   ├── test_thickness.py      最小值计算
@@ -323,6 +365,9 @@ Capstone/
 ## 文档索引
 
 - `docs/requirements/` 需求报告（原始需求全文）
-- `docs/management/` 项目章程、开发计划、M1/M2/M4/UI 设计、阶段交接记录
+- `docs/management/` 项目章程、开发计划、M1/M2/M4/UI/M5 设计、阶段交接记录
+- `docs/management/M5-设计.md` M5 的设计与实测结论（含"闸门盲区"的发现与补法）
+- `docs/management/真机验证checklist.md` Flask 版 UI 的真机清单
+- `docs/management/M5-真机验证checklist.md` M5 纯前端版的真机清单（照片方向 / 配额 / 离线）
 - `docs/management/signed/` 签署类文档（含签名与联系方式，不入仓库）
 - `docs/samples/` 检测结果案例（Excel + 截图）
