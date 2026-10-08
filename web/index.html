@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <!-- viewport-fit=cover：让 env(safe-area-inset-*) 生效，否则 iPhone 底部横条会压住固定底栏 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#1668dc">
+    <title>建筑幕墙检测报告工具</title>
+    <!--
+      导入映射（import map）：把裸模块名指到 vendor/ 里的第三方构建产物。
+      这样**同一份源码**在浏览器（vendor/）与 Node（node_modules）里都跑得起来 ——
+      不需要打包器，也不需要在源码里写两套路径（M5 设计第 5 节）。
+      需要浏览器支持 import maps（Chrome 89+ / Safari 16.4+ / Firefox 108+）。
+    -->
+    <script type="importmap">
+    {
+        "imports": {
+            "docx": "./vendor/docx.mjs",
+            "jszip": "./vendor/jszip.js"
+        }
+    }
+    </script>
+    <!-- 移植自 Flask 侧（生成物，见 tools/export_web_assets.py），保证"长得跟 UI 阶段定下的壳一样" -->
+    <link rel="stylesheet" href="./styles/app.css">
+    <!-- M5 自己新增的少量样式（手写） -->
+    <link rel="stylesheet" href="./styles/m5.css">
+</head>
+<body>
+    <header class="topbar">
+        <div class="wrap bar">
+            <a class="brand" href="#/projects">建筑幕墙检测报告工具</a>
+            <!-- 桌面端导航：与底部 Tab 同一份定义、两处渲染（由 app/ui/nav.js 生成） -->
+            <nav class="topnav" id="topnav" aria-label="主导航"></nav>
+        </div>
+    </header>
+
+    <main class="wrap">
+        <div class="flashes" id="flashes" hidden></div>
+        <div id="view"></div>
+    </main>
+
+    <footer class="wrap foot">
+        本期范围：立柱 / 横梁截面尺寸检测（5 个厚度值自动计算最小值）· 缺陷检测填报 · 项目级 Word 导出 · 报告管理
+    </footer>
+
+    <!-- 底部 Tab（移动端）。表单类页面在渲染时清空它，改用固定的底部操作条 -->
+    <nav class="tabbar" id="tabbar" aria-label="主导航"></nav>
+
+    <!-- 应用内确认弹窗（移植自 Flask 侧 app.js 的语义） -->
+    <dialog id="confirm-dialog" class="dialog">
+        <form method="dialog">
+            <h2 id="confirm-title">请确认</h2>
+            <p id="confirm-message" class="dialog-message"></p>
+            <div class="dialog-actions">
+                <button value="cancel" class="btn ghost">取消</button>
+                <button value="confirm" class="btn danger" id="confirm-ok">确认删除</button>
+            </div>
+        </form>
+    </dialog>
+
+    <noscript>
+        <div class="wrap">
+            <div class="card">
+                <h1>需要启用 JavaScript</h1>
+                <p class="sub">这一版把数据与导出都放在浏览器里（IndexedDB + docx JS），因此必须启用 JavaScript。</p>
+                <p class="hint">参考实现（Flask 版，服务端渲染、无 JS 也能用）仍保留在仓库的 <code>webapp/</code> 里：
+                    <code>python app.py</code> 即可运行。</p>
+            </div>
+        </div>
+    </noscript>
+
+    <!-- 显式的启动标记：main.js 只在看到它时才自动 boot()。
+         这样 Node 测试 import main.js（jsdom 环境里 document/window 都在）不会误触发启动。 -->
+    <script>globalThis.__APP_BOOT__ = true;</script>
+    <script type="module" src="./app/main.js"></script>
+</body>
+</html>

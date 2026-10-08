@@ -45,7 +45,7 @@ def steps() -> list:
          "348 项：数据层 / 版式 / 导出 / 缺陷 / UI / 工具"),
         ("前端 JS 测试",
          [NPM, "test"],
-         "数据层 + 引擎 + 附页 + 图片管线 + 既有 UI 测试"),
+         "数据层 + 引擎 + 附页 + 图片管线 + 端到端 UI（真实 index.html）+ 模块图自检"),
         ("Flask 基线：回灌对拍",
          [PY, "tools/compare_report_with_sample.py"],
          "Python 引擎产物 vs 真实客户报告裁剪版"),

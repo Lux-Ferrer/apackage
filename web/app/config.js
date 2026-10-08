@@ -131,6 +131,13 @@ export const CONFIG = Object.freeze({
     "department_code": "KJGL",
     "employee_no": ""
   },
+  "APP_INFO": {
+    "name": "建筑幕墙检测报告生成工具",
+    "name_en": "Existing Curtain Wall Inspection Data Recording and Report Generation Tool",
+    "version": "1.0.0",
+    "org": "NYU MS in Management and Systems · Capstone",
+    "client": "中冶建筑研究总院（深圳）有限公司"
+  },
   "MAX_IMAGE_BYTES": 20971520,
   "ALLOWED_IMAGE_EXTENSIONS": [
     ".jpg",

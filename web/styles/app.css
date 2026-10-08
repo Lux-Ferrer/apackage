@@ -1,0 +1,533 @@
+/* 本文件由 tools/export_web_assets.py 生成，请勿手改。
+ * 真相源：webapp/static/css/app.css
+ * 重新生成：python tools/export_web_assets.py
+ *
+ * 为什么要生成而不是手抄：M5 的前端必须"长得跟 UI 阶段定下的壳一模一样"，
+ * 手抄一份就有两个真相源，改了 Flask 侧忘了同步会慢慢走样（而且肉眼看不出来）。
+ * M5 自己新增的样式在手写的 web/styles/m5.css 里，不混进来。
+ */
+/* 建筑幕墙检测报告工具 —— 基础样式 */
+/* ==========================================================================
+   断点策略（详见 docs/management/UI-设计.md 第 4 节）
+   --------------------------------------------------------------------------
+   - base（<640px）      手机竖屏：单列、底部 Tab、输入框 16px
+   - @media 640px+       大屏手机/平板：内容加宽居中
+   - @media 960px+       桌面：**唯一的结构性变化** —— 底部 Tab 换成顶栏导航
+   - @media max-359px    小屏：读数网格 5 列 → 3 列
+   硬约束：除 960px 那一处外，任何断点都不允许改动 DOM 结构（只调宽度/字号/间距），
+   否则就变成"两套布局要同时维护"，正是本次改造要避免的。
+   ========================================================================== */
+:root {
+    --accent: #1668dc;
+    --accent-dark: #0f57bb;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --bg: #f5f6f8;
+    --danger: #b3261e;
+    --ok-bg: #e8f5e9;
+    --ok-fg: #1e7b34;
+    --warn: #b76e00;
+    --warn-bg: #fff4e5;
+
+    /* 固定底栏高度与 iPhone 底部安全区：底栏与页面底部留白共用这两个变量，
+       改一处即可，不会出现"底栏高度改了但内容被遮住"的错位 */
+    --bottom-bar-h: 56px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.wrap { max-width: 980px; margin: 0 auto; padding: 0 12px; }
+.nowrap { white-space: nowrap; }
+.muted { color: var(--muted); }
+.strong { font-weight: 600; }
+
+/* 为固定底栏留出空间：主内容 + 页脚都要让位，否则最后一行会被压在底栏下面。
+   表单页没有底栏而是"底部操作条"，两者高度相同（--bottom-bar-h），所以共用一条规则。 */
+main.wrap, .foot { padding-bottom: calc(var(--bottom-bar-h) + var(--safe-bottom) + 12px); }
+
+/* 顶栏 */
+.topbar { background: #fff; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
+.topbar .bar { display: flex; align-items: center; justify-content: space-between; height: 56px; }
+.brand { font-weight: 700; color: var(--ink); text-decoration: none; font-size: 16px; }
+
+/* --------------------------------------------------------------------------
+   导航：一个 partial（templates/_nav.html）渲染两处
+   - .topnav  桌面顶栏用的横排链接（移动端隐藏）
+   - .tabbar  移动端固定在底部的 3 个 Tab（桌面隐藏）
+   高亮由 .active 决定（app 级 context_processor 提供的 active_tab）
+   -------------------------------------------------------------------------- */
+.topnav { display: none; }
+.topnav .nav-item {
+    color: var(--muted); text-decoration: none; font-size: 14px;
+    padding: 4px 2px; border-bottom: 2px solid transparent;
+}
+.topnav .nav-item:hover { color: var(--accent); }
+.topnav .nav-item.active { color: var(--accent); border-bottom-color: var(--accent); }
+.topnav .nav-icon { display: none; }
+
+.tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    display: flex; background: #fff; border-top: 1px solid var(--line);
+    height: calc(var(--bottom-bar-h) + var(--safe-bottom));
+    padding-bottom: var(--safe-bottom);
+}
+.tabbar .nav-item {
+    flex: 1 1 0; min-height: 44px;               /* 命中区下限 */
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; text-decoration: none; color: var(--muted); font-size: 11px;
+}
+.tabbar .nav-item.active { color: var(--accent); }
+.tabbar .nav-icon { display: block; width: 22px; height: 22px; }
+.tabbar .nav-icon svg { width: 100%; height: 100%; display: block; }
+
+/* --------------------------------------------------------------------------
+   底部固定操作条（表单页替代 Tab）：取消 / 主操作，固定在拇指可达处
+   -------------------------------------------------------------------------- */
+.action-bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    display: flex; align-items: center; gap: 12px;
+    background: #fff; border-top: 1px solid var(--line);
+    padding: 8px 12px calc(8px + var(--safe-bottom));
+    min-height: calc(var(--bottom-bar-h) + var(--safe-bottom));
+}
+.action-bar .action-spacer { flex: 1 1 auto; }
+.action-bar .btn, .action-bar button { padding: 10px 20px; }
+/* 校验提示放进操作条：长表单里它原本在页面底部按钮上方，禁用保存时提示往往在屏幕外 */
+.action-bar .form-status { margin: 0; flex: 1 1 auto; }
+
+/* 卡片与页头 */
+.card {
+    background: #fff; border-radius: 8px; padding: 24px 28px; margin-bottom: 20px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, .08);
+}
+.page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.head-actions { display: flex; gap: 10px; align-items: center; }
+h1 { font-size: 20px; margin: 0 0 4px; }
+h2 { font-size: 16px; margin: 0 0 8px; }
+h3 { font-size: 15px; margin: 0 0 8px; }
+.section-title { margin-top: 24px; }
+.sub { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
+.hint { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
+
+/* flash 消息 */
+.flashes { margin-bottom: 16px; }
+.flash {
+    background: var(--ok-bg); color: var(--ok-fg); border: 1px solid #c8e6c9;
+    border-radius: 6px; padding: 8px 12px; margin-bottom: 8px;
+}
+
+/* 表单 */
+.field { margin-bottom: 18px; }
+.field-row { display: flex; gap: 16px; flex-wrap: wrap; }
+.field-row .field { flex: 1 1 180px; margin-bottom: 12px; }
+label { display: block; font-weight: 600; margin-bottom: 6px; }
+input[type="text"], input[type="date"], select, textarea {
+    width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px;
+    font-size: 14px; font-family: inherit; background: #fff;
+}
+textarea { resize: vertical; min-height: 110px; }
+.radio-row { display: flex; gap: 20px; }
+.radio-row label { display: flex; align-items: center; gap: 4px; font-weight: 400; margin: 0; }
+.required { color: var(--danger); }
+.error {
+    background: #fdecea; color: var(--danger); border: 1px solid #f5c6c0;
+    border-radius: 6px; padding: 8px 12px; margin-bottom: 16px;
+}
+.field-error { color: var(--danger); font-size: 12px; margin: 4px 0 0; }
+.input-error { border-color: var(--danger) !important; background: #fff8f7; }
+
+/* 按钮与链接 */
+button, .btn {
+    background: var(--accent); color: #fff; border: 0; border-radius: 6px;
+    padding: 10px 22px; font-size: 15px; cursor: pointer; text-decoration: none;
+    display: inline-block; font-family: inherit;
+}
+button:hover, .btn:hover { background: var(--accent-dark); }
+button:disabled { background: #c9ced6; cursor: not-allowed; }
+.btn.small { padding: 5px 14px; font-size: 13px; }
+.btn.ghost { background: #eef1f5; color: var(--ink); }
+.btn.ghost:hover { background: #e2e6ec; }
+.btn.danger { background: var(--danger); }
+.btn.danger:hover { background: #8f1e17; }
+.link { color: var(--accent); text-decoration: none; cursor: pointer; }
+.link:hover { text-decoration: underline; }
+.danger-link { background: none; border: 0; padding: 0; color: var(--danger); font-size: 14px; }
+.danger-link:hover { background: none; text-decoration: underline; }
+.inline-form { display: inline; }
+.actions { margin-top: 24px; display: flex; gap: 14px; align-items: center; }
+.table-actions { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+
+/* 表单分节（缺陷填报按需求 3.3.1 的流程分为 隐患信息 / 处理建议 / 归属） */
+.form-section {
+    font-size: 14px; color: var(--muted); font-weight: 600;
+    margin: 26px 0 14px; padding-bottom: 6px; border-bottom: 1px solid var(--line);
+}
+.form-section:first-of-type { margin-top: 6px; }
+
+/* 文件选择与图片预览 */
+input[type="file"] {
+    width: 100%; padding: 8px 10px; border: 1px dashed #c3c9d2; border-radius: 6px;
+    background: #fafbfc; font-size: 14px; font-family: inherit;
+}
+input[type="file"]::file-selector-button {
+    margin-right: 10px; padding: 6px 12px; border: 0; border-radius: 6px;
+    background: var(--accent); color: #fff; font-size: 13px; cursor: pointer;
+}
+.image-preview { margin-top: 10px; }
+.image-preview img {
+    max-width: 100%; max-height: 260px; border: 1px solid var(--line); border-radius: 6px;
+}
+img.thumb {
+    max-width: 220px; max-height: 220px; border: 1px solid var(--line); border-radius: 6px;
+    display: block;
+}
+.readonly-value { margin: 0; padding: 8px 10px; background: #f7f8fa; border: 1px solid var(--line); border-radius: 6px; }
+.clip { font-size: 12px; }
+.back-link { margin: 0 0 12px; }
+
+/* 保存前的整体校验提示（有非法读数时显示） */
+.form-status {
+    display: none; margin: 18px 0 0; padding: 8px 12px; border-radius: 6px; font-size: 13px;
+    background: #fdecea; color: var(--danger); border: 1px solid #f5c6c0;
+}
+.form-status.show { display: block; }
+
+/* 普通表格（列表类） */
+table.grid { width: 100%; border-collapse: collapse; }
+table.grid th, table.grid td {
+    text-align: left; padding: 8px 10px; border-bottom: 1px solid #eee; vertical-align: top;
+}
+table.grid th { color: #555; font-weight: 600; }
+td.right, th.right { text-align: right; }
+td.pre { white-space: pre-line; }
+
+/* 信息栅格（项目详情） */
+.info-grid { display: flex; flex-wrap: wrap; gap: 8px 32px; margin: 12px 0 0; }
+.info-grid dt { color: var(--muted); font-size: 12px; }
+.info-grid dd { margin: 0; }
+
+/* 检测记录：分组 + 折叠 */
+.record-group { margin-top: 18px; }
+.group-title { padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+details.record {
+    border: 1px solid var(--line); border-radius: 6px; margin-bottom: 8px; background: #fff;
+}
+details.record > summary {
+    cursor: pointer; padding: 10px 12px; display: flex; align-items: center;
+    gap: 12px; flex-wrap: wrap; list-style: none;
+}
+details.record > summary::-webkit-details-marker { display: none; }
+details.record > summary::before { content: "▸"; color: var(--muted); }
+details.record[open] > summary::before { content: "▾"; }
+.rec-title { font-weight: 600; }
+.rec-meta { color: var(--muted); font-size: 13px; }
+.rec-actions { margin-left: auto; display: flex; gap: 12px; align-items: center; }
+.record-body { padding: 0 12px 12px; border-top: 1px solid var(--line); }
+.requirement { margin: 10px 0 0; font-size: 13px; }
+.requirement .label { color: var(--muted); }
+
+/* --------------------------------------------------------------------------
+   检测面：摘要行 + 下级编辑（<ol> + <details>）
+   开合是原生行为，无 JS 也能用；JS 只刷派生状态（圆点/进度/最小值/警告灯）。
+   -------------------------------------------------------------------------- */
+ol.face-list { list-style: none; margin: 10px 0 0; padding: 0; }
+ol.face-list > li { margin-bottom: 8px; }
+
+details.face-row {
+    border: 1px solid var(--line); border-radius: 8px; background: #fff; overflow: hidden;
+}
+details.face-row[open] { border-color: #cfd8e3; box-shadow: 0 1px 6px rgba(0, 0, 0, .05); }
+
+/* 摘要行：纯展示，整行可点（≥48px 命中区），警告灯在出错时换到第二行 */
+.face-summary {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px;
+    min-height: 48px; padding: 10px 12px; cursor: pointer; list-style: none;
+}
+.face-summary::-webkit-details-marker { display: none; }
+.face-summary::after {                       /* 展开指示三角，纯装饰 */
+    content: "▾"; margin-left: auto; color: var(--muted); font-size: 12px;
+    transition: transform .15s ease;
+}
+details.face-row[open] > .face-summary::after { transform: rotate(180deg); }
+
+.face-dot { flex: 0 0 auto; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--muted); }
+.face-dot.state-none { border-color: var(--muted); background: transparent; }        /* ○ 未填 */
+.face-dot.state-partial { border-color: var(--warn); background: var(--warn); }      /* ● 部分 */
+.face-dot.state-done { border-color: var(--ok-fg); background: var(--ok-fg); }       /* ● 完成 */
+.face-name { font-weight: 600; }
+.face-count { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.face-min { color: var(--muted); font-size: 13px; }
+.face-min .min-value { color: var(--accent-dark); font-variant-numeric: tabular-nums; }
+
+/* 警告灯：与三态着色**独立**的通道 —— 着色说"还剩多少活"，它说"能不能保存" */
+.face-lamp {
+    flex: 0 0 100%; font-size: 12px; color: var(--danger);
+    background: #fdecea; border-radius: 4px; padding: 2px 8px;
+}
+.face-lamp[hidden] { display: none; }
+
+.face-editor { padding: 4px 12px 12px; border-top: 1px solid var(--line); }
+label.face-field {
+    display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center;
+    gap: 8px; margin: 10px 0; font-weight: 600; color: var(--muted); font-size: 14px;
+}
+label.face-field .face-input { text-align: left; }
+
+/* 5 个读数：每个格子自带标签与就地提示（.input-hint 必须是 input 的直接父元素内，
+   record_form.js 与 JS 测试都用 input.parentNode.querySelector('.input-hint')） */
+.reading-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.reading-cell { display: block; }
+.reading-label { display: block; text-align: center; font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+.reading-cell input.reading { text-align: center; padding: 8px 2px; }
+input.reading.is-min { background: #eaf2fe; border-color: var(--accent); font-weight: 600; }
+input.reading.is-invalid, .face-input.input-error { border-color: var(--danger); background: #fff8f7; }
+.reading-cell .input-hint {
+    display: none; color: var(--danger); font-size: 11px; line-height: 1.2; margin-top: 2px;
+    text-align: center;
+}
+.reading-cell .input-hint.show { display: block; }
+
+.face-editor-foot {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    margin-top: 8px; flex-wrap: wrap;
+}
+.face-editor-foot .row-remove {
+    background: none; border: 0; color: var(--danger); font-size: 14px; cursor: pointer;
+}
+.face-editor-foot .row-remove:hover { background: none; text-decoration: underline; }
+
+/* 旧的表格录入样式（table.face-table）随 UI 改造下线，只保留只读明细表 table.data-table */
+table.data-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+table.data-table th, table.data-table td {
+    border: 1px solid var(--line); padding: 6px 8px; text-align: center;
+}
+table.data-table th { background: #f7f8fa; font-weight: 600; font-size: 13px; }
+table.data-table .col-face { width: 72px; }
+table.data-table .col-min { width: 78px; font-weight: 600; }
+
+/* 模板选择 */
+.template-badge {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: #f7f8fa; border: 1px solid var(--line); border-radius: 6px;
+    padding: 10px 14px; margin-bottom: 4px;
+}
+.template-badge .label { color: var(--muted); font-size: 13px; }
+.template-choices { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0 16px; }
+.template-card {
+    flex: 1 1 240px; border: 1px solid var(--line); border-radius: 8px; padding: 18px;
+    text-decoration: none; color: var(--ink); display: block; background: #fff;
+}
+.template-card:hover { border-color: var(--accent); box-shadow: 0 2px 10px rgba(22, 104, 220, .12); }
+.template-card h3 { margin-top: 0; }
+.template-card .template-title { color: var(--muted); font-size: 13px; margin: 0 0 8px; }
+.template-card .btn { margin-top: 10px; }
+
+/* 徽标 */
+.badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; }
+.badge.high { background: #fdecea; color: var(--danger); }
+.badge.medium { background: #fff4e5; color: #b76e00; }
+.badge.low { background: var(--ok-bg); color: var(--ok-fg); }
+.badge.ok { background: var(--ok-bg); color: var(--ok-fg); }
+.badge.todo { background: #eef1f5; color: var(--muted); }
+
+ul.plain, ol.plain { margin: 8px 0 16px; padding-left: 22px; }
+ul.plain li, ol.plain li { margin-bottom: 4px; }
+
+code { background: #eef1f5; padding: 1px 6px; border-radius: 4px; font-size: 13px; }
+
+/* 应用内确认弹窗 */
+dialog.dialog {
+    border: 0; border-radius: 10px; padding: 22px 24px; max-width: 460px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, .25); color: var(--ink);
+}
+dialog.dialog::backdrop { background: rgba(15, 23, 42, .35); }
+.dialog-message { margin: 8px 0 20px; color: #374151; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+/* --------------------------------------------------------------------------
+   M4 报告管理：顶部统计条 + 报告卡片 + 详情大图
+   新增类，不改上面任何既有类，避免影响 M1~M3 的页面。
+   -------------------------------------------------------------------------- */
+
+/* 顶部统计：四个数字块同时就是等级筛选控件 */
+nav.stats { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 18px; }
+.stat {
+    flex: 1 1 72px; min-width: 68px; text-align: center; text-decoration: none;
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 6px; background: #fff;
+    color: var(--ink);
+}
+.stat:hover { border-color: var(--accent); }
+.stat.active { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.stat-value { display: block; font-size: 20px; font-weight: 600; line-height: 1.3; }
+.stat-label { display: block; font-size: 12px; color: var(--muted); }
+.stat.high .stat-value { color: var(--danger); }
+.stat.medium .stat-value { color: #b76e00; }
+.stat.low .stat-value { color: var(--ok-fg); }
+
+/* 报告列表：左缩略图 + 右文字 + 右侧操作（手机上天然成立，不需要把表格拆成块） */
+ul.report-list { list-style: none; margin: 8px 0 0; padding: 0; }
+.report-card {
+    display: flex; align-items: flex-start; gap: 12px; padding: 12px 0;
+    border-top: 1px solid #eee;
+}
+.report-card:first-child { border-top: 0; }
+.report-thumb {
+    flex: 0 0 auto; width: 72px; height: 72px; border: 1px solid var(--line);
+    border-radius: 6px; overflow: hidden; display: flex; align-items: center;
+    justify-content: center; background: #f7f8fa; text-decoration: none;
+}
+.report-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb-empty { color: var(--muted); font-size: 12px; }
+.report-body { flex: 1 1 auto; min-width: 0; }
+.report-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.report-meta { margin: 3px 0 0; font-size: 13px; }
+.report-actions { flex: 0 0 auto; display: flex; gap: 10px; align-items: center; }
+
+/* 详情页大图 */
+figure.photo { margin: 12px 0 18px; }
+figure.photo img {
+    max-width: 100%; max-height: 60vh; border: 1px solid var(--line);
+    border-radius: 8px; display: block; object-fit: contain;
+}
+figure.photo figcaption { margin-top: 6px; }
+.photo-missing {
+    margin: 12px 0 18px; padding: 18px; text-align: center; color: var(--muted);
+    background: #f7f8fa; border: 1px dashed var(--line); border-radius: 8px;
+}
+.hint.warn { color: var(--warn); }
+
+.foot { color: var(--muted); font-size: 12px; }
+
+/* --------------------------------------------------------------------------
+   UI 改造：移动优先的通用件
+   -------------------------------------------------------------------------- */
+
+/* 横向表格布局：label 左 / 控件右（移动端原生设置页的形态）。
+   - label 右对齐：中文标签只有 2~5 字，右对齐让控件列形成一条干净的竖线
+   - minmax(0, 1fr) 而不是 1fr：后者的最小值是 auto，长内容会把网格撑破
+   - 错误提示放在 .form-control 里，紧贴出错的控件，而不是跑到下一行 */
+.form-table { border-top: 1px solid var(--line); }
+.form-row {
+    display: grid; grid-template-columns: 84px minmax(0, 1fr);
+    gap: 4px 12px; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid var(--line);
+}
+.form-row > label { margin: 0; text-align: right; font-weight: 600; color: var(--muted); font-size: 14px; }
+.form-control { min-width: 0; }
+.form-control > .hint, .form-control > .field-error { margin-top: 4px; }
+.form-row-block { grid-template-columns: 84px minmax(0, 1fr); align-items: start; }
+.form-row-block > label { padding-top: 10px; }
+
+/* 三选一分段控件（隐患等级；需求 3.3.2 要求"三选一按钮"） */
+.segmented { display: flex; border: 1px solid #ccc; border-radius: 6px; overflow: hidden; }
+.segmented label {
+    flex: 1 1 0; margin: 0; text-align: center; padding: 10px 4px; font-weight: 400;
+    background: #fff; cursor: pointer; border-left: 1px solid #ccc; font-size: 15px;
+}
+.segmented label:first-child { border-left: 0; }
+.segmented input { position: absolute; opacity: 0; pointer-events: none; }
+.segmented label:has(input:checked) { background: var(--accent); color: #fff; }
+.segmented label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+/* 不支持 :has 的旧浏览器退化为原生 radio（仍然可用，只是没有选中配色） */
+@supports not selector(:has(*)) {
+    .segmented input { position: static; opacity: 1; pointer-events: auto; }
+}
+
+/* 「我的」页的报告人卡 */
+.profile { display: flex; align-items: center; gap: 14px; margin: 12px 0 6px; }
+.profile-avatar {
+    flex: 0 0 auto; width: 52px; height: 52px; border-radius: 50%;
+    background: var(--accent); color: #fff; display: flex; align-items: center;
+    justify-content: center; font-size: 22px; font-weight: 600;
+}
+.profile-body { min-width: 0; }
+.profile-name { margin: 0; font-size: 17px; font-weight: 600; }
+
+/* 小屏表格（项目详情里的厚度明细、关于页的模块表）允许横向滚动，不撑破页面 */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* 项目列表：复用报告卡的卡片流（统一布局，桌面也只是变宽） */
+.project-list .report-card { align-items: center; }
+.record-actions-bar {
+    display: flex; align-items: center; justify-content: flex-end; gap: 14px;
+    padding: 6px 0 2px;
+}
+/* 自定义缺陷类型的输入框：默认收起，由 defects_form.js 按需显示 */
+.hidden-row { display: none; }
+
+/* ==========================================================================
+   移动优先：base 就是手机竖屏
+   ========================================================================== */
+.card { padding: 18px 16px; }
+h1 { font-size: 19px; }
+.page-head { flex-direction: column; align-items: stretch; gap: 10px; }
+.page-head .head-actions { flex-wrap: wrap; }
+/* iOS Safari 对 <16px 的输入框会在聚焦时自动放大页面 —— 这是硬约束，不要调小 */
+input[type="text"], input[type="date"], input[type="file"], select, textarea { font-size: 16px; }
+input[type="text"], input[type="date"], select { padding: 10px; min-height: 44px; }
+button, .btn { min-height: 44px; }
+/* 文本型操作按钮（删除/编辑）命中区补到 44px。只对**独立成块**的操作链接生效：
+   正文句子里那种 <a class="link"> 不能加 padding，否则会把行高撑起来、破坏折行。 */
+.danger-link, .row-remove { padding: 11px 6px; display: inline-block; }
+.report-actions .link, .record-actions-bar .link, .head-actions .link,
+.actions .link, .table-actions .link, .page-head > .link { padding: 11px 4px; display: inline-block; }
+.table-actions { flex-wrap: wrap; }
+ul.report-list { margin-top: 4px; }
+.report-card { padding: 14px 0; gap: 10px; }
+.report-actions { flex-direction: column; align-items: flex-end; gap: 2px; }
+.stats { gap: 6px; }
+.stat { padding: 10px 4px; }
+
+@media (min-width: 640px) {
+    .wrap { max-width: 640px; }
+    .card { padding: 22px 24px; }
+    .page-head { flex-direction: row; align-items: flex-start; justify-content: space-between; }
+    .form-row, .form-row-block { grid-template-columns: 96px minmax(0, 1fr); }
+    .report-card { padding: 16px 0; gap: 14px; }
+    .report-actions { flex-direction: row; gap: 12px; }
+    .stat { padding: 8px 6px; }
+    /* 表单页在宽屏上限制在 720px：label 到控件的距离不会拉到需要转头看 */
+    .card.form-card { max-width: 720px; margin-left: auto; margin-right: auto; }
+}
+
+/* --------------------------------------------------------------------------
+   ≥960px：**唯一的结构性变化** —— 底部 Tab 换成顶栏导航
+   -------------------------------------------------------------------------- */
+@media (min-width: 960px) {
+    .wrap { max-width: 980px; }
+    main.wrap, .foot { padding-bottom: 32px; }   /* 没有底栏了，收回留白 */
+    .tabbar { display: none; }
+    .topnav { display: flex; gap: 20px; align-items: center; }
+    .action-bar { position: static; border-top: 0; padding: 0; min-height: 0; background: none; }
+    .action-bar .form-status { margin: 0 0 12px; }
+    .form-row, .form-row-block { grid-template-columns: 96px minmax(0, 1fr); }
+
+    /* 桌面恢复改造前的观感：触控用的放大尺寸在这里收回，
+       否则 44px 的最小高度会让桌面上的紧凑按钮显得臃肿 */
+    input[type="text"], input[type="date"], select { padding: 8px 10px; min-height: 0; font-size: 14px; }
+    button, .btn { min-height: 0; }
+    .danger-link, .row-remove { padding: 0; }
+    .report-actions .link, .record-actions-bar .link, .head-actions .link,
+    .actions .link, .table-actions .link, .page-head > .link { padding: 0; }
+}
+
+/* 小屏（iPhone SE 320px）：读数网格 5 列会窄于 60px，换成 3 列 ×2 行 */
+@media (max-width: 359px) {
+    .reading-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+}
+
+/* 尊重系统的"减少动态效果" */
+@media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+}

@@ -6,6 +6,15 @@
 - ``web/app/config.js``            业务预置数据 ← ``webapp/config.py``
 - ``web/app/report/spec.js``       版式规格     ← ``webapp/resources/report_layout.json``
 - ``web/assets/report_layout.json`` 同一份 JSON 的副本（供前端 fetch 与人工查看）
+- ``web/styles/app.css``         **界面样式** ← ``webapp/static/css/app.css``
+
+为什么连 CSS 也生成
+-------------------
+M5 的前端要"长得跟 UI 阶段定下的壳一模一样"。把 CSS 手抄一份到 ``web/`` 会有两个真相源，
+改了 Flask 侧忘了同步就会**两边慢慢走样**，而且几乎不可能靠肉眼发现。
+生成一份 + ``--check`` 就能把"走样"变成一条会红的检查。
+M5 自己新增的样式写在**手写文件** ``web/styles/m5.css`` 里（不参与生成），
+这样"移植的"与"新增的"在文件层面就分开了。
 
 为什么用"生成 .js"而不是"运行时 import JSON"
 --------------------------------------------
@@ -41,10 +50,46 @@ WEB_DIR = ROOT / "web"
 CONFIG_JS = WEB_DIR / "app" / "config.js"
 SPEC_JS = WEB_DIR / "app" / "report" / "spec.js"
 SPEC_JSON_COPY = WEB_DIR / "assets" / "report_layout.json"
+STYLE_CSS = WEB_DIR / "styles" / "app.css"
+
+SOURCE_CSS = ROOT / "webapp" / "static" / "css" / "app.css"
+
+# ---- vendored 第三方库（浏览器端没有打包器，靠 importmap 把裸名指到这里）----
+VENDOR_DIR = WEB_DIR / "vendor"
+NODE_MODULES = ROOT / "node_modules"
+VENDOR_FILES = {
+    # 目标文件名 → node_modules 里的源文件
+    "docx.mjs": NODE_MODULES / "docx" / "dist" / "index.mjs",
+    "jszip.min.js": NODE_MODULES / "jszip" / "dist" / "jszip.min.js",
+}
+VENDOR_NOTE = (
+    "/* vendored：由 tools/export_web_assets.py 从 node_modules 复制，请勿手改。\n"
+    " * 来源：%s\n"
+    " * 为什么 vendor 而不是用 CDN：本工具可能在没有外网的工地上用（需求 1.2），\n"
+    " *   而且 M5-5 的 Service Worker 要把它一起缓存成离线可用的应用壳。\n"
+    " * `python tools/export_web_assets.py --check` 会在依赖升级后提醒重新 vendor。\n"
+    " */\n"
+)
+
+# ---- 二进制资产（原样复制；前端 fetch 它们）----
+BINARY_ASSETS = {
+    # 目标 → 源
+    WEB_DIR / "assets" / "report_base.docx": ROOT / "webapp" / "resources" / "report_base.docx",
+}
 
 HEADER = """/* 本文件由 tools/export_web_assets.py 生成，请勿手改。
  * 真相源：%s
  * 重新生成：python tools/export_web_assets.py
+ */
+"""
+
+CSS_HEADER = """/* 本文件由 tools/export_web_assets.py 生成，请勿手改。
+ * 真相源：webapp/static/css/app.css
+ * 重新生成：python tools/export_web_assets.py
+ *
+ * 为什么要生成而不是手抄：M5 的前端必须"长得跟 UI 阶段定下的壳一模一样"，
+ * 手抄一份就有两个真相源，改了 Flask 侧忘了同步会慢慢走样（而且肉眼看不出来）。
+ * M5 自己新增的样式在手写的 web/styles/m5.css 里，不混进来。
  */
 """
 
@@ -80,6 +125,8 @@ def config_payload() -> dict:
         "ATTACHMENT_EMPTY_FIELDS": list(config.ATTACHMENT_EMPTY_FIELDS),
         "ATTACHMENT_TITLE": config.ATTACHMENT_TITLE,
         "DEFAULT_REPORTER": dict(config.DEFAULT_REPORTER),
+        # 「我的 / 关于」页要显示的应用信息（需求 3.7e）
+        "APP_INFO": dict(config.APP_INFO),
         # 图片
         "MAX_IMAGE_BYTES": config.MAX_IMAGE_BYTES,
         "ALLOWED_IMAGE_EXTENSIONS": list(config.ALLOWED_IMAGE_EXTENSIONS),
@@ -102,15 +149,51 @@ def _render_module(header_source: str, const_name: str, payload: dict) -> str:
         HEADER % header_source, const_name, body, const_name)
 
 
+def vendor_entries() -> dict:
+    """要复制的第三方构建产物：``目标路径 → (源路径, 版本号)``。
+
+    ``node_modules`` 不存在时返回空（没装 JS 依赖的机器上不该因此红掉 Python 侧的检查）。
+    """
+    entries = {}
+    for target_name, source in VENDOR_FILES.items():
+        if not source.exists():
+            continue
+        entries[VENDOR_DIR / target_name] = (source, package_version(source))
+    return entries
+
+
+def package_version(source: Path) -> str:
+    """从 ``node_modules/<pkg>/package.json`` 读版本号（写进 vendor 文件头，便于追溯）。"""
+    for parent in source.parents:
+        manifest = parent / "package.json"
+        if manifest.exists():
+            try:
+                return str(json.loads(manifest.read_text(encoding="utf-8")).get("version", "?"))
+            except (ValueError, OSError):
+                return "?"
+    return "?"
+
+
 def build(check_only: bool = False) -> int:
     sources = {
         CONFIG_JS: _render_module("webapp/config.py", "CONFIG", config_payload()),
         SPEC_JSON_COPY: json.dumps(config_payload_spec(), ensure_ascii=False, indent=2) + "\n",
         SPEC_JS: _render_module("webapp/resources/report_layout.json", "SPEC", config_payload_spec()),
+        STYLE_CSS: CSS_HEADER + style_source(),
     }
 
     stale = [path for path, text in sources.items()
              if not path.exists() or path.read_text(encoding="utf-8") != text]
+
+    # vendored 第三方库：二进制/压缩件，按字节比对
+    vendor = {path: data for path, (source, data) in vendor_payloads().items()}
+    stale += [path for path, data in vendor.items()
+              if not path.exists() or path.read_bytes() != data]
+
+    # 二进制资产（底座 docx）：原样复制，按字节比对
+    assets = {path: source.read_bytes() for path, source in BINARY_ASSETS.items()}
+    stale += [path for path, data in assets.items()
+              if not path.exists() or path.read_bytes() != data]
 
     if check_only:
         if stale:
@@ -118,20 +201,48 @@ def build(check_only: bool = False) -> int:
             for path in stale:
                 print("  - %s" % path.relative_to(ROOT))
             return 1
-        print("web/ 下的生成物与真相源一致 ✅")
+        print("web/ 下的生成物与真相源一致 ✅（含 %d 个 vendored 库、%d 个二进制资产）"
+              % (len(vendor), len(assets)))
+        if not vendor:
+            print("  ⚠ 没找到 node_modules，跳过第三方库比对（先 `npm install`）")
         return 0
 
     for path, text in sources.items():
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
         print("已生成 %s" % path.relative_to(ROOT))
+
+    for path, data in vendor.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+        print("已 vendor %s（%d KB）" % (path.relative_to(ROOT), len(data) // 1024))
+
+    for path, data in assets.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+        print("已复制 %s（%d KB）" % (path.relative_to(ROOT), len(data) // 1024))
     return 0
+
+
+def vendor_payloads() -> dict:
+    """``目标路径 → (源路径, 带版本头的字节)``。"""
+    payloads = {}
+    for target, (source, version) in vendor_entries().items():
+        header = (VENDOR_NOTE % (source.relative_to(ROOT).as_posix()
+                                 + "（v%s）" % version)).encode("utf-8")
+        payloads[target] = (source, header + source.read_bytes())
+    return payloads
 
 
 def config_payload_spec() -> dict:
     """版式规格：原样读 JSON（它本来就是语言中立的）。"""
     path = config.RESOURCE_DIR / "report_layout.json"
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def style_source() -> str:
+    """界面样式的真相源：Flask 侧那份 CSS（逐字节复制，只加一个生成头）。"""
+    return SOURCE_CSS.read_text(encoding="utf-8")
 
 
 def main() -> int:
