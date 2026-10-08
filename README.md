@@ -4,6 +4,18 @@ Existing Curtain Wall Inspection Data Recording and Report Generation Tool —�
 
 面向幕墙检测工程师的本地 Web 工具：录入立柱 / 横梁截面尺寸检测数据与缺陷检测记录，一键导出与客户模板排版一致的 Word 检测报告。
 
+> ### 一条贯穿本项目的结论
+>
+> **闸门绿了，先问"这个属性到底有没有被比"。相等有两种来源：两边真的对，或者这个属性根本没进比对。
+> 后者更危险，因为它伪装成前者。**
+>
+> 出处是 M5-3 的实测：把缺陷附页接进 JS 引擎时发现，段落指纹里原本**完全没有图片** ——
+> 一张图漏嵌、嵌错文件、显示尺寸算错、EXIF 方向没摆正，对拍闸门都会照样报"全部一致"。
+> 补法与验证见 `docs/management/M5-设计.md` 4.6、`deliverables/m5-gate-a-diff.md`，
+> 可执行的判据是 `python tools/verify_gate_sensitivity.py`（阴性对照 + 7 项下毒）。
+>
+> 文档索引见 README 末尾。
+
 ---
 
 ## 当前状态
@@ -18,7 +30,7 @@ Existing Curtain Wall Inspection Data Recording and Report Generation Tool —�
 | M3 | 缺陷填报完善（图片/规范/建议/绑定项目）+ 附页导出 | ✅ 完成 |
 | M4 | 报告管理（列表/筛选/详情/删除） | ✅ 完成 |
 | UI | 移动优先响应式改造（静态壳 + 客户端渲染，为 M5 铺路） | ✅ 完成 |
-| M5 | 前端本地化改造（IndexedDB + docx JS + 纯静态 PWA） | 🚧 进行中：**数据层 ✅ / 导出引擎 ✅（含附页，0 差异）/ 图片管线与配额 ✅** / UI 接线、PWA 待做 |
+| M5 | 前端本地化改造（IndexedDB + docx JS + 纯静态 PWA） | 🚧 进行中：**数据层 ✅ / 导出引擎 ✅（含附页，0 差异）/ 图片管线与配额 ✅ / UI 接线 ✅** / PWA 与离线待做 |
 
 **M5 已完成的部分**（新代码全在 `web/`，与 `webapp/` 并存）：
 
@@ -31,10 +43,16 @@ Existing Curtain Wall Inspection Data Recording and Report Generation Tool —�
   原图字节原样入库、**只有缩略图落库**（设计文档 3.4 的那一次有意偏离），全尺寸导出副本**导出时现压**；
 - **附页**：`web/app/report/attachments.js` + `engine.js` 的附页部分（两列 9 行信息表、每份独立成页、
   图片嵌入、缺失降级），并**纳入闸门 A**；
+- **UI 接线**：`web/index.html` + `web/app/{main,router}.js` + `web/app/views/*`（项目 / 检测记录 /
+  报告 / 我的 / 数据管理 / 关于）+ `web/app/ui/*`（DOM 原语、确认弹窗、提示、检测面交互）。
+  壳与 `webapp/templates/` + `webapp/static/css/app.css` 一一对应，**CSS 是生成物**（同一份真相源）；
+- **数据管理页**（`#/me/data`）：已用空间、持久化授权、**导出/导入备份 zip**、重建缩略图、清除全部报告；
+- **备份**：`web/app/import-export.js` —— `backup.json` + 原图打进一个 zip；导入先 `inspectBackup()`
+  把"会覆盖什么"讲清楚再确认（备份是完整快照，不做合并）；缩略图不进备份，导入时现重建；
 - **闸门自身的可信度**：`tools/verify_gate_sensitivity.py` 往产物里逐个下毒（图片尺寸/换成别的图/
   漏嵌/文本/合并/行高/加粗），验证闸门**确实抓得住**，而不是"这个属性根本没被比"；
-- **生成物同步**：`tools/export_web_assets.py`（config.js / spec.js ← Python 侧）、
-  `tools/export_fixture_data.py`（基准数据 → 语言中立 JSON，于是 JS 只需实现"数据 → docx"）；
+- **生成物同步**：`tools/export_web_assets.py`（config.js / spec.js / **styles/app.css** / vendor 库 /
+  底座 docx ← Python 侧）、`tools/export_fixture_data.py`（基准数据 → 语言中立 JSON）；
 - **Flask 版本未受影响**：`webapp/` / `app.py` / `tests/` / `requirements*.txt` 一行未改，
   348 项 Python 测试与四条基线闸门保持全绿（它是中期展示的演示素材）。
 
@@ -56,6 +74,19 @@ M3 交付：隐患图片（必填、拍照/相册、≤20MB、原图落盘且保
 
 ## 运行
 
+**M5 纯前端版**（推荐；数据存在浏览器里，需要支持 import maps 的浏览器 = Chrome 89+ / Safari 16.4+ / Firefox 108+）：
+
+```powershell
+python tools/serve_web.py                 # 起静态服务器，并打印手机能打开的局域网地址
+# 或者用任意静态服务器：
+python -m http.server 8080 --directory web
+```
+
+然后浏览器打开 <http://127.0.0.1:8080>。**不要双击 `index.html` 用 `file://` 打开** ——
+IndexedDB 与 ES modules 都会受限（真这样打开时页面会给出这句提示）。
+
+**Flask 参考实现**（服务端渲染、无 JS 也能录入；中期展示用）：
+
 ```powershell
 python -m pip install -r requirements.txt
 python app.py
@@ -67,7 +98,17 @@ python app.py
 
 ### 手机真机验证（局域网访问）
 
-用手机打开同一个应用，需要绑定 `0.0.0.0` 并把地址告诉手机：
+两份清单，风险点不同：
+
+| 验什么 | 清单 | 起服务 |
+| --- | --- | --- |
+| Flask 版 UI 改造（按钮点得动吗） | `docs/management/真机验证checklist.md` | `python app.py --lan` |
+| **M5 纯前端版**（照片方向 / 会不会丢数据 / 离线） | `docs/management/M5-真机验证checklist.md` | `python tools/serve_web.py` |
+
+（下面这一段是 **Flask 版**的局域网说明；M5 版由 `tools/serve_web.py` 代劳，
+它同样会打印手机地址，前置条件与排错完全一致。）
+
+用手机打开 Flask 版，需要绑定 `0.0.0.0` 并把地址告诉手机：
 
 ```powershell
 python app.py --lan
@@ -161,7 +202,7 @@ python tools/make_report_template.py
 M5 移植验收（可选，需要 Node.js。设计见 `docs/management/M5-设计.md`）：
 
 ```powershell
-npm test                      # 数据层 + 引擎 + 附页 + 图片管线（158 项）+ 既有 UI 测试（58 项）
+npm test                      # 数据层 + 引擎 + 附页 + 图片管线 + 端到端 UI（173 项）+ 既有 UI 测试（58 项）
 
 # 生成两份被测产物：无附页 / 含附页
 node tools/js/generate_from_fixture.mjs
@@ -230,23 +271,33 @@ Capstone/
 │   │                          projects / records / defects / reports / me
 │   └── static/                css/app.css · js/{app,record_form,defects_form}.js
 ├── web/                       M5：纯前端版（浏览器里跑，数据存 IndexedDB）
+│   ├── index.html             应用壳（含 import map：裸模块名 → vendor/）
+│   ├── styles/
+│   │   ├── app.css            **生成物** ← webapp/static/css/app.css（同一份壳，勿手改）
+│   │   └── m5.css             M5 自己新增的样式（手写）
 │   ├── app/
+│   │   ├── main.js            引导 + hash 路由分发 + 渲染互斥量
+│   │   ├── router.js          路由表 / 匹配 / 链接生成（纯函数）
 │   │   ├── db.js              IndexedDB 连接 / 建库 / 事务纪律 / 错误翻译
 │   │   ├── repo/              数据层：projects · measurements · defects · images
 │   │   ├── thickness.js       5 个厚度读数 -> 最小值（对齐 Python 版）
 │   │   ├── clauses.js         截面尺寸归一化与条文解析
 │   │   ├── image-pipeline.js  EXIF 摆正 / 等比缩放 / JPEG 现压 / 缩略图（编解码可注入）
 │   │   ├── storage.js         配额与持久化：警告线 / 拦截线 / iOS 闲置清理提示
+│   │   ├── export.js          项目 → docx → 下载（含附页、文件名规则）
+│   │   ├── import-export.js   备份 zip：导出 / 预检 / 导入（覆盖式）
 │   │   ├── config.js          生成物（源自 webapp/config.py，勿手改）
+│   │   ├── views/             页面：projects · records · reports · me · layout
+│   │   ├── ui/                dom · dialog（确认弹窗+提示队列）· objecturl · record-form
 │   │   └── report/
-│   │       ├── engine.js      数据 -> docx（docx JS 库）
+│   │       ├── engine.js      数据 -> docx（docx JS 库，含附页）
 │   │       ├── attachments.js 附页：版式换算 / 现压图片 / 缺失降级
 │   │       ├── postprocess.js 11 个补丁：把库的输出补齐到与基线逐属性一致
 │   │       └── spec.js        生成物（源自 report_layout.json，勿手改）
-│   ├── assets/                report_layout.json · fixture_data.json（生成物）
-│   ├── tests/                 db / projects / measurements / defects / rules /
-│   │                          engine / attachments / image_pipeline / images /
-│   │                          storage / image_headers（158 项）
+│   ├── assets/                report_layout.json · report_base.docx · fixture_data.json（生成物）
+│   ├── vendor/                docx.mjs · jszip.min.js（vendored）· jszip.js（ESM 包装）
+│   ├── tests/                 173 项：数据层 / 引擎 / 附页 / 图片管线 / 配额 / 路由 /
+│   │                          端到端（jsdom + fake-indexeddb）/ 模块图自检
 │   └── package.json           仅声明本目录为 ESM 作用域
 ├── reports/                   导出的 .docx（gitignore）
 ├── uploads/defects/           隐患图片（gitignore）
@@ -279,8 +330,13 @@ Capstone/
 ├── tools/                     compare_report_with_sample.py · verify_case_data.py
 │                              generate_sample_reports.py · make_report_template.py
 │                              case_data.py（案例解析，多工具共用）
+│                              verify_all.py（一条命令跑完全部闸门）
+│                              verify_gate_sensitivity.py（闸门可信度：阴性 + 下毒）
+│                              serve_web.py（起 M5 静态服务 + 打印手机地址）
 │                              export_web_assets.py · export_fixture_data.py（M5 生成物）
-│                              js/generate_from_fixture.mjs · js/prototype_postprocess.mjs
+│                              attachment_fixture.py · build_attachment_baseline.py（附页夹具）
+│                              js/generate_from_fixture.mjs · js/fixture-codec.mjs
+│                              js/image-headers.mjs · js/prototype_postprocess.mjs
 └── docs/                      需求、计划、章程、案例资料、设计文档
 ```
 
@@ -366,7 +422,7 @@ Capstone/
 
 - `docs/requirements/` 需求报告（原始需求全文）
 - `docs/management/` 项目章程、开发计划、M1/M2/M4/UI/M5 设计、阶段交接记录
-- `docs/management/M5-设计.md` M5 的设计与实测结论（含"闸门盲区"的发现与补法）
+- `docs/management/M5-设计.md` M5 的设计与实测结论（含"闸门盲区"的发现与补法、M5-4 实施中的 4 个时序问题）
 - `docs/management/真机验证checklist.md` Flask 版 UI 的真机清单
 - `docs/management/M5-真机验证checklist.md` M5 纯前端版的真机清单（照片方向 / 配额 / 离线）
 - `docs/management/signed/` 签署类文档（含签名与联系方式，不入仓库）
