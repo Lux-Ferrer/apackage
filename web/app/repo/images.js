@@ -19,6 +19,27 @@
 import { CONFIG } from '../config.js';
 import { STORE } from '../db.js';
 import { clean } from '../clauses.js';
+import { prepareImage, rebuildThumbnail } from '../image-pipeline.js';
+import { checkUploadQuota, DEFAULT_MAX_IMAGE_BYTES } from '../storage.js';
+// 时间戳格式必须与报告一致（附页会按 yyyy-MM-dd HH:mm 显示），故复用同一个实现。
+import { stamp } from './defects.js';
+
+/** 图片校验失败（表单层展示原样文案；与 parseForm 的 `errors` 同名同义）。 */
+export class ImageError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = 'ImageError';
+    }
+}
+
+/** 空间不够（UI 应当引导"先导出备份再清理"，而不是让用户重试）。 */
+export class QuotaError extends Error {
+    constructor(message, status) {
+        super(message);
+        this.name = 'QuotaError';
+        this.status = status;
+    }
+}
 
 /** Windows/POSIX 下的非法文件名字符（保留中文，去掉分隔符与控制字符）。 */
 const UNSAFE_NAME_CHARS = /[\\/:*?"<>|\u0000-\u001f]/g;
@@ -90,6 +111,83 @@ export function validateFile(file, options = {}) {
             + `（当前 ${(file.size / (1024 * 1024)).toFixed(1)} MB）`;
     }
     return null;
+}
+
+/* --------------------------------------------------------------------------
+ * 导入（校验 → 配额 → 现算缩略图 → 与报告同一事务写入）
+ * ------------------------------------------------------------------------ */
+
+/**
+ * 处理一张上传的图片，返回**可入库的图片记录**（尚未写库）。
+ *
+ * 顺序有讲究：图片解码与缩略图生成必须在**开事务之前**做完 ——
+ * IndexedDB 的事务在"没有挂起请求 + 微任务清空"时自动提交，在事务里 await
+ * canvas 编码必然抛 `TransactionInactiveError`（见 `db.js` 的纪律第 3 条）。
+ *
+ * @returns {Promise<object>} `{id, blob, thumb, width, height, bytes, mime, created_at}`
+ */
+export async function prepareUpload(db, file, options = {}) {
+    const error = validateFile(file, options);
+    if (error) throw new ImageError(error);
+
+    if (options.checkQuota !== false) {
+        const quota = await checkUploadQuota(
+            Math.min(file.size || 0, options.maxBytes ?? DEFAULT_MAX_IMAGE_BYTES),
+            options.quotaOptions);
+        if (!quota.allowed) throw new QuotaError(quota.message, quota.status);
+    }
+
+    const prepared = await prepareImage(file, options.pipeline);
+    return {
+        id: makeImageKey(file.name, options.uuid),
+        ...prepared,
+        created_at: options.created_at ?? stamp(),
+    };
+}
+
+/** 导入一张图片并落库。配 `defects.create(db, data, record)` 一起用（同一事务）。 */
+export async function importImage(db, file, options = {}) {
+    const record = await prepareUpload(db, file, options);
+    await put(db, record);
+    return record;
+}
+
+/** 列出全部图片 key（"重建缩略图"与"导出备份"都要遍历）。 */
+export async function allKeys(db) {
+    const rows = await all(db);
+    return rows.map((row) => row.id);
+}
+
+/** 全部图片记录（按 key 升序；备份包要连原图一起导出）。 */
+export function all(db) {
+    return db.read([STORE.images], (ctx) => ctx.getAll(STORE.images));
+}
+
+/**
+ * 批量重建缩略图（改了缩略图参数后用，对应设计文档 3.4 的"代价"一栏）。
+ *
+ * 缩略图是**可从原图重新生成**的纯派生值，所以重建永远安全：不动原图、不动业务字段。
+ *
+ * @returns {Promise<{total: number, rebuilt: number, failed: number}>}
+ */
+export async function rebuildThumbnails(db, options = {}) {
+    const rows = await all(db);
+    const updates = [];
+    let failed = 0;
+    for (const row of rows) {
+        try {
+            const thumb = await rebuildThumbnail(row.blob, options.pipeline);
+            updates.push({ ...row, thumb });
+        } catch {
+            failed += 1;                       // 一张坏图不该让整批重建失败
+        }
+    }
+    if (updates.length) {
+        await db.write([STORE.images], async (ctx) => {
+            for (const row of updates) await ctx.put(STORE.images, row);
+        });
+    }
+    return { total: rows.length, rebuilt: updates.length, failed };
 }
 
 /* --------------------------------------------------------------------------

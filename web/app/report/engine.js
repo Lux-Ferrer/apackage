@@ -2,20 +2,23 @@
  *
  * 与 `webapp/services/word_report.py` 一一对应。边界见 docs/management/M5-设计.md 第 1 节：
  *   - 本文只负责"数据 → 库能表达的结构"；
- *   - 库表达不了的细节由 `postprocess.js` 补（7 个补丁）；
+ *   - 库表达不了的细节由 `postprocess.js` 补（11 个补丁）；
  *   - "从文档里认表"那一半不在这里（那是测试设施，见 tools/export_fixture_data.py）。
  *
- * 本版本（M5-2 骨架）实现：信息段 + 立柱/横梁检测表 + 备注 + 文末空段。
- * 附页（图片）尚未实现 —— 见 TODO。
+ * 覆盖范围：信息段 + 立柱/横梁检测表 + 备注 + **缺陷报告附页** + 文末空段。
+ * 附页里的图片由 `attachments.js` 在**导出时现压**（不落库），本模块只负责嵌入。
  */
 
 import {
-    AlignmentType, BorderStyle, Document, HeightRule, LineRuleType, Packer, Paragraph,
+    AlignmentType, BorderStyle, Document, HeightRule, ImageRun, LineRuleType, Packer, Paragraph,
     Table, TableCell, TableRow, TableLayoutType, TextRun, VerticalAlign, WidthType,
 } from 'docx';
 
 import { CONFIG } from '../config.js';
 import { SPEC } from './spec.js';
+import {
+    ATTACHMENT, NATIVE_TWIPS_PER_PIXEL, attachmentRows, fitImageTwips,
+} from './attachments.js';
 import { postprocess } from './postprocess.js';
 
 /* ---- 规格常量（全部来自 spec，不在代码里写死数值）---- */
@@ -37,6 +40,24 @@ const HEADER_LINE_SPACING = SPEC.cell.headerLineSpacing ?? {};
 
 /** 行高为"至少"语义：库的 ATLEAST 会写 hRule，由补丁③删掉。 */
 const ROW_HEIGHT_RULE = HeightRule.ATLEAST;
+
+/** 边框：外框粗（outerSz）、内线细（innerSz）；补丁⑩补 `w:space`。两张表共用。 */
+function tableBorders() {
+    const outer = { style: BorderStyle.SINGLE, size: TABLE_SPEC.border.outerSz, color: TABLE_SPEC.border.color };
+    const inner = { style: BorderStyle.SINGLE, size: TABLE_SPEC.border.innerSz, color: TABLE_SPEC.border.color };
+    return {
+        top: outer, bottom: outer, left: outer, right: outer,
+        insideHorizontal: inner, insideVertical: inner,
+    };
+}
+
+/** tblLook：补丁②把布尔的 false/true 归一成 0/1 并补上 w:val。 */
+function tableLook() {
+    return {
+        firstRow: false, lastRow: false, firstColumn: false,
+        lastColumn: false, noHBand: false, noVBand: false,
+    };
+}
 
 export function dataRowHeight(templateType) {
     return SPEC.rows.dataHeightByTemplate?.[templateType] ?? DATA_ROW_TWIPS;
@@ -111,17 +132,18 @@ export function infoLines(project) {
  * 表格内一律：不写字号（继承）、不加粗、无 tcMar、vAlign=center、段落居中。
  * ------------------------------------------------------------------------ */
 
-function cellParagraphs(text, { align = AlignmentType.CENTER, line = null } = {}) {
+function cellParagraphs(text, { align = AlignmentType.CENTER, line = null, bold = false } = {}) {
     const lines = text === null || text === undefined || text === '' ? [''] : String(text).split('\n');
-    return lines.map((one) => paragraph(one, { align, line }));
+    return lines.map((one) => paragraph(one, { align, line, bold }));
 }
 
 function tableCell(definition) {
     const {
-        text = '', width, columnSpan, rowSpan, align = AlignmentType.CENTER, line = null,
+        text = '', width, columnSpan, rowSpan,
+        align = AlignmentType.CENTER, line = null, bold = false,
     } = definition;
     return new TableCell({
-        children: cellParagraphs(text, { align, line }),
+        children: cellParagraphs(text, { align, line, bold }),
         width: { size: width, type: WidthType.DXA },
         verticalAlign: VerticalAlign.CENTER,
         ...(columnSpan && columnSpan > 1 ? { columnSpan } : {}),
@@ -278,16 +300,121 @@ export function buildDetectionTable(group) {
             left: TABLE_SPEC.tableCellMargin.left,
             right: TABLE_SPEC.tableCellMargin.right,
         },
-        borders: {
-            top: { style: BorderStyle.SINGLE, size: TABLE_SPEC.border.outerSz, color: TABLE_SPEC.border.color },
-            bottom: { style: BorderStyle.SINGLE, size: TABLE_SPEC.border.outerSz, color: TABLE_SPEC.border.color },
-            left: { style: BorderStyle.SINGLE, size: TABLE_SPEC.border.outerSz, color: TABLE_SPEC.border.color },
-            right: { style: BorderStyle.SINGLE, size: TABLE_SPEC.border.outerSz, color: TABLE_SPEC.border.color },
-            insideHorizontal: { style: BorderStyle.SINGLE, size: TABLE_SPEC.border.innerSz, color: TABLE_SPEC.border.color },
-            insideVertical: { style: BorderStyle.SINGLE, size: TABLE_SPEC.border.innerSz, color: TABLE_SPEC.border.color },
-        },
-        tableLook: { firstRow: false, lastRow: false, firstColumn: false, lastColumn: false, noHBand: false, noVBand: false },
+        borders: tableBorders(),
+        tableLook: tableLook(),
     });
+}
+
+/* --------------------------------------------------------------------------
+ * 附页（缺陷报告，M3/M5-3）
+ *
+ * 一份附页 = 标题（前加分页）→ 两列信息表（9 行）→ 「隐患图片」标签 + 居中图片；
+ * 图片缺失时降级成一行「（图片缺失：原名）」，整份报告照样导得出来。
+ * ------------------------------------------------------------------------ */
+
+/** 附页标题：`检测报告附页（1/3）`，居中加粗 16pt，**带 pageBreakBefore**（每份独立成页）。 */
+function attachmentTitle(index, total) {
+    return paragraph(
+        CONFIG.ATTACHMENT_TITLE.replace('{index}', index).replace('{total}', total),
+        {
+            bold: true,
+            halfPoints: TITLE_HALF_POINTS,
+            align: AlignmentType.CENTER,
+            before: SPACING.titleBefore,
+            after: SPACING.titleAfter,
+            pageBreakBefore: true,
+        },
+    );
+}
+
+/** 两列信息表：标签列加粗居中（1600）、内容列左对齐（7200），行高 400。 */
+export function attachmentTable(view) {
+    const rows = attachmentRows(view).map((row) => new TableRow({
+        children: [
+            tableCell({ text: row.label, width: ATTACHMENT.labelColumnTwips, bold: true }),
+            tableCell({
+                text: row.value,
+                width: ATTACHMENT.valueColumnTwips,
+                align: AlignmentType.LEFT,
+            }),
+        ],
+        height: { value: row.height, rule: ROW_HEIGHT_RULE },
+    }));
+
+    return new Table({
+        rows,
+        columnWidths: [ATTACHMENT.labelColumnTwips, ATTACHMENT.valueColumnTwips],
+        width: {
+            size: ATTACHMENT.labelColumnTwips + ATTACHMENT.valueColumnTwips,
+            type: WidthType.DXA,
+        },
+        layout: TableLayoutType.FIXED,
+        alignment: AlignmentType.CENTER,
+        margins: {
+            marginUnitType: WidthType.DXA,
+            top: 0,
+            bottom: 0,
+            left: TABLE_SPEC.tableCellMargin.left,
+            right: TABLE_SPEC.tableCellMargin.right,
+        },
+        borders: tableBorders(),
+        tableLook: tableLook(),
+    });
+}
+
+/**
+ * 居中嵌入一张图片。
+ *
+ * `ImageRun` 的 `transformation` 单位是 **96 DPI 像素**（不是 EMU），而 twips 与 EMU 的换算是
+ * `1 twip = 635 EMU`、与像素是 `1 px = 15 twips`，所以传 `twips / 15` 后由库
+ * `Math.round(px * 9525)` 得到 `twips * 635`——与 Python 侧 `Twips(...)` 的结果**逐 EMU 相同**。
+ * （`fitImageTwips` 已经取整成整数 twips，故这里的小数不会引入误差。）
+ */
+function picture(imageBytes, widthTwips, heightTwips) {
+    return new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [new ImageRun({
+            data: imageBytes,
+            type: imageType(imageBytes),
+            transformation: {
+                width: widthTwips / NATIVE_TWIPS_PER_PIXEL,
+                height: heightTwips / NATIVE_TWIPS_PER_PIXEL,
+            },
+        })],
+    });
+}
+
+/** 按文件头判断图片类型（库需要它来写 [Content_Types].xml 与关系类型）。 */
+function imageType(bytes) {
+    if (bytes && bytes[0] === 0x89 && bytes[1] === 0x50) return 'png';
+    if (bytes && bytes[0] === 0x47 && bytes[1] === 0x49) return 'gif';
+    if (bytes && bytes[0] === 0x42 && bytes[1] === 0x4d) return 'bmp';
+    return 'jpg';
+}
+
+/** 一份附页的全部块（标题 + 信息表 + 图片/降级行）。 */
+export function buildAttachment(view, index, total) {
+    const blocks = [attachmentTitle(index, total), attachmentTable(view)];
+
+    if (view.image_bytes?.length) {
+        const [widthTwips, heightTwips] = fitImageTwips(
+            view.image_width_px, view.image_height_px);
+        blocks.push(paragraph(ATTACHMENT.imageLabel, {
+            halfPoints: BODY_HALF_POINTS,
+            align: AlignmentType.LEFT,
+            before: SPACING.titleBefore,
+            after: SPACING.titleAfter,
+        }));
+        blocks.push(picture(view.image_bytes, widthTwips, heightTwips));
+    } else if (view.original_name) {
+        // 降级：图片读不出来也要把附页导出去
+        blocks.push(paragraph(`（图片缺失：${view.original_name}）`, {
+            halfPoints: BODY_HALF_POINTS,
+            align: AlignmentType.LEFT,
+            before: SPACING.titleBefore,
+        }));
+    }
+    return blocks;
 }
 
 /* --------------------------------------------------------------------------
@@ -328,8 +455,10 @@ export function buildProjectReport(project, groups, attachments = []) {
 
     children.push(note(CONFIG.NOTE_TEXT));
 
-    // TODO(M5-2 后续)：附页（标题 + 两列信息表 + 图片）。图片要先从 IndexedDB 取 blob 并现压。
-    void attachments;
+    const views = [...(attachments ?? [])];
+    views.forEach((view, offset) => {
+        for (const block of buildAttachment(view, offset + 1, views.length)) children.push(block);
+    });
 
     children.push(trailingEmpty());
 

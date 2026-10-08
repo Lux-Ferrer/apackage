@@ -8,7 +8,62 @@
     "client_org": "",
     "test_date": ""
   },
-  "attachments": null,
+  "attachments": [
+    {
+      "defect": {
+        "id": 1,
+        "project_id": 1,
+        "defect_type": "密封胶开裂",
+        "project_part": "东立面三层 1# 立柱",
+        "risk_level": "高",
+        "rectification_plan": "第一行：清除开裂密封胶并清理基材。\n第二行：重新注胶并复检确认无渗漏。",
+        "related_standards": "GB/T 21086-2007 第 5.2 条",
+        "extra_advice": "建议雨季前完成整改。",
+        "reporter_name": "Zeyu Jin",
+        "reporter_department": "结构工程部",
+        "image_path": "5f3a1c7e9b2d4a6f8c0e1d2b3a4c5d6e_现场照片_横拍.jpg",
+        "created_at": "2026-09-20 10:24:00"
+      },
+      "source": "tests/fixtures/attachment/5f3a1c7e9b2d4a6f8c0e1d2b3a4c5d6e_现场照片_横拍.jpg",
+      "oriented_source": null
+    },
+    {
+      "defect": {
+        "id": 2,
+        "project_id": 1,
+        "defect_type": "幕墙面板缺陷（石材）",
+        "project_part": "南立面五层 2# 横梁上方",
+        "risk_level": "中",
+        "rectification_plan": "更换受损石板并复核挂件。",
+        "related_standards": "JGJ 133-2001 第 6.3 节",
+        "extra_advice": null,
+        "reporter_name": "Zeyu Jin",
+        "reporter_department": "结构工程部",
+        "image_path": "9c8b7a6d5e4f3a2b1c0d9e8f7a6b5c4d_现场照片_竖拍.jpg",
+        "created_at": "2026-09-21 14:05:00"
+      },
+      "source": "tests/fixtures/attachment/9c8b7a6d5e4f3a2b1c0d9e8f7a6b5c4d_现场照片_竖拍.jpg",
+      "oriented_source": "tests/fixtures/attachment/9c8b7a6d5e4f3a2b1c0d9e8f7a6b5c4d_现场照片_竖拍_摆正.jpg"
+    },
+    {
+      "defect": {
+        "id": 3,
+        "project_id": 1,
+        "defect_type": "明框外框外表面损伤",
+        "project_part": "西立面四层 3# 立柱",
+        "risk_level": "低",
+        "rectification_plan": "打磨后补涂氟碳漆。",
+        "related_standards": null,
+        "extra_advice": null,
+        "reporter_name": "Zeyu Jin",
+        "reporter_department": "结构工程部",
+        "image_path": "1a2b3c4d5e6f708192a3b4c5d6e7f809_现场照片_已删除.jpg",
+        "created_at": "2026-09-22 09:41:00"
+      },
+      "source": "tests/fixtures/attachment/1a2b3c4d5e6f708192a3b4c5d6e7f809_现场照片_已删除.jpg",
+      "oriented_source": null
+    }
+  ],
   "groups": [
     {
       "template_type": "column",

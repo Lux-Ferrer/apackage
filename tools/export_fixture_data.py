@@ -27,12 +27,38 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from tools import attachment_fixture                                   # noqa: E402
 from tools.compare_report_with_sample import (extract_groups,        # noqa: E402
                                               extract_project, sample_root)
 from webapp import config                                            # noqa: E402
 
 SOURCE = config.GOLDEN_SAMPLE
 OUTPUT = ROOT / "web" / "assets" / "fixture_data.json"
+
+
+def build_attachments() -> list | None:
+    """附页夹具：三份缺陷报告 + 图片路径。
+
+    与项目/检测记录不同，附页的数据**不在对拍基准里**（基准只含立柱/横梁两张表），
+    所以期望产物由 ``tools/build_attachment_baseline.py`` 用 Python 引擎单独冻结。
+    这里只导出"数据"这一半，JS 侧照同一份数据重跑。
+
+    ``oriented_source``：带 EXIF 方向的那张图另有一份"已摆正副本"，
+    **只给 Node 端的闸门替身用**（Node 里没有 canvas，没法真的旋转像素）。
+    浏览器管线不需要它 —— 理由见 ``tools/attachment_fixture.py`` 的说明。
+    """
+    if not attachment_fixture.defect_rows():
+        return None
+    sources = attachment_fixture.relative_sources()
+    oriented = attachment_fixture.relative_oriented_sources()
+    return [
+        {
+            "defect": row,
+            "source": sources.get(row["image_path"]),
+            "oriented_source": oriented.get(row["image_path"]),
+        }
+        for row in attachment_fixture.defect_rows()
+    ]
 
 
 def build_payload() -> dict:
@@ -44,7 +70,7 @@ def build_payload() -> dict:
         "_note": "由 tools/export_fixture_data.py 从对拍基准导出；JS 引擎只消费这份数据，"
                  "不实现「从文档里认表」的逻辑（那是测试设施）。",
         "project": project,
-        "attachments": None,
+        "attachments": build_attachments(),
         "groups": groups,
     }
 
@@ -73,6 +99,12 @@ def main() -> int:
         print("  %s：%d 条记录 / %d 个检测面"
               % (group["template_type"], len(group["records"]),
                  sum(len(item["faces"]) for item in group["records"])))
+    attachments = payload.get("attachments") or []
+    states = [
+        ("有图" if (item["source"] and (ROOT / item["source"]).exists()) else "缺图（走降级）")
+        for item in attachments
+    ]
+    print("  附页：%d 份（%s）" % (len(attachments), "、".join(states) or "无"))
     return 0
 
 

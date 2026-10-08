@@ -9,8 +9,8 @@
 
 比对的属性
 ----------
-文档：``sectPr`` 的 pgSz / pgMar / cols / docGrid
-正文：子元素顺序与类型、段落文本 / jc / spacing、run 的加粗与字号
+文档：``sectPr`` 的 pgSz / pgMar / cols / docGrid、**嵌入图片的像素尺寸多重集**
+正文：子元素顺序与类型、段落文本 / jc / spacing、run 的加粗与字号、**段落里图片的显示尺寸**
 表格：tblW / jc / tblLayout / tblBorders(6 边) / tblCellMar / tblLook / tblGrid 列宽
 行  ：trHeight(val,hRule) / trPr jc
 单元格：``w:tc`` 个数与顺序、tcW / gridSpan / vMerge / tcMar / vAlign、段落格式
@@ -23,6 +23,11 @@
 - **run 的切分方式**：样例把长条文按中英文字界拆成多个 run，我们写一个 run；
   渲染完全相同，所以文本按段落拼接后比较，run 只比"属性集合"
 - 样例的玻璃/膜厚章节：范围外，基准 fixture 已裁掉；另反向断言生成物不含这些内容
+- 图片的**关系 id**（``r:embed``）与部件编号（``image1.jpg`` / ``image2.jpg``）：
+  两个引擎的 id 分配方式不同，比它只会产生假差异。图片只比"显示尺寸"（EMU）与
+  "实际像素尺寸"，这两项足以抓住"漏嵌、嵌错文件、尺寸算错、方向没摆正"。
+  （附页是 M5-3 加的：真实报告裁剪基准里没有附页，闸门 A 的第二半用
+  ``tests/fixtures/attachment_baseline.docx`` 覆盖。）
 
 用法::
 
@@ -50,6 +55,7 @@ from webapp import config                                       # noqa: E402
 from webapp.services import word_report as wr                   # noqa: E402
 
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+WP = "{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}"
 MAX_SHOWN_DIFFS = 20
 
 
@@ -89,6 +95,22 @@ def run_props(paragraph) -> list:
     return sorted(props, key=repr)
 
 
+def paragraph_images(paragraph) -> list:
+    """段落里嵌入图片的**显示尺寸**（EMU 对），按出现顺序。
+
+    只取 ``wp:extent``：它是"这张图在版面上占多大"，正是附页要对齐的东西。
+    **不比** ``r:embed``（关系 id）—— 两个引擎的 id 分配方式不同，比它只会产生假差异；
+    图片"是不是真的那张"由 :func:`document_media` 从像素尺寸独立核对。
+    """
+    found = []
+    for drawing in paragraph.iter(W + "drawing"):
+        extent = drawing.find(".//" + WP + "extent")
+        if extent is None:
+            continue
+        found.append([int(extent.get("cx") or 0), int(extent.get("cy") or 0)])
+    return found
+
+
 def paragraph_fingerprint(paragraph) -> dict:
     ppr = paragraph.find(W + "pPr")
     jc = ppr.find(W + "jc") if ppr is not None else None
@@ -98,6 +120,7 @@ def paragraph_fingerprint(paragraph) -> dict:
         "jc": val_of(jc),
         "spacing": attr_map(spacing),
         "run_props": run_props(paragraph),
+        "images": paragraph_images(paragraph),
     }
 
 
@@ -201,9 +224,28 @@ def normalize_for_json(value):
     return value
 
 
+def media_sizes(archive: zipfile.ZipFile) -> list:
+    """文档里嵌入图片的**像素尺寸**多重集（已按 EXIF 摆正，排序后比较）。
+
+    这一项是"图片真的嵌对了吗"的独立证据：显示尺寸对了但嵌错了文件（比如把没摆正的
+    原图塞进已摆正的尺寸里），只有读像素才看得出来。按多重集比较，所以
+    ``image1.jpg`` / ``image2.jpg`` 这种部件编号差异不会造成假差异。
+    """
+    from PIL import Image, ImageOps
+
+    sizes = []
+    for name in archive.namelist():
+        if not name.startswith("word/media/") or name.endswith("/"):
+            continue          # 目录条目：JSZip 会写一条 `word/media/`（0 字节），不是图片
+        with Image.open(io.BytesIO(archive.read(name))) as image:
+            sizes.append([int(value) for value in ImageOps.exif_transpose(image).size])
+    return sorted(sizes)
+
+
 def document_fingerprint(path) -> dict:
     with zipfile.ZipFile(path) as archive:
         root = etree.fromstring(archive.read("word/document.xml"))
+        media = media_sizes(archive)
     body = root.find(W + "body")
     children = []
     tables = []
@@ -216,7 +258,7 @@ def document_fingerprint(path) -> dict:
             tables.append(table_fingerprint(child))
         elif tag == "sectPr":
             children.append({"type": "sectPr", **section_fingerprint(child)})
-    return {"children": children, "tables": tables}
+    return {"children": children, "tables": tables, "media": media}
 
 
 def diff(expected, actual, path="", found=None):
@@ -331,7 +373,12 @@ def apply_spec_widths(table_fingerprint, spec_widths) -> dict:
     背景：基准是真实报告裁剪版，规格值就取自它（表2-4）。表2-5 的列宽有 ≤4 twips 的
     Word 自动重算偏差，因此两侧都归一到 ``report_layout.json`` 的列宽，
     "除列宽以外任何一处偏差"依然会被抓住。
+
+    ⚠️ **只对"列数与检测表规格相同"的表生效**（M5-3 起）。附页的两列信息表宽度来自
+    需求报告 4.4、与检测表无关，拿 11 列的规格去覆盖它会把整张表判成错（踩过一次）。
     """
+    if len(table_fingerprint.get("grid") or []) != len(spec_widths):
+        return table_fingerprint
     patched = copy.deepcopy(table_fingerprint)
     patched["grid"] = list(spec_widths)
     for row in patched["rows"]:
@@ -399,6 +446,10 @@ def run_comparison(sample_path=None, output_docx=None) -> dict:
     expected_tables = len([c for c in expected_children if c["type"] == "tbl"])
     if len(actual["tables"]) != expected_tables:
         diffs.append(("tables.count", expected_tables, len(actual["tables"])))
+
+    # 5) 嵌入图片的像素尺寸（M5-3 附页；这段基准里两侧都是空的 → []=[]，不影响既有结论）
+    if expected["media"] != actual["media"]:
+        diffs.append(("media", expected["media"], actual["media"]))
 
     return {
         "diffs": diffs,
@@ -492,12 +543,17 @@ def run_pair_comparison(expected_path, actual_path) -> dict:
         if expected_grids[index] != actual_grids[index]:
             diffs.append(("grid[%d]" % index, expected_grids[index], actual_grids[index]))
 
-    # 表格数量不影响网格比较；把"表格数不同"也算进合并网格条数
+    # 嵌入图片的像素尺寸（附页；无图片时两边都是 []）
+    if expected["media"] != actual["media"]:
+        diffs.append(("media", expected["media"], actual["media"]))
+
     return {
         "diffs": diffs,
         "compared_tables": compared,
         "expected_grids": expected_grids,
         "actual_grids": actual_grids,
+        "expected_media": expected["media"],
+        "actual_media": actual["media"],
         "expected_name": expected_path.name,
         "actual_name": actual_path.name,
     }
@@ -511,7 +567,7 @@ def build_pair_markdown(result) -> str:
         "",
         "- 期望：`%s`" % result["expected_name"],
         "- 实际：`%s`" % result["actual_name"],
-        "- 比对项：正文序列、表格级属性、行级属性、单元格级属性、合并网格",
+        "- 比对项：正文序列、表格级属性、行级属性、单元格级属性、合并网格、嵌入图片",
         "",
     ]
     if not diffs:
@@ -552,6 +608,9 @@ def main() -> int:
     parser.add_argument("--output", help="把生成的文档另存到指定路径（便于人工查看）")
     parser.add_argument("--bless", action="store_true",
                         help="重新冻结回归基线 tests/fixtures/generated_baseline.docx")
+    parser.add_argument("--fingerprint", action="store_true",
+                        help="只用**现有**基线重算语言中立指纹（不重建 docx），"
+                             "用于比对口径变化后刷新 .fingerprint.json")
     parser.add_argument("--expected", help="直接比两个文件：期望文件（如冻结基线）")
     parser.add_argument("--actual", help="直接比两个文件：实际文件（如 JS 生成物）")
     args = parser.parse_args()
@@ -568,7 +627,7 @@ def main() -> int:
 
         diffs = result["diffs"]
         print("比对：%s（期望） vs %s（实际）" % (result["expected_name"], result["actual_name"]))
-        print("比对项：正文序列 + %d 张表（含每格属性）+ 合并网格" % result["compared_tables"])
+        print("比对项：正文序列 + %d 张表（含每格属性）+ 合并网格 + 嵌入图片" % result["compared_tables"])
         if not diffs:
             print("结果：全部一致 ✅")
             return 0
@@ -580,11 +639,22 @@ def main() -> int:
             print("  …（其余 %d 处，用 --verbose 查看）" % (len(diffs) - len(shown)))
         return 1
 
+    fingerprint_path = config.GENERATED_BASELINE.with_suffix(".fingerprint.json")
+
+    if args.fingerprint:
+        # 只重算指纹：**不动基线的字节**。为什么单独一个开关 ——
+        # `--bless` 会重建 docx，而 zip 的时间戳每次都会变，于是一处口径调整会带出
+        # 一份"内容其实没变"的二进制 diff，评审时看不出真假。见 M5 设计 4.3。
+        fingerprint_path.write_text(
+            json.dumps(normalize_for_json(document_fingerprint(config.GENERATED_BASELINE)),
+                       ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print("基线指纹已重算（基线 docx 未改动）：%s" % fingerprint_path)
+        return 0
+
     if args.bless:
         path = build_from_sample(config.GENERATED_BASELINE, args.sample)
         print("回归基线已重新冻结：%s" % path)
         # 语言中立的指纹一并落盘（M5 闸门 C 用；见 M5 设计 4.3）
-        fingerprint_path = config.GENERATED_BASELINE.with_suffix(".fingerprint.json")
         fingerprint_path.write_text(
             json.dumps(normalize_for_json(document_fingerprint(config.GENERATED_BASELINE)),
                        ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -599,7 +669,7 @@ def main() -> int:
             build_markdown(result, Path(args.sample).name), encoding="utf-8")
         print("报告已写入 %s" % args.report)
 
-    print("比对项：正文序列 + %d 张表（含每格属性）+ 合并网格" % result["compared_tables"])
+    print("比对项：正文序列 + %d 张表（含每格属性）+ 合并网格 + 嵌入图片" % result["compared_tables"])
     if not diffs:
         print("结果：全部一致 ✅")
         return 0

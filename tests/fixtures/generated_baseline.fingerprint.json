@@ -1,0 +1,5354 @@
+{
+  "children": [
+    {
+      "type": "p",
+      "text": "项目编号：A06YG-2026-001",
+      "jc": null,
+      "spacing": {
+        "after": "100"
+      },
+      "run_props": [
+        [
+          true,
+          "22",
+          null
+        ]
+      ],
+      "images": []
+    },
+    {
+      "type": "p",
+      "text": "房屋名称：示例项目（脱敏）",
+      "jc": null,
+      "spacing": {
+        "after": "100"
+      },
+      "run_props": [
+        [
+          true,
+          "22",
+          null
+        ]
+      ],
+      "images": []
+    },
+    {
+      "type": "p",
+      "text": "房屋地点：",
+      "jc": null,
+      "spacing": {
+        "after": "100"
+      },
+      "run_props": [
+        [
+          true,
+          "22",
+          null
+        ]
+      ],
+      "images": []
+    },
+    {
+      "type": "p",
+      "text": "委托单位：",
+      "jc": null,
+      "spacing": {
+        "after": "100"
+      },
+      "run_props": [
+        [
+          true,
+          "22",
+          null
+        ]
+      ],
+      "images": []
+    },
+    {
+      "type": "p",
+      "text": "检测日期：",
+      "jc": null,
+      "spacing": {
+        "after": "100"
+      },
+      "run_props": [
+        [
+          true,
+          "22",
+          null
+        ]
+      ],
+      "images": []
+    },
+    {
+      "type": "p",
+      "text": "幕墙立柱截面尺寸检测结果",
+      "jc": "center",
+      "spacing": {
+        "before": "300",
+        "after": "200"
+      },
+      "run_props": [
+        [
+          true,
+          "32",
+          null
+        ]
+      ],
+      "images": []
+    },
+    {
+      "type": "tbl",
+      "index": 0
+    },
+    {
+      "type": "p",
+      "text": "",
+      "jc": null,
+      "spacing": {
+        "before": "200",
+        "after": "200"
+      },
+      "run_props": [],
+      "images": []
+    },
+    {
+      "type": "p",
+      "text": "幕墙横梁截面尺寸检测结果",
+      "jc": "center",
+      "spacing": {
+        "before": "300",
+        "after": "200"
+      },
+      "run_props": [
+        [
+          true,
+          "32",
+          null
+        ]
+      ],
+      "images": []
+    },
+    {
+      "type": "tbl",
+      "index": 1
+    },
+    {
+      "type": "p",
+      "text": "",
+      "jc": null,
+      "spacing": {
+        "before": "200",
+        "after": "200"
+      },
+      "run_props": [],
+      "images": []
+    },
+    {
+      "type": "p",
+      "text": "备注：检测构件位置详见检测工作内容附件 18。",
+      "jc": null,
+      "spacing": {
+        "before": "300"
+      },
+      "run_props": [
+        [
+          false,
+          "22",
+          null
+        ]
+      ],
+      "images": []
+    },
+    {
+      "type": "p",
+      "text": "",
+      "jc": null,
+      "spacing": {},
+      "run_props": [],
+      "images": []
+    },
+    {
+      "type": "sectPr",
+      "pgSz": {
+        "w": "11907",
+        "h": "16839"
+      },
+      "pgMar": {
+        "top": "1440",
+        "right": "907",
+        "bottom": "1843",
+        "left": "907",
+        "header": "850",
+        "footer": "964",
+        "gutter": "0"
+      },
+      "cols": {
+        "space": "720"
+      },
+      "docGrid": {
+        "linePitch": "312"
+      }
+    }
+  ],
+  "tables": [
+    {
+      "tblW": {
+        "type": "dxa",
+        "w": "10833"
+      },
+      "jc": "center",
+      "tblLayout": {
+        "type": "fixed"
+      },
+      "tblBorders": {
+        "top": {
+          "val": "single",
+          "sz": "12",
+          "space": "0",
+          "color": "000000"
+        },
+        "left": {
+          "val": "single",
+          "sz": "12",
+          "space": "0",
+          "color": "000000"
+        },
+        "bottom": {
+          "val": "single",
+          "sz": "12",
+          "space": "0",
+          "color": "000000"
+        },
+        "right": {
+          "val": "single",
+          "sz": "12",
+          "space": "0",
+          "color": "000000"
+        },
+        "insideH": {
+          "val": "single",
+          "sz": "6",
+          "space": "0",
+          "color": "000000"
+        },
+        "insideV": {
+          "val": "single",
+          "sz": "6",
+          "space": "0",
+          "color": "000000"
+        }
+      },
+      "tblCellMar": {
+        "left": {
+          "w": "57",
+          "type": "dxa"
+        },
+        "right": {
+          "w": "57",
+          "type": "dxa"
+        }
+      },
+      "tblLook": {
+        "firstColumn": "0",
+        "firstRow": "0",
+        "lastColumn": "0",
+        "lastRow": "0",
+        "noHBand": "0",
+        "noVBand": "0",
+        "val": "0000"
+      },
+      "grid": [
+        1077,
+        850,
+        1416,
+        789,
+        790,
+        790,
+        789,
+        790,
+        790,
+        790,
+        1962
+      ],
+      "rows": [
+        {
+          "trHeight": [
+            "567",
+            null
+          ],
+          "jc": "center",
+          "cells": [
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1077"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "楼层",
+                  "jc": "center",
+                  "spacing": {
+                    "line": "280",
+                    "lineRule": "atLeast"
+                  },
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "850"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "检测构件",
+                  "jc": "center",
+                  "spacing": {
+                    "line": "280",
+                    "lineRule": "atLeast"
+                  },
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                },
+                {
+                  "text": "位置",
+                  "jc": "center",
+                  "spacing": {
+                    "line": "280",
+                    "lineRule": "atLeast"
+                  },
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1416"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "尺寸检测结果m×n",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                },
+                {
+                  "text": "（mm×mm）",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "5528"
+              },
+              "gridSpan": "7",
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "厚度检测结果（mm）",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1962"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "立柱截面尺寸截面要求（mm）",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "trHeight": [
+            "567",
+            null
+          ],
+          "jc": "center",
+          "cells": [
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1077"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {
+                    "line": "280",
+                    "lineRule": "atLeast"
+                  },
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "850"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {
+                    "line": "280",
+                    "lineRule": "atLeast"
+                  },
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1416"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {
+                    "line": "280",
+                    "lineRule": "atLeast"
+                  },
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "检测面",
+                  "jc": "center",
+                  "spacing": {
+                    "line": "280",
+                    "lineRule": "atLeast"
+                  },
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "1",
+                  "jc": "center",
+                  "spacing": {
+                    "line": "280",
+                    "lineRule": "atLeast"
+                  },
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "3",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "4",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "5",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "最小值",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1962"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "trHeight": [
+            "522",
+            null
+          ],
+          "jc": "center",
+          "cells": [
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1077"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "六层",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "850"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "1",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1416"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "63164",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "B",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.99",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "3.02",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "3.01",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "3.01",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.99",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.99",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1962"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "立柱铝型材开口部位的厚度不应小于3.0mm，闭口部位的厚度不应小于2.5mm",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "trHeight": [
+            "522",
+            null
+          ],
+          "jc": "center",
+          "cells": [
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1077"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "850"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1416"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "H",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.55",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.52",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.52",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.53",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.53",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.52",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1962"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "trHeight": [
+            "522",
+            null
+          ],
+          "jc": "center",
+          "cells": [
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1077"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "六层",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "850"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1416"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "63164",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "B",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "3.02",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.99",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "3.01",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.99",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.99",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.99",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1962"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "trHeight": [
+            "522",
+            null
+          ],
+          "jc": "center",
+          "cells": [
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1077"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "850"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1416"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "H",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.56",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.53",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.55",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.53",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.53",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.53",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1962"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "trHeight": [
+            "522",
+            null
+          ],
+          "jc": "center",
+          "cells": [
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1077"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "六层",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "850"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "3",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1416"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "63164",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "B",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "3.01",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.99",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "3.01",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "3.01",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.99",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.99",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1962"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "trHeight": [
+            "522",
+            null
+          ],
+          "jc": "center",
+          "cells": [
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1077"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "850"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1416"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "H",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.52",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.52",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.52",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.53",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.53",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.52",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1962"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "trHeight": [
+            "522",
+            null
+          ],
+          "jc": "center",
+          "cells": [
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1077"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "二十三层",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "850"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "4",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1416"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "63164",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "B",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "3.01",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.99",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "3.01",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "3.01",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.99",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.99",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1962"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "trHeight": [
+            "522",
+            null
+          ],
+          "jc": "center",
+          "cells": [
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1077"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "850"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1416"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "H",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.54",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.52",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.52",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.53",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.52",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.52",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1962"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "trHeight": [
+            "522",
+            null
+          ],
+          "jc": "center",
+          "cells": [
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1077"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "二十三层",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "850"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "5",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1416"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "63164",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "B",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.99",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.99",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "3.01",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "3.01",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.99",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.99",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1962"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "trHeight": [
+            "522",
+            null
+          ],
+          "jc": "center",
+          "cells": [
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1077"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "850"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1416"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "H",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.54",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.53",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.53",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.54",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.53",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.53",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1962"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tblW": {
+        "type": "dxa",
+        "w": "10833"
+      },
+      "jc": "center",
+      "tblLayout": {
+        "type": "fixed"
+      },
+      "tblBorders": {
+        "top": {
+          "val": "single",
+          "sz": "12",
+          "space": "0",
+          "color": "000000"
+        },
+        "left": {
+          "val": "single",
+          "sz": "12",
+          "space": "0",
+          "color": "000000"
+        },
+        "bottom": {
+          "val": "single",
+          "sz": "12",
+          "space": "0",
+          "color": "000000"
+        },
+        "right": {
+          "val": "single",
+          "sz": "12",
+          "space": "0",
+          "color": "000000"
+        },
+        "insideH": {
+          "val": "single",
+          "sz": "6",
+          "space": "0",
+          "color": "000000"
+        },
+        "insideV": {
+          "val": "single",
+          "sz": "6",
+          "space": "0",
+          "color": "000000"
+        }
+      },
+      "tblCellMar": {
+        "left": {
+          "w": "57",
+          "type": "dxa"
+        },
+        "right": {
+          "w": "57",
+          "type": "dxa"
+        }
+      },
+      "tblLook": {
+        "firstColumn": "0",
+        "firstRow": "0",
+        "lastColumn": "0",
+        "lastRow": "0",
+        "noHBand": "0",
+        "noVBand": "0",
+        "val": "0000"
+      },
+      "grid": [
+        1077,
+        850,
+        1416,
+        789,
+        790,
+        790,
+        789,
+        790,
+        790,
+        790,
+        1962
+      ],
+      "rows": [
+        {
+          "trHeight": [
+            "567",
+            null
+          ],
+          "jc": "center",
+          "cells": [
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1077"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "楼层",
+                  "jc": "center",
+                  "spacing": {
+                    "line": "280",
+                    "lineRule": "atLeast"
+                  },
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "850"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "检测构件",
+                  "jc": "center",
+                  "spacing": {
+                    "line": "280",
+                    "lineRule": "atLeast"
+                  },
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                },
+                {
+                  "text": "位置",
+                  "jc": "center",
+                  "spacing": {
+                    "line": "280",
+                    "lineRule": "atLeast"
+                  },
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1416"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "尺寸检测结果m×n",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                },
+                {
+                  "text": "（mm×mm）",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "5528"
+              },
+              "gridSpan": "7",
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "厚度检测结果（mm）",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1962"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "横梁截面尺寸截面",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                },
+                {
+                  "text": "要求（mm）",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "trHeight": [
+            "567",
+            null
+          ],
+          "jc": "center",
+          "cells": [
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1077"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {
+                    "line": "280",
+                    "lineRule": "atLeast"
+                  },
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "850"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {
+                    "line": "280",
+                    "lineRule": "atLeast"
+                  },
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1416"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {
+                    "line": "280",
+                    "lineRule": "atLeast"
+                  },
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "检测面",
+                  "jc": "center",
+                  "spacing": {
+                    "line": "280",
+                    "lineRule": "atLeast"
+                  },
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "1",
+                  "jc": "center",
+                  "spacing": {
+                    "line": "280",
+                    "lineRule": "atLeast"
+                  },
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "3",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "4",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "5",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "最小值",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1962"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "trHeight": [
+            "567",
+            null
+          ],
+          "jc": "center",
+          "cells": [
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1077"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "六层",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "850"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "6",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1416"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "8276",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "t",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.14",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.12",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.11",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.10",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.10",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.10",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1962"
+              },
+              "gridSpan": null,
+              "vMerge": "restart",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "当横梁跨度不大于1.2m时，铝型材截面主要受力部位的厚度不应小于2.0mm；当横梁跨度大于1.2m时，其截面主要受力部位的厚度不应小于2.5mm",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "trHeight": [
+            "567",
+            null
+          ],
+          "jc": "center",
+          "cells": [
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1077"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "六层",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "850"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "7",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1416"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "8276",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "t",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.15",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.12",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.18",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.19",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.15",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.12",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1962"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "trHeight": [
+            "567",
+            null
+          ],
+          "jc": "center",
+          "cells": [
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1077"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "六层",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "850"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "8",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1416"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "8276",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "t",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.14",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.15",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.16",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.14",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.15",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.14",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1962"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "trHeight": [
+            "567",
+            null
+          ],
+          "jc": "center",
+          "cells": [
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1077"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "二十三层",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "850"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "9",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1416"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "8276",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "t",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.14",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.14",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.14",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.15",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.14",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.14",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1962"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "trHeight": [
+            "567",
+            null
+          ],
+          "jc": "center",
+          "cells": [
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1077"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "二十三层",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "850"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "10",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1416"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "8276",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "t",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.17",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.16",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "789"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.15",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.13",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.10",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "790"
+              },
+              "gridSpan": null,
+              "vMerge": null,
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "2.10",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [
+                    [
+                      false,
+                      null,
+                      null
+                    ]
+                  ],
+                  "images": []
+                }
+              ]
+            },
+            {
+              "tcW": {
+                "type": "dxa",
+                "w": "1962"
+              },
+              "gridSpan": null,
+              "vMerge": "continue",
+              "tcMar": null,
+              "vAlign": "center",
+              "paragraphs": [
+                {
+                  "text": "",
+                  "jc": "center",
+                  "spacing": {},
+                  "run_props": [],
+                  "images": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "media": []
+}
