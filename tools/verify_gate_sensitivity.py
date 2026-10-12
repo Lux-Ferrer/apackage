@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import io
+import json
 import shutil
 import sys
 import tempfile
@@ -129,6 +130,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="验证对拍闸门对图片/文本/合并结构确实敏感")
     parser.add_argument("--expected", default=str(DEFAULT_EXPECTED))
     parser.add_argument("--actual", default=str(DEFAULT_ACTUAL))
+    parser.add_argument("--json", help="把结果以 JSON 写到指定路径（供展示素材生成器消费）")
     args = parser.parse_args()
 
     expected, actual = Path(args.expected), Path(args.actual)
@@ -139,12 +141,15 @@ def main() -> int:
             return 2
 
     failures = []
+    payload = {"expected": expected.name, "actual": actual.name,
+               "baseline_diffs": None, "poisons": []}
     with tempfile.TemporaryDirectory() as tmp:
         tmpdir = Path(tmp)
 
         # 1) 阴性对照：原样必须 0 差异
         result = run_pair_comparison(expected, actual)
         baseline_diffs = len(result["diffs"])
+        payload["baseline_diffs"] = baseline_diffs
         print("阴性对照（原样一对）：%s"
               % ("0 差异 ✅" if baseline_diffs == 0 else "竟然有 %d 处差异 ❌" % baseline_diffs))
         if baseline_diffs:
@@ -171,9 +176,20 @@ def main() -> int:
         for name, note, caught, hit, ok in rows:
             print("| `%s` | %s | %s | `%s` |"
                   % (name, note, "✅" if caught else "❌ 没抓到", hit or "—"))
+            payload["poisons"].append({
+                "name": name, "note": note, "detected": bool(caught),
+                "detected_at": hit, "ok": bool(ok),
+            })
             if not ok:
                 failures.append("%s：期望落在 `%s`，实际 %s"
                                 % (name, _expected_prefix(name), hit or "没抓到任何差异"))
+
+    payload["passed"] = not failures
+    if args.json:
+        target = Path(args.json)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print("\n结果已写入：%s" % target)
 
     if failures:
         print("\n结果：不合格 %d 项 ❌" % len(failures))
