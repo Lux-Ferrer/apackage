@@ -33,11 +33,17 @@ import subprocess
 import sys
 from pathlib import Path
 
-import matplotlib
+try:
+    import matplotlib
 
-matplotlib.use("Agg")                     # 无显示环境（脚本/CI）也能出图
-import matplotlib.pyplot as plt           # noqa: E402
-from matplotlib.patches import FancyArrowPatch, FancyBboxPatch, Rectangle  # noqa: E402
+    matplotlib.use("Agg")                 # 无显示环境（脚本/CI）也能出图
+    import matplotlib.pyplot as plt       # noqa: E402
+    from matplotlib.patches import FancyArrowPatch, FancyBboxPatch, Rectangle  # noqa: E402
+except ImportError:                       # pragma: no cover - 只影响素材生成，不影响产品
+    # 退出码 3 = "本机没有 matplotlib，跳过"。verify_all.py 会把 3 当成跳过而不是失败，
+    # 这样这个自检可以进闸门清单，又不会强迫每个人都装绘图库。
+    print("跳过：本机没装 matplotlib（pip install matplotlib 后可生成展示素材）")
+    raise SystemExit(3)
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -63,6 +69,9 @@ PANEL = "#f8f9fb"
 FIG_INCHES = (12.0, 6.75)
 DPI = 200
 
+# `--dump` 会把图上的文字按阅读顺序打出来 —— 供"没有眼睛"时复核文案（截断、漏词就在这里露出来）
+DUMP = False
+
 CAPTION = ("Source: this repository — tools/verify_gate_sensitivity.py, "
            "tools/verify_all.py, and the M5 migration test suite.")
 
@@ -86,17 +95,34 @@ def footer(fig, text=CAPTION):
 # --------------------------------------------------------------------------
 # 版式自检（没有眼睛，就用 renderer 量）
 # --------------------------------------------------------------------------
-def audit_figure(fig, cells=None, allow_overlap=()) -> list:
-    """返回版式问题列表：文本越出画布、越出所属单元格、或两段文字互相压住。
+def audit_figure(fig, cells=None, regions=None, forbidden=None, allow_overlap=()) -> list:
+    """返回版式问题列表。检查五类问题，全部**用 renderer 量出来的包围盒**判断：
 
-    ``cells`` 是 ``[(text_artist, rect_in_figure_fraction)]``，用于表格类图。
-    ``allow_overlap`` 是允许重叠的文本对（用文本内容前缀表示），默认禁止任何文字重叠 ——
-    "两段文字压在一起"在幻灯片上就是不可读，而这是**唯一能在没有眼睛的情况下查出来的**排版错误。
+    1. 文本越出画布；
+    2. 文本越出它所属的容器（单元格 / 卡片 / 面板内的子框）；
+    3. 文本落进了"禁止区"（例如架构图中间那条箭头带）；
+    4. 两段文字互相压住；
+    5. 图里出现中文（PPT 是英文的）。
+
+    参数
+    ----
+    ``cells``      ``[(text_artist, rect)]`` —— 表格单元格
+    ``regions``    ``[(rect, [text_artist, ...])]`` —— 卡片/子框：里面的文字必须全在框内
+    ``forbidden``  ``[rect]`` —— 不许有任何文字进入的矩形带（箭头、图例条…）
+
+    ⚠️ 为什么要有 2 和 3：**第一版只查了"越出画布"和"越出单元格"**，
+    于是"子框里的第三行掉到框外、正好压在下面那个框上"和"说明文字被箭头头压住"
+    这两种问题一条都没查出来 —— 交付后由人眼发现的。**只查画布边界是不够的：
+    真正会出问题的是"文字跑出它自己的那块地方"，而不是跑出整张图。**
     """
     fig.canvas.draw()
     renderer = fig.canvas.get_renderer()
     problems = []
     width, height = fig.bbox.width, fig.bbox.height
+
+    def rect_px(rect):
+        return (rect[0] * width, rect[1] * height,
+                (rect[0] + rect[2]) * width, (rect[1] + rect[3]) * height)
 
     texts = []
     for text in fig.findobj(match=plt.Text):
@@ -112,15 +138,30 @@ def audit_figure(fig, cells=None, allow_overlap=()) -> list:
                             % (content[:40], box.x0, box.x1, box.y0, box.y1, width, height))
         texts.append((content, box))
 
-    for text, rect in (cells or []):
+    def check_inside(text, rect, kind):
         box = text.get_window_extent(renderer)
-        x0 = rect[0] * width
-        y0 = rect[1] * height
-        x1 = (rect[0] + rect[2]) * width
-        y1 = (rect[1] + rect[3]) * height
+        x0, y0, x1, y1 = rect_px(rect)
         if box.x0 < x0 - 1 or box.x1 > x1 + 1 or box.y0 < y0 - 1 or box.y1 > y1 + 1:
-            problems.append("表格文字溢出单元格：%r（文本 %.0f~%.0f，单元格 %.0f~%.0f）"
-                            % (text.get_text()[:40], box.x0, box.x1, x0, x1))
+            problems.append(
+                "%s放不下这段文字：%r\n"
+                "        文本 x %.0f~%.0f / y %.0f~%.0f，容器 x %.0f~%.0f / y %.0f~%.0f"
+                % (kind, text.get_text()[:44], box.x0, box.x1, box.y0, box.y1, x0, x1, y0, y1))
+
+    for text, rect in (cells or []):
+        check_inside(text, rect, "单元格")
+
+    for rect, items in (regions or []):
+        for text in items:
+            check_inside(text, rect, "容器内")
+
+    for rect in (forbidden or []):
+        x0, y0, x1, y1 = rect_px(rect)
+        for content, box in texts:
+            overlap_x = min(box.x1, x1) - max(box.x0, x0)
+            overlap_y = min(box.y1, y1) - max(box.y0, y0)
+            if overlap_x > 2 and overlap_y > 2:
+                problems.append("文字落进了禁止区（重叠 %.0f×%.0f px）：%r"
+                                % (overlap_x, overlap_y, content[:44]))
 
     def allowed(one, two):
         for prefix in allow_overlap:
@@ -137,6 +178,11 @@ def audit_figure(fig, cells=None, allow_overlap=()) -> list:
             if overlap_x > 2 and overlap_y > 2:
                 problems.append("两段文字重叠：%r ↔ %r（重叠 %.0f×%.0f px）"
                                 % (content_a[:28], content_b[:28], overlap_x, overlap_y))
+
+    if DUMP:      # --dump：把图上的文字按阅读顺序打出来，便于复核文案本身
+        print("    ── 图上的文字（自上而下）──")
+        for content, box in sorted(texts, key=lambda item: -item[1].y0):
+            print("    y=%4.0f x=%4.0f  %s" % (box.y0, box.x0, content.replace("\n", " ⏎ ")))
     return problems
 
 
@@ -357,27 +403,30 @@ def figure_test_summary(path: Path, facts: dict) -> list:
 
     tiles = [
         ("Python test suite", "%d" % facts["python_tests"], "tests passed",
-         "data layer · report layout · export · defects · UI", ACCENT),
+         ["data layer · report layout · export · defects · UI"], ACCENT),
         ("Front-end tests", "%d" % front_total,
          "tests passed (%d M5 + %d legacy UI)" % (facts["front_m5_tests"],
                                                   facts["front_legacy_tests"]),
-         "IndexedDB · docx engine · attachments · image pipeline", ACCENT),
+         ["IndexedDB · docx engine · attachments · image pipeline"], ACCENT),
         ("Baseline gates", "4 / 4", "green",
-         "Word diff · layout spec · case data · front-end JS", OK),
+         ["Word diff · layout spec · case data · front-end JS"], OK),
         ("Gate A & Gate B", "0", "differences",
-         "JS engine reproduces the frozen baseline exactly, and still", OK),
+         ["JS engine reproduces the frozen baseline exactly,",
+          "and still matches the real client report"], OK),
     ]
 
-    positions = [(0.045, 0.455), (0.522, 0.455), (0.045, 0.135), (0.522, 0.135)]
-    size = (0.433, 0.290)
+    positions = [(0.040, 0.470), (0.525, 0.470), (0.040, 0.150), (0.525, 0.150)]
+    size = (0.435, 0.290)
+    regions = []
 
-    for (label, value, unit, detail, colour), (x, y) in zip(tiles, positions):
+    for (label, value, unit, details, colour), (x, y) in zip(tiles, positions):
         fig.patches.append(FancyBboxPatch(
             (x, y), size[0], size[1], transform=fig.transFigure, boxstyle="round,pad=0.006",
             facecolor=PANEL, edgecolor=LINE, linewidth=1.0))
         fig.patches.append(Rectangle((x, y + size[1] - 0.011), size[0], 0.011,
                                      transform=fig.transFigure, facecolor=colour, edgecolor="none"))
-        fig.text(x + 0.020, y + size[1] - 0.050, label, fontsize=11.5, color=MUTED, va="center")
+        texts = [fig.text(x + 0.020, y + size[1] - 0.050, label, fontsize=11.5,
+                          color=MUTED, va="center")]
 
         # 数字与单位是**两个** text 对象，所以要量出数字的真实宽度再放单位 ——
         # 靠"字符数 × 常数"估算必然在 "4 / 4" 这种多字符值上压字（第一版就是）。
@@ -386,9 +435,16 @@ def figure_test_summary(path: Path, facts: dict) -> list:
         fig.canvas.draw()
         measured = value_text.get_window_extent(fig.canvas.get_renderer()).width \
             / fig.bbox.width
-        fig.text(x + 0.020 + measured + 0.010, y + size[1] - 0.142, unit, fontsize=12,
-                 color=colour, va="center", fontweight="bold")
-        fig.text(x + 0.020, y + 0.052, detail, fontsize=9.5, color=MUTED, va="center")
+        texts.append(value_text)
+        texts.append(fig.text(x + 0.020 + measured + 0.010, y + size[1] - 0.142, unit,
+                              fontsize=12, color=colour, va="center", fontweight="bold"))
+
+        # 说明文字：**逐行显式排**（不用 wrap=True —— 它按整张图的宽度折行，
+        # 结果是文字跑出卡片或句子被截断，第一版就留了个"and still"）
+        for index, line in enumerate(details):
+            texts.append(fig.text(x + 0.020, y + 0.072 - index * 0.030, line,
+                                  fontsize=9.5, color=MUTED, va="center"))
+        regions.append(((x, y, size[0], size[1]), texts))
 
     fig.text(0.045, 0.105,
              "Gate A runs twice: the M2 path (detection tables) and the M3 path (attachment pages "
@@ -398,7 +454,7 @@ def figure_test_summary(path: Path, facts: dict) -> list:
     footer(fig, "Counts collected %s from actual runs (pytest -q, npm test) — "
                 "not transcribed by hand." % facts.get("collected_at", ""))
     fig.savefig(path, dpi=DPI, facecolor="white")
-    problems = audit_figure(fig)
+    problems = audit_figure(fig, regions=regions)
     plt.close(fig)
     return problems
 
@@ -406,16 +462,32 @@ def figure_test_summary(path: Path, facts: dict) -> list:
 # --------------------------------------------------------------------------
 # 图 4：架构对比
 # --------------------------------------------------------------------------
-def box(fig, x, y, width, height, title, lines, colour, *, align="left"):
-    """一个带标题与要点行的圆角盒子。"""
+def box(fig, x, y, width, height, title, lines, colour, *, line_size=9.2):
+    """一个带标题与要点行的圆角盒子。**返回 `(rect, [texts])` 供版式自检。**
+
+    布局是从盒子的实际高度**算出来的**，不是拿固定行距堆的 ——
+    第一版用固定行距 `0.032`，三行要点就掉出了盒底（第三行正好压在下面那个盒子上，
+    由人眼发现）。现在：标题占顶部固定带，要点行在剩余高度里**平均分配**，
+    每两行之间保证留出文本高度以外的空隙；实在放不下时 `audit` 会报"容器内放不下这段文字"。
+    """
     fig.patches.append(FancyBboxPatch(
         (x, y), width, height, transform=fig.transFigure, boxstyle="round,pad=0.008",
         facecolor="white", edgecolor=colour, linewidth=1.6))
-    fig.text(x + width / 2, y + height - 0.030, title, fontsize=13, fontweight="bold",
-             color=colour, ha="center", va="center")
+
+    texts = []
+    title_gap = 0.030                                   # 标题中心距盒顶
+    texts.append(fig.text(x + width / 2, y + height - title_gap, title, fontsize=12.5,
+                          fontweight="bold", color=colour, ha="center", va="center"))
+
+    inner_top = y + height - 0.055                      # 要点区上沿（标题下方）
+    inner_bottom = y + 0.014                            # 要点区下沿（盒内留一点内边距）
+    count = max(len(lines), 1)
+    step = (inner_top - inner_bottom) / count
     for index, line in enumerate(lines):
-        fig.text(x + 0.016, y + height - 0.070 - index * 0.032, line, fontsize=9.8,
-                 color=INK if index == 0 else MUTED, va="center")
+        texts.append(fig.text(x + 0.014, inner_bottom + step * (count - index - 0.5), line,
+                              fontsize=line_size, color=INK if index == 0 else MUTED,
+                              va="center"))
+    return (x, y, width, height), texts, step
 
 
 def figure_architecture(path: Path) -> list:
@@ -428,78 +500,91 @@ def figure_architecture(path: Path) -> list:
     # 最右侧 0.890~0.985 留给「Data stays on device」标注 —— 不把标注挤在画布边上
     panel_w = 0.350
     left_x, right_x = 0.040, 0.530
-    panel_h = 0.480
-    top_y = 0.755
+    top_y = 0.760
+    inner_w = panel_w - 0.044
+    box_h = 0.142                       # 三行要点 + 标题所需的高度（算过的，不是猜的）
+    box_gap = 0.038
+    panel_h = 0.062 + box_h * 2 + box_gap + 0.026     # 标题带 + 两个子框 + 间距 + 内边距
     bottom_y = top_y - panel_h
     mid_x = (left_x + panel_w + right_x) / 2
+    centre_y = bottom_y + panel_h / 2
+
+    box_top = top_y - 0.062                               # 第一个子框的上沿
+    first_y = box_top - box_h
+    second_y = first_y - box_gap - box_h
+
+    regions = []
 
     # —— 左：Flask 参考实现 ——
     fig.patches.append(FancyBboxPatch(
         (left_x, bottom_y), panel_w, panel_h, transform=fig.transFigure,
         boxstyle="round,pad=0.010", facecolor=PANEL, edgecolor=LINE, linewidth=1.2))
-    fig.text(left_x + panel_w / 2, top_y - 0.036, "Flask app  (reference implementation)",
+    fig.text(left_x + panel_w / 2, top_y - 0.034, "Flask app  (reference implementation)",
              fontsize=12.5, fontweight="bold", color=INK, ha="center", va="center")
 
-    box(fig, left_x + 0.022, top_y - 0.185, panel_w - 0.044, 0.118,
-        "Server process",
-        ["Routes + Jinja templates render every page",
-         "python-docx builds the .docx server-side",
-         "Live only while the laptop runs"], MUTED)
-    box(fig, left_x + 0.022, top_y - 0.330, panel_w - 0.044, 0.118,
-        "SQLite + uploads/",
-        ["4 tables, foreign keys, ON DELETE CASCADE",
-         "Originals stored on the server disk",
-         "Data lives on the machine that runs it"], MUTED)
+    rect, texts, _step = box(fig, left_x + 0.022, first_y, inner_w,
+                             box_h, "Server process",
+                             ["Routes + Jinja templates render every page",
+                              "python-docx builds the .docx server-side",
+                              "Live only while the laptop runs"], MUTED)
+    regions.append((rect, texts))
+    rect, texts, _step = box(fig, left_x + 0.022, second_y, inner_w,
+                             box_h, "SQLite + uploads/",
+                             ["4 tables, foreign keys, ON DELETE CASCADE",
+                              "Originals stored on the server disk",
+                              "Data lives on the machine that runs it"], MUTED)
+    regions.append((rect, texts))
 
-    arrow_left = FancyArrowPatch((left_x + panel_w / 2, top_y - 0.190),
-                                 (left_x + panel_w / 2, top_y - 0.205),
-                                 transform=fig.transFigure, arrowstyle="-|>",
-                                 mutation_scale=12, color=MUTED, linewidth=1.4)
-    fig.patches.append(arrow_left)
-
-    # —— 中间：迁移箭头 ——
+    # —— 中间：迁移箭头（文字一律排在箭头**上方/下方**的独立带上，不碰箭头） ——
+    arrow_y = centre_y
     fig.patches.append(FancyArrowPatch(
-        (left_x + panel_w + 0.014, bottom_y + panel_h / 2),
-        (right_x - 0.014, bottom_y + panel_h / 2),
-        transform=fig.transFigure, arrowstyle="-|>", mutation_scale=26,
+        (left_x + panel_w + 0.016, arrow_y), (right_x - 0.016, arrow_y),
+        transform=fig.transFigure, arrowstyle="-|>", mutation_scale=18,
         color=ACCENT, linewidth=2.6))
-    fig.text(mid_x, bottom_y + panel_h / 2 + 0.048, "Migration", fontsize=13,
-             fontweight="bold", color=ACCENT, ha="center")
-    fig.text(mid_x, bottom_y + panel_h / 2 - 0.048,
-             "data layer · export engine · tests\nre-expressed, then proven equivalent",
-             fontsize=9, color=MUTED, ha="center", va="top", linespacing=1.5)
+    fig.text(mid_x, arrow_y + 0.082, "Migration", fontsize=13, fontweight="bold",
+             color=ACCENT, ha="center", va="center")
+    fig.text(mid_x, arrow_y - 0.062, "data layer · export engine · tests", fontsize=9,
+             color=MUTED, ha="center", va="center")
+    fig.text(mid_x, arrow_y - 0.092, "re-expressed, then proven equivalent", fontsize=9,
+             color=MUTED, ha="center", va="center")
+
+    # 箭头占用的横向带：不许有任何文字落进来（第一版说明文字正好被箭头头压住）
+    forbidden = [(left_x + panel_w + 0.010, arrow_y - 0.016,
+                  right_x - left_x - panel_w - 0.020, 0.032)]
 
     # —— 右：PWA ——
     fig.patches.append(FancyBboxPatch(
         (right_x, bottom_y), panel_w, panel_h, transform=fig.transFigure,
         boxstyle="round,pad=0.010", facecolor=PANEL, edgecolor=ACCENT, linewidth=1.6))
-    fig.text(right_x + panel_w / 2, top_y - 0.036, "Offline PWA  (M5)",
+    fig.text(right_x + panel_w / 2, top_y - 0.034, "Offline PWA  (M5)",
              fontsize=12.5, fontweight="bold", color=ACCENT, ha="center", va="center")
 
-    box(fig, right_x + 0.022, top_y - 0.185, panel_w - 0.044, 0.118,
-        "Browser",
-        ["Static shell + native ES modules (hash routing)",
-         "docx JS builds the .docx on the device",
-         "Installable: works with no network"], ACCENT)
-    box(fig, right_x + 0.022, top_y - 0.330, panel_w - 0.044, 0.118,
-        "IndexedDB",
-        ["4 stores + images blob store, hand-written cascade",
-         "Originals, thumbnails and export copies handled locally",
-         "Quota and persistence surfaced in the UI"], ACCENT)
+    rect, texts, _step = box(fig, right_x + 0.022, first_y, inner_w,
+                             box_h, "Browser",
+                             ["Static shell + native ES modules, hash routing",
+                              "docx JS builds the .docx on the device",
+                              "Installable: works with no network"], ACCENT)
+    regions.append((rect, texts))
+    rect, texts, _step = box(fig, right_x + 0.022, second_y, inner_w,
+                             box_h, "IndexedDB",
+                             ["4 stores + images blob store, hand-written cascade",
+                              "Originals, thumbnails and export copies kept local",
+                              "Quota and persistence surfaced in the UI"], ACCENT)
+    regions.append((rect, texts))
 
     # 右侧标注：数据不出设备
-    fig.text(right_x + panel_w + 0.055, bottom_y + panel_h / 2, "Data\nstays on\ndevice",
+    fig.text(right_x + panel_w + 0.055, centre_y, "Data\nstays on\ndevice",
              fontsize=12, fontweight="bold", color=OK, ha="center", va="center",
              linespacing=1.4)
 
-    fig.text(0.045, 0.105,
+    fig.text(0.040, 0.118,
              "Both versions write the same Word report: the same layout spec, the same table "
              "structure, the same attachment pages.\nThe Python engine is kept as the reference — "
              "the JavaScript engine has to reproduce it attribute by attribute.",
              fontsize=9.5, color=MUTED, va="top", linespacing=1.6)
     footer(fig)
     fig.savefig(path, dpi=DPI, facecolor="white")
-    problems = audit_figure(fig)
+    problems = audit_figure(fig, regions=regions, forbidden=forbidden)
     plt.close(fig)
     return problems
 
@@ -509,7 +594,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="生成 PRP 展示素材图")
     parser.add_argument("--refresh", action="store_true", help="现场跑测试刷新计数")
     parser.add_argument("--out", default=str(OUT_DIR))
+    parser.add_argument("--dump", action="store_true",
+                        help="打印每张图上的文字（按阅读顺序），便于复核文案")
     args = parser.parse_args()
+
+    global DUMP
+    DUMP = args.dump
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)

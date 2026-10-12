@@ -31,6 +31,11 @@ NPM = shutil.which("npm") or "npm.cmd"
 NODE = shutil.which("node") or "node"
 
 
+# 允许的退出码：默认只有 0。个别步骤可以声明"跳过的退出码"（3），
+# 表示"本机缺少可选依赖"——那是跳过，不是失败。
+SKIP_CODE = 3
+
+
 def steps() -> list:
     """(名称, 命令, 说明)。顺序按"从便宜到贵"排，早失败早停。"""
     return [
@@ -79,6 +84,11 @@ def steps() -> list:
         ("闸门敏感性",
          [PY, "tools/verify_gate_sensitivity.py"],
          "阴性对照 + 7 项下毒，证明闸门不是摆设"),
+        # 展示素材也要能自检：四张图渲染后自己量版式（文字越界/压字/落进禁止区/混进中文）。
+        # 允许退出码 3 = 本机没装 matplotlib，视为"跳过"而不是失败。
+        ("PRP 素材版式",
+         [PY, "tools/make_prp_figures.py"],
+         "四张展示图的版式自检（允许 3=跳过：没装 matplotlib）"),
     ]
 
 
@@ -100,9 +110,14 @@ def run(name: str, command: list, note: str, index: int, total: int) -> tuple:
     started = time.time()
     result = subprocess.run(command, cwd=str(ROOT))          # 输出直接透传，便于看细节
     elapsed = time.time() - started
-    ok = result.returncode == 0
-    print("%s（%.1fs）" % ("✅ 通过" if ok else "❌ 失败（退出码 %d）" % result.returncode, elapsed))
-    return name, ok, elapsed
+    if result.returncode == 0:
+        print("✅ 通过（%.1fs）" % elapsed)
+        return name, True, elapsed, False
+    if result.returncode == SKIP_CODE:
+        print("⏭ 跳过（退出码 %d：本机缺少可选依赖）（%.1fs）" % (SKIP_CODE, elapsed))
+        return name, True, elapsed, True
+    print("❌ 失败（退出码 %d，%.1fs）" % (result.returncode, elapsed))
+    return name, False, elapsed, False
 
 
 def main() -> int:
@@ -127,16 +142,18 @@ def main() -> int:
         results.append(run(name, command, note, index, total))
 
     failed = [item for item in results if not item[1]]
+    skipped = [item for item in results if item[3]]
     print("\n" + "=" * 78)
     print("汇总（共 %d 条，耗时 %.1fs）" % (len(results), sum(item[2] for item in results)))
     print("=" * 78)
-    for name, ok, elapsed in results:
-        print("  %s  %-24s %6.1fs" % ("✅" if ok else "❌", name, elapsed))
+    for name, ok, elapsed, was_skipped in results:
+        mark = "⏭" if was_skipped else ("✅" if ok else "❌")
+        print("  %s  %-24s %6.1fs" % (mark, name, elapsed))
 
     if failed:
         print("\n失败 %d 条：%s" % (len(failed), "、".join(item[0] for item in failed)))
         return 1
-    print("\n全部通过 ✅")
+    print("\n全部通过 ✅%s" % ("（%d 条因缺少可选依赖被跳过）" % len(skipped) if skipped else ""))
     return 0
 
 
