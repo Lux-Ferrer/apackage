@@ -81,21 +81,29 @@ def new_figure():
     return fig
 
 
-def title_block(fig, title, subtitle=None):
-    """统一的标题样式：左对齐加粗标题 + 一行灰色副标题。"""
-    fig.text(0.045, 0.935, title, fontsize=21, fontweight="bold", color=INK, va="top")
+def title_block(fig, title, subtitle=None) -> list:
+    """统一的标题样式：左对齐加粗标题 + 一行灰色副标题。**返回文本对象**供归属声明。"""
+    texts = [fig.text(0.045, 0.935, title, fontsize=21, fontweight="bold", color=INK, va="top")]
     if subtitle:
-        fig.text(0.045, 0.868, subtitle, fontsize=12, color=MUTED, va="top")
+        texts.append(fig.text(0.045, 0.868, subtitle, fontsize=12, color=MUTED, va="top"))
+    return texts
 
 
-def footer(fig, text=CAPTION):
-    fig.text(0.045, 0.020, text, fontsize=8.5, color=MUTED, va="bottom")
+def footer(fig, text=CAPTION) -> list:
+    """页脚（含出处）。**返回文本对象**供归属声明。"""
+    return [fig.text(0.045, 0.020, text, fontsize=8.5, color=MUTED, va="bottom")]
+
+
+# 标题带与页脚带：这两块本来就是通栏的，直接给一个"整条带"作为归属
+HEAD_BAND = (0.030, 0.840, 0.940, 0.140)
+FOOT_BAND = (0.030, 0.012, 0.940, 0.120)
 
 
 # --------------------------------------------------------------------------
 # 版式自检（没有眼睛，就用 renderer 量）
 # --------------------------------------------------------------------------
-def audit_figure(fig, cells=None, regions=None, forbidden=None, allow_overlap=()) -> list:
+def audit_figure(fig, cells=None, homes=None, forbidden=None, allow_overlap=(),
+                 strict=True) -> list:
     """返回版式问题列表。检查五类问题，全部**用 renderer 量出来的包围盒**判断：
 
     1. 文本越出画布；
@@ -107,13 +115,15 @@ def audit_figure(fig, cells=None, regions=None, forbidden=None, allow_overlap=()
     参数
     ----
     ``cells``      ``[(text_artist, rect)]`` —— 表格单元格
-    ``regions``    ``[(rect, [text_artist, ...])]`` —— 卡片/子框：里面的文字必须全在框内
+    ``homes``      ``[(rect, [text_artist, ...])]`` —— 每段文字的"归属":文字必须全在框内
     ``forbidden``  ``[rect]`` —— 不许有任何文字进入的矩形带（箭头、图例条…）
+    ``strict``     每一段文字都**必须**落在某个 home 里；没有归属的文字一律报错
 
-    ⚠️ 为什么要有 2 和 3：**第一版只查了"越出画布"和"越出单元格"**，
-    于是"子框里的第三行掉到框外、正好压在下面那个框上"和"说明文字被箭头头压住"
-    这两种问题一条都没查出来 —— 交付后由人眼发现的。**只查画布边界是不够的：
-    真正会出问题的是"文字跑出它自己的那块地方"，而不是跑出整张图。**
+    ⚠️ 为什么这么严：第一版只查"越出画布"和"越出单元格"，
+    于是"子框里的第三行掉到框外压住下面的框"和"文字被箭头头压住"都没查出来（人眼发现的）；
+    补了 home 之后，还有一处漏网 —— 中间那行说明**根本不属于任何 home**，
+    于是它横着长进了右侧面板里也没人管。**教训：没有归属的文字等于没人管，
+    所以现在要求"每一段文字都必须声明它属于哪一块"。**
     """
     fig.canvas.draw()
     renderer = fig.canvas.get_renderer()
@@ -133,6 +143,10 @@ def audit_figure(fig, cells=None, regions=None, forbidden=None, allow_overlap=()
         if any("\u4e00" <= char <= "\u9fff" for char in content):
             problems.append("图里出现了中文（PPT 是英文的）：%r" % content[:40])
         box = text.get_window_extent(renderer)
+        # 幽灵文本：matplotlib 会创建一些永远不会画出来的 Text（例如刻度标签的备用对象），
+        # 它们的包围盒是零面积。既不该参与重叠判断，也不该被要求声明归属。
+        if not text.get_visible() or (box.width < 1 and box.height < 1):
+            continue
         if box.x0 < -1 or box.y0 < -1 or box.x1 > width + 1 or box.y1 > height + 1:
             problems.append("文本越出画布：%r（x %.0f~%.0f / y %.0f~%.0f，画布 %.0f×%.0f）"
                             % (content[:40], box.x0, box.x1, box.y0, box.y1, width, height))
@@ -150,9 +164,25 @@ def audit_figure(fig, cells=None, regions=None, forbidden=None, allow_overlap=()
     for text, rect in (cells or []):
         check_inside(text, rect, "单元格")
 
-    for rect, items in (regions or []):
+    declared = [rect for rect, _items in (homes or [])]
+    declared += [rect for _text, rect in (cells or [])]
+
+    for rect, items in (homes or []):
         for text in items:
             check_inside(text, rect, "容器内")
+
+    if strict:
+        def inside(x, y, rect):
+            x0, y0, x1, y1 = rect_px(rect)
+            return x0 - 1 <= x <= x1 + 1 and y0 - 1 <= y <= y1 + 1
+
+        for content, box in texts:
+            centre = ((box.x0 + box.x1) / 2, (box.y0 + box.y1) / 2)
+            if not any(inside(centre[0], centre[1], rect) for rect in declared):
+                problems.append(
+                    "这段文字没有声明归属（可能横着长进别的元素里）：%r\n"
+                    "        中心 (%.0f, %.0f)；已声明的 home 有 %d 处"
+                    % (content[:40], centre[0], centre[1], len(declared)))
 
     for rect in (forbidden or []):
         x0, y0, x1, y1 = rect_px(rect)
@@ -265,7 +295,7 @@ CONVERGENCE = [
 
 def figure_gate_convergence(path: Path) -> list:
     fig = new_figure()
-    title_block(
+    head = title_block(
         fig, "Fidelity Gate A Convergence",
         "JS engine output vs. the frozen Python baseline — compared attribute by attribute "
         "across body, tables, rows, cells and images.")
@@ -288,6 +318,11 @@ def figure_gate_convergence(path: Path) -> list:
         ax.annotate(label, (x, y), textcoords="offset points", xytext=(0, -34),
                     ha="center", va="top", fontsize=9, color=MUTED, linespacing=1.5)
 
+    # 绘图区里的文字（数据标签、轮次说明、坐标轴标题与刻度）收进一个归属带：
+    # 它们本来就该待在绘图区内，于是"横向长出去压到别的元素"会被自动抓住
+    plot_texts = list(ax.texts) + [ax.xaxis.label, ax.yaxis.label] \
+        + list(ax.get_xticklabels()) + list(ax.get_yticklabels())
+
     ax.set_xlim(0.55, 4.85)
     ax.set_ylim(-34, 232)
     ax.set_xticks(rounds)
@@ -302,14 +337,19 @@ def figure_gate_convergence(path: Path) -> list:
     ax.set_axisbelow(True)
     ax.tick_params(colors=MUTED, labelsize=9.5)
 
-    fig.text(0.085, 0.105,
+    caption = [fig.text(0.085, 0.105,
              "201 → 33 → 2 → 0 over four rounds.  Convergence was reached with 11 attribute-level "
              "post-processing patches;\nno deviations were declared and the gate was not "
              "loosened. Gate A (both halves) and Gate B all report 0 differences.",
-             fontsize=9.5, color=MUTED, va="top", linespacing=1.6)
-    footer(fig)
+             fontsize=9.5, color=MUTED, va="top", linespacing=1.6)]
+    foot = footer(fig)
+    homes = [(HEAD_BAND, head),
+             # 归属带要盖住坐标轴文字（含最上面的刻度与 y 轴标题），
+             # 所以比绘图区本身大一圈
+             ((0.020, 0.050, 0.965, 0.810), plot_texts),
+             (FOOT_BAND, caption + foot)]
     fig.savefig(path, dpi=DPI, facecolor="white")
-    problems = audit_figure(fig)
+    problems = audit_figure(fig, homes=homes)
     plt.close(fig)
     return problems
 
@@ -336,7 +376,7 @@ def figure_gate_sensitivity(path: Path, payload: dict) -> list:
     by_name = {item["name"]: item for item in payload["poisons"]}
     rows = [(SENSITIVITY_EN[name], by_name[name]["detected_at"]) for name in SENSITIVITY_ORDER]
 
-    title_block(
+    head = title_block(
         fig, "Gate Sensitivity Check",
         "Seven defects were injected into a verified-good export. Every one must be caught — "
         "and caught at the right attribute.")
@@ -358,6 +398,11 @@ def figure_gate_sensitivity(path: Path, payload: dict) -> list:
     fig.text(col_2 + 0.014, top - header_h / 2, "Detected at (diff path)", fontsize=12.5,
              fontweight="bold", color="white", va="center")
 
+    # 表头两格也要声明归属（它们不是数据行，第一版漏了 —— 严格模式立刻报出来）
+    header_texts = [text for text in fig.texts if text.get_text() in
+                    ("Injected defect", "Detected at (diff path)")]
+    homes = [((left, top - header_h, right - left, header_h), header_texts)]
+
     cells = []
     for index, (defect, where) in enumerate(rows):
         y = top - header_h - (index + 1) * row_h
@@ -369,24 +414,27 @@ def figure_gate_sensitivity(path: Path, payload: dict) -> list:
                                      facecolor="none", edgecolor=LINE, linewidth=0.7))
 
         # 只在第一列前放一个绿色对勾：说明"被抓住"这件事本身
-        fig.text(col_1 + 0.014, y + row_h / 2, "✓", fontsize=12, color=OK,
-                 va="center", fontweight="bold")
+        tick_text = fig.text(col_1 + 0.014, y + row_h / 2, "✓", fontsize=12, color=OK,
+                             va="center", fontweight="bold")
         defect_text = fig.text(col_1 + 0.042, y + row_h / 2, defect, fontsize=11.5,
                                color=INK, va="center")
         path_text = fig.text(col_2 + 0.014, y + row_h / 2, where, fontsize=11,
                              color=ACCENT, va="center", family="monospace")
+        # 行归属从 ✓ 那一格开始（对勾也是这一行的文字）
+        cells.append((tick_text, (col_1 + 0.006, y + 0.006, 0.030, row_h - 0.012)))
         cells.append((defect_text, (col_1 + 0.040, y + 0.006, name_w - 0.046, row_h - 0.012)))
         cells.append((path_text, (col_2 + 0.012, y + 0.006, path_w - 0.026, row_h - 0.012)))
 
-    fig.text(0.045, 0.105,
+    caption = [fig.text(0.045, 0.105,
              "Control (no injection): 0 differences — so the gate is not reporting noise. All 7 "
              "injected defects were caught,\nand each was caught at the attribute that was "
              "actually modified. Rows are grouped by the attribute under test.",
-             fontsize=10, color=MUTED, va="top", linespacing=1.6)
-    footer(fig, "Source: python tools/verify_gate_sensitivity.py — "
-                "re-run it any time; the exit code is 0 only when all seven are caught.")
+             fontsize=10, color=MUTED, va="top", linespacing=1.6)]
+    foot = footer(fig, "Source: python tools/verify_gate_sensitivity.py — "
+                       "re-run it any time; the exit code is 0 only when all seven are caught.")
+    homes += [(HEAD_BAND, head), (FOOT_BAND, caption + foot)]
     fig.savefig(path, dpi=DPI, facecolor="white")
-    problems = audit_figure(fig, cells)
+    problems = audit_figure(fig, cells=cells, homes=homes)
     plt.close(fig)
     return problems
 
@@ -397,7 +445,7 @@ def figure_gate_sensitivity(path: Path, payload: dict) -> list:
 def figure_test_summary(path: Path, facts: dict) -> list:
     fig = new_figure()
     front_total = facts["front_m5_tests"] + facts["front_legacy_tests"]
-    title_block(fig, "Verification Summary",
+    head = title_block(fig, "Verification Summary",
                 "Everything below is produced by one command: "
                 "python tools/verify_all.py (14 checks, ~70 s).")
 
@@ -446,15 +494,16 @@ def figure_test_summary(path: Path, facts: dict) -> list:
                                   fontsize=9.5, color=MUTED, va="center"))
         regions.append(((x, y, size[0], size[1]), texts))
 
-    fig.text(0.045, 0.105,
+    caption = [fig.text(0.045, 0.105,
              "Gate A runs twice: the M2 path (detection tables) and the M3 path (attachment pages "
              "with embedded images).\nBoth report 0 differences — and the gate itself is checked "
              "for sensitivity, so a green result means something.",
-             fontsize=9.5, color=MUTED, va="top", linespacing=1.6)
-    footer(fig, "Counts collected %s from actual runs (pytest -q, npm test) — "
-                "not transcribed by hand." % facts.get("collected_at", ""))
+             fontsize=9.5, color=MUTED, va="top", linespacing=1.6)]
+    foot = footer(fig, "Counts collected %s from actual runs (pytest -q, npm test) — "
+                       "not transcribed by hand." % facts.get("collected_at", ""))
+    homes = [(HEAD_BAND, head)] + regions + [(FOOT_BAND, caption + foot)]
     fig.savefig(path, dpi=DPI, facecolor="white")
-    problems = audit_figure(fig, regions=regions)
+    problems = audit_figure(fig, homes=homes)
     plt.close(fig)
     return problems
 
@@ -492,7 +541,7 @@ def box(fig, x, y, width, height, title, lines, colour, *, line_size=9.2):
 
 def figure_architecture(path: Path) -> list:
     fig = new_figure()
-    title_block(fig, "Architecture: Reference Implementation → Offline PWA",
+    head = title_block(fig, "Architecture: Reference Implementation → Offline PWA",
                 "Same data model and the same Word output — the difference is where the work "
                 "and the data live.")
 
@@ -519,8 +568,9 @@ def figure_architecture(path: Path) -> list:
     fig.patches.append(FancyBboxPatch(
         (left_x, bottom_y), panel_w, panel_h, transform=fig.transFigure,
         boxstyle="round,pad=0.010", facecolor=PANEL, edgecolor=LINE, linewidth=1.2))
-    fig.text(left_x + panel_w / 2, top_y - 0.034, "Flask app  (reference implementation)",
-             fontsize=12.5, fontweight="bold", color=INK, ha="center", va="center")
+    left_title = fig.text(left_x + panel_w / 2, top_y - 0.034,
+                          "Flask app  (reference implementation)",
+                          fontsize=12.5, fontweight="bold", color=INK, ha="center", va="center")
 
     rect, texts, _step = box(fig, left_x + 0.022, first_y, inner_w,
                              box_h, "Server process",
@@ -541,14 +591,16 @@ def figure_architecture(path: Path) -> list:
         (left_x + panel_w + 0.016, arrow_y), (right_x - 0.016, arrow_y),
         transform=fig.transFigure, arrowstyle="-|>", mutation_scale=18,
         color=ACCENT, linewidth=2.6))
-    fig.text(mid_x, arrow_y + 0.082, "Migration", fontsize=13, fontweight="bold",
-             color=ACCENT, ha="center", va="center")
-    fig.text(mid_x, arrow_y - 0.062, "data layer · export engine · tests", fontsize=9,
-             color=MUTED, ha="center", va="center")
-    fig.text(mid_x, arrow_y - 0.092, "re-expressed, then proven equivalent", fontsize=9,
-             color=MUTED, ha="center", va="center")
+    # 「Migration」只准待在两个面板之间的那条缝里（缝宽 0.14，文字约 0.06 宽）——
+    # 声明成归属之后，它要是变长了就会立刻报错，而不是长进右边的框里
+    migration_text = fig.text(mid_x, arrow_y + 0.082, "Migration", fontsize=13,
+                              fontweight="bold", color=ACCENT, ha="center", va="center")
+    # ⚠️ 这里原本还有两行灰字（"data layer · export engine · tests / re-expressed…"）。
+    # 它们**不属于任何容器**，于是横着长进了右侧面板，和 IndexedDB 框里的文字挤在一起。
+    # 按评审意见直接删掉：底部注释已经表达了同样的意思，
+    # 而"两个框 + 箭头 + 右侧 Data stays on device"本身已经把话说完了。
 
-    # 箭头占用的横向带：不许有任何文字落进来（第一版说明文字正好被箭头头压住）
+    # 箭头占用的横向带：不许有任何文字落进来（早先版本说明文字被箭头头压住）
     forbidden = [(left_x + panel_w + 0.010, arrow_y - 0.016,
                   right_x - left_x - panel_w - 0.020, 0.032)]
 
@@ -556,8 +608,9 @@ def figure_architecture(path: Path) -> list:
     fig.patches.append(FancyBboxPatch(
         (right_x, bottom_y), panel_w, panel_h, transform=fig.transFigure,
         boxstyle="round,pad=0.010", facecolor=PANEL, edgecolor=ACCENT, linewidth=1.6))
-    fig.text(right_x + panel_w / 2, top_y - 0.034, "Offline PWA  (M5)",
-             fontsize=12.5, fontweight="bold", color=ACCENT, ha="center", va="center")
+    right_title = fig.text(right_x + panel_w / 2, top_y - 0.034, "Offline PWA  (M5)",
+                           fontsize=12.5, fontweight="bold", color=ACCENT,
+                           ha="center", va="center")
 
     rect, texts, _step = box(fig, right_x + 0.022, first_y, inner_w,
                              box_h, "Browser",
@@ -572,19 +625,27 @@ def figure_architecture(path: Path) -> list:
                               "Quota and persistence surfaced in the UI"], ACCENT)
     regions.append((rect, texts))
 
-    # 右侧标注：数据不出设备
-    fig.text(right_x + panel_w + 0.055, centre_y, "Data\nstays on\ndevice",
-             fontsize=12, fontweight="bold", color=OK, ha="center", va="center",
-             linespacing=1.4)
+    # 右侧标注：数据不出设备（归属 = 面板右边那条竖带）
+    stays_text = fig.text(right_x + panel_w + 0.055, centre_y, "Data\nstays on\ndevice",
+                          fontsize=12, fontweight="bold", color=OK, ha="center",
+                          va="center", linespacing=1.4)
 
-    fig.text(0.040, 0.118,
+    caption = [fig.text(0.040, 0.118,
              "Both versions write the same Word report: the same layout spec, the same table "
              "structure, the same attachment pages.\nThe Python engine is kept as the reference — "
              "the JavaScript engine has to reproduce it attribute by attribute.",
-             fontsize=9.5, color=MUTED, va="top", linespacing=1.6)
-    footer(fig)
+             fontsize=9.5, color=MUTED, va="top", linespacing=1.6)]
+    foot = footer(fig)
+    homes = [(HEAD_BAND, head),
+             # 面板标题的归属 = 各自面板的顶部条（不许横向长到隔壁面板去）
+             ((left_x, top_y - 0.062, panel_w, 0.058), [left_title]),
+             ((right_x, top_y - 0.062, panel_w, 0.058), [right_title])] + regions + [
+        ((mid_x - 0.070, arrow_y + 0.055, 0.140, 0.055), [migration_text]),
+        ((right_x + panel_w + 0.005, centre_y - 0.060, 0.120, 0.120), [stays_text]),
+        (FOOT_BAND, caption + foot),
+    ]
     fig.savefig(path, dpi=DPI, facecolor="white")
-    problems = audit_figure(fig, regions=regions, forbidden=forbidden)
+    problems = audit_figure(fig, homes=homes, forbidden=forbidden)
     plt.close(fig)
     return problems
 

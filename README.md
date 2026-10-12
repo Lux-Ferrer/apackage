@@ -240,6 +240,8 @@ python tools/export_fixture_data.py --check
 | --- | --- |
 | `deliverables/samples/` | 5 份样例报告 + 清单（章程 Objective 3 的度量证据） |
 | `deliverables/fidelity-report.md` | 与客户样例的逐属性对拍报告 |
+| `deliverables/m5-gate-a-diff.md` | 闸门 A 的归档报告（两半 0 差异 + 闸门可信度证据） |
+| `deliverables/prp/` | PRP 展示素材：4 张证明类图（收敛曲线 / 敏感性表 / 测试总览 / 架构对比），由 `tools/make_prp_figures.py` 生成，图上的数字取自真实运行输出 |
 | `tests/fixtures/generated_baseline.docx` | 回归基线：生成物偏离即测试失败，直到显式重新冻结 |
 
 ## 目录结构
@@ -333,6 +335,7 @@ Capstone/
 │                              verify_all.py（一条命令跑完全部闸门）
 │                              verify_gate_sensitivity.py（闸门可信度：阴性 + 下毒）
 │                              serve_web.py（起 M5 静态服务 + 打印手机地址）
+│                              make_prp_figures.py（PRP 展示素材 + 版式自检）
 │                              export_web_assets.py · export_fixture_data.py（M5 生成物）
 │                              attachment_fixture.py · build_attachment_baseline.py（附页夹具）
 │                              js/generate_from_fixture.mjs · js/fixture-codec.mjs
