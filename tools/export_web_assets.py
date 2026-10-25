@@ -35,6 +35,7 @@ JSON 模块导入（``import data from './x.json' with { type: 'json' }``）在�
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -51,6 +52,7 @@ CONFIG_JS = WEB_DIR / "app" / "config.js"
 SPEC_JS = WEB_DIR / "app" / "report" / "spec.js"
 SPEC_JSON_COPY = WEB_DIR / "assets" / "report_layout.json"
 STYLE_CSS = WEB_DIR / "styles" / "app.css"
+SHELL_JS = WEB_DIR / "assets" / "shell.js"
 
 SOURCE_CSS = ROOT / "webapp" / "static" / "css" / "app.css"
 
@@ -149,6 +151,49 @@ def _render_module(header_source: str, const_name: str, payload: dict) -> str:
         HEADER % header_source, const_name, body, const_name)
 
 
+def shell_assets() -> list:
+    """离线可用所需的**全部文件**（相对 ``web/``，正斜杠，排序）。
+
+    为什么要"算出来"而不是手写：Service Worker 最常见的失败就是**漏了一个文件** ——
+    在线时一切正常，一断网就白屏，而且很难复现。这里按目录规则扫一遍，
+    ``web/tests/pwa.test.mjs`` 再反向核对"源码里 import 到的每个模块都在清单里"。
+
+    规则是**列举式**的（不是"扫全盘"）：只把运行时真正会 fetch 的东西放进去。
+    ``tests/``、``assets/fixture_data.json``（闸门用）、``assets/report_layout.json``
+    （只是给人和工具看的副本）都不进 —— 少缓存几十 KB，也少一份"到底是哪份"的困惑。
+    """
+    included = []
+
+    def add(relative: Path) -> None:
+        included.append(relative.as_posix())
+
+    add(Path("index.html"))
+    add(Path("manifest.webmanifest"))
+    for name in ("app.css", "m5.css"):
+        if (WEB_DIR / "styles" / name).exists():
+            add(Path("styles") / name)
+    add(Path("assets/report_base.docx"))
+    for path in sorted((WEB_DIR / "app").rglob("*.js")):
+        add(path.relative_to(WEB_DIR))
+    for path in sorted((WEB_DIR / "vendor").glob("*")):
+        if path.is_file():
+            add(path.relative_to(WEB_DIR))
+    for path in sorted((WEB_DIR / "icons").glob("*.png")):
+        add(path.relative_to(WEB_DIR))
+    return sorted(included)
+
+
+def shell_version(assets: list) -> str:
+    """内容指纹：任何一个被缓存的文件变了，版本号就变 → 安装新 SW、清掉旧缓存。"""
+    digest = hashlib.sha256()
+    for relative in assets:
+        digest.update(relative.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update((WEB_DIR / relative).read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()[:12]
+
+
 def vendor_entries() -> dict:
     """要复制的第三方构建产物：``目标路径 → (源路径, 版本号)``。
 
@@ -180,6 +225,7 @@ def build(check_only: bool = False) -> int:
         SPEC_JSON_COPY: json.dumps(config_payload_spec(), ensure_ascii=False, indent=2) + "\n",
         SPEC_JS: _render_module("webapp/resources/report_layout.json", "SPEC", config_payload_spec()),
         STYLE_CSS: CSS_HEADER + style_source(),
+        SHELL_JS: shell_source(),
     }
 
     stale = [path for path, text in sources.items()
@@ -238,6 +284,30 @@ def config_payload_spec() -> dict:
     """版式规格：原样读 JSON（它本来就是语言中立的）。"""
     path = config.RESOURCE_DIR / "report_layout.json"
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def shell_source() -> str:
+    """``web/assets/shell.js``：给 Service Worker 用的离线清单 + 版本号。"""
+    assets = shell_assets()
+    missing = [item for item in assets if not (WEB_DIR / item).exists()]
+    if missing:
+        raise SystemExit("离线清单里有不存在的文件：%s" % "、".join(missing))
+    lines = [
+        "/* 本文件由 tools/export_web_assets.py 生成，请勿手改。",
+        " * 真相源：web/ 目录（规则见脚本里的 shell_assets()）",
+        " * 重新生成：python tools/export_web_assets.py",
+        " *",
+        " * 用途：Service Worker 的离线预缓存清单 + 内容指纹版本号。",
+        " * 版本号只取决于被缓存文件的内容 —— 改了任何一个文件，SW 都会装新版本并清掉旧缓存。",
+        " */",
+        "",
+        "export const SHELL_VERSION = %s;" % json.dumps(shell_version(assets)),
+        "",
+        "export const SHELL_ASSETS = Object.freeze([",
+    ]
+    lines += ["    %s," % json.dumps(item, ensure_ascii=False) for item in assets]
+    lines += ["]);", "", "export default SHELL_ASSETS;", ""]
+    return "\n".join(lines)
 
 
 def style_source() -> str:

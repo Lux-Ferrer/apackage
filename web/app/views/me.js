@@ -14,7 +14,7 @@ import * as defects from '../repo/defects.js';
 import * as images from '../repo/images.js';
 import * as measurements from '../repo/measurements.js';
 import * as projects from '../repo/projects.js';
-import { describeStorage, formatBytes, requestPersistence } from '../storage.js';
+import { describeStorage, formatBytes, requestPersistence, shellVersion } from '../storage.js';
 import { STORE } from '../db.js';
 import { badge, h, infoTable, link } from '../ui/dom.js';
 import { confirmDialog, flash } from '../ui/dialog.js';
@@ -298,6 +298,7 @@ const MODULES = [
 ];
 
 export async function about(ctx) {
+    const offlineVersion = await shellVersion();
     return {
         nodes: [
             card([
@@ -335,12 +336,19 @@ export async function about(ctx) {
                         + 'python -m http.server 8080 --directory web）。用 file:// 直接打开不行 —— '
                         + 'IndexedDB 与 ES modules 都会受限。',
                 }),
+                h('p.hint', {
+                    text: '装过一次之后可以离线使用（浏览器缓存了应用壳）；iOS 上请用'
+                        + '「添加到主屏幕」，并在「我的 → 数据管理」里申请持久化授权。',
+                }),
                 h('table.grid', null, h('tbody', null, [
                     ['名称', CONFIG.APP_INFO.name],
                     ['English', CONFIG.APP_INFO.name_en],
                     ['版本', CONFIG.APP_INFO.version],
                     ['出品', CONFIG.APP_INFO.org],
                     ['需求方', CONFIG.APP_INFO.client],
+                    // 离线缓存的版本号：改过任何一个被缓存的文件它就会变，
+                    // 出"怎么还是旧页面"这类问题时，第一眼就能对比出来
+                    ['离线缓存版本', offlineVersion ?? '（还没有离线缓存）'],
                 ].map(([label, value]) => h('tr', null, [h('th', { text: label }), h('td', { text: value })])))),
             ]),
         ],

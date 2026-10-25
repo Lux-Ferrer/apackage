@@ -1,0 +1,35 @@
+{
+    "name": "Curtain Wall Inspection Report Tool",
+    "short_name": "Curtain Wall",
+    "description": "Record curtain-wall inspection data and generate Word reports on the device. Works offline.",
+    "lang": "en",
+    "dir": "ltr",
+    "id": "/",
+    "start_url": "./index.html",
+    "scope": "./",
+    "display": "standalone",
+    "display_override": ["standalone", "minimal-ui"],
+    "orientation": "portrait-primary",
+    "background_color": "#f5f6f8",
+    "theme_color": "#1668dc",
+    "icons": [
+        {
+            "src": "./icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "./icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "./icons/icon-512-maskable.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

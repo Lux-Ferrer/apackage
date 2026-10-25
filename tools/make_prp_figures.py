@@ -261,8 +261,12 @@ def load_facts(refresh: bool) -> dict:
         return refresh_facts()
 
     facts = json.loads(FACTS_PATH.read_text(encoding="utf-8"))
-    # 便宜的过期检查：pytest 只收集不执行（约 2 秒），对不上就提醒重新 --refresh。
-    # 素材上的数字一旦和仓库对不上，在评审现场就是可信度问题。
+
+    # 便宜的过期检查（都不跑测试）：
+    #  · Python：`pytest --collect-only` 只收集不执行，约 2 秒；
+    #  · 前端：数一数 `web/tests/*.test.mjs` 里以 `test(` 开头的行（约 10ms）。
+    #    这是个**代理指标**（如果将来有人把测试写在循环里，它会少数 → 只会误报、不会漏报），
+    #    所以只警告、不失败。理由是：素材上的数字一旦和仓库对不上，在评审现场就是可信度问题。
     collect = subprocess.run([PY, "-m", "pytest", "-q", "--collect-only"],
                              cwd=str(ROOT), capture_output=True, text=True)
     found = re.search(r"(\d+)\s+tests?\s+collected", collect.stdout)
@@ -270,6 +274,15 @@ def load_facts(refresh: bool) -> dict:
         print("⚠ Python 测试数已变化（缓存 %s → 实际 %s）。请用 --refresh 重新生成素材，"
               "否则图上的数字是旧的。"
               % (facts.get("python_tests"), found.group(1)))
+
+    declared = 0
+    for test_file in sorted((ROOT / "web" / "tests").glob("*.test.mjs")):
+        for line in test_file.read_text(encoding="utf-8").splitlines():
+            if line.startswith("test("):
+                declared += 1
+    if declared and declared != facts.get("front_m5_tests"):
+        print("⚠ 前端测试数看起来变了（缓存 %s → 声明 %s）。请用 --refresh 重新生成素材。"
+              % (facts.get("front_m5_tests"), declared))
     return facts
 
 
@@ -458,9 +471,11 @@ def figure_test_summary(path: Path, facts: dict) -> list:
          ["IndexedDB · docx engine · attachments · image pipeline"], ACCENT),
         ("Baseline gates", "4 / 4", "green",
          ["Word diff · layout spec · case data · front-end JS"], OK),
-        ("Gate A & Gate B", "0", "differences",
-         ["JS engine reproduces the frozen baseline exactly,",
-          "and still matches the real client report"], OK),
+        # M5-5 之后闸门有三道（A 复刻基线 / B 对齐真实报告 / C 无 Python 自检），
+        # 三道都是 0 差异。标题保留 A/B（评审要求的那两个），C 作为第三行说明。
+        ("Gate A / B / C", "0", "differences",
+         ["reproduces the frozen baseline (A), still matches the",
+          "real client report (B), and self-checks in pure JS (C)"], OK),
     ]
 
     positions = [(0.040, 0.470), (0.525, 0.470), (0.040, 0.150), (0.525, 0.150)]

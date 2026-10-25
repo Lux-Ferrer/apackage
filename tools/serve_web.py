@@ -59,8 +59,25 @@ def local_addresses() -> list:
 class Handler(http.server.SimpleHTTPRequestHandler):
     """在默认处理器上加两件事：不缓存（开发时免得改了代码看不到）+ 安静一点的日志。"""
 
+    # 显式声明关键类型。**为什么不能只靠系统 mimetypes**：
+    # `.webmanifest` 在不少系统上认不出来，会被当成 application/octet-stream ——
+    # 于是一个完全正确的 PWA 清单会被浏览器**静默拒绝**（不可安装，且几乎没有报错）。
+    # 这类问题只在别人的机器上复现时最难查，所以把话直接写死在代码里。
+    extensions_map = {
+        **http.server.SimpleHTTPRequestHandler.extensions_map,
+        ".webmanifest": "application/manifest+json",
+        ".mjs": "text/javascript",
+        ".js": "text/javascript",
+        ".css": "text/css",
+        ".json": "application/json",
+        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ".png": "image/png",
+        ".svg": "image/svg+xml",
+    }
+
     def end_headers(self):
-        # 开发/验证阶段一律不缓存：否则手机上会一直看到旧版本（Service Worker 是 M5-5 的事）
+        # 开发/验证阶段一律不缓存：否则手机上会一直看到旧版本
+        # （离线缓存由 Service Worker 负责，走的是它自己的 Cache Storage，与这里无关）
         self.send_header("Cache-Control", "no-store, must-revalidate")
         super().end_headers()
 

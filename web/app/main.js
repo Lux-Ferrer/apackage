@@ -242,6 +242,41 @@ export function createApp({
 /* --------------------------------------------------------------------------
  * 浏览器入口
  * ------------------------------------------------------------------------ */
+
+/**
+ * 注册 Service Worker（离线可用）。
+ *
+ * 三处克制的设计：
+ *  - 只在 http(s) 下注册：`file://` 打开时 SW 根本不可用，试了只会报错；
+ *  - **不自动 skipWaiting**：新版本先待在 waiting，等页面说了再切 ——
+ *    否则用户正在填的表单会在脚下被换掉；
+ *  - 任何失败都只 warning，不打断启动：离线能力是增强，不是前提。
+ */
+async function registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) return null;
+    if (location.protocol !== 'http:' && location.protocol !== 'https:') return null;
+    try {
+        const registration = await navigator.serviceWorker.register('./sw.js', {
+            type: 'module',
+            scope: './',
+        });
+        registration.addEventListener('updatefound', () => {
+            const worker = registration.installing;
+            if (!worker) return;
+            worker.addEventListener('statechange', () => {
+                if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+                    flash('新版本已下载，关闭本页再打开即可用上');
+                }
+            });
+        });
+        return registration;
+    } catch (error) {
+        // 常见原因：非安全上下文，或静态服务器不支持 module worker。功能不受影响，只是不能离线。
+        if (globalThis.console) console.warn('[M5] Service Worker 注册失败（不影响在线使用）', error);
+        return null;
+    }
+}
+
 export async function boot() {
     const app = createApp({});
     try {
@@ -259,6 +294,7 @@ export async function boot() {
         return null;
     }
     await app.start();
+    await registerServiceWorker();
     globalThis.__APP__ = app;                 // 便于真机排错时在控制台里查状态
     return app;
 }

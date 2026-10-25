@@ -30,7 +30,7 @@ Existing Curtain Wall Inspection Data Recording and Report Generation Tool —�
 | M3 | 缺陷填报完善（图片/规范/建议/绑定项目）+ 附页导出 | ✅ 完成 |
 | M4 | 报告管理（列表/筛选/详情/删除） | ✅ 完成 |
 | UI | 移动优先响应式改造（静态壳 + 客户端渲染，为 M5 铺路） | ✅ 完成 |
-| M5 | 前端本地化改造（IndexedDB + docx JS + 纯静态 PWA） | 🚧 进行中：**数据层 ✅ / 导出引擎 ✅（含附页，0 差异）/ 图片管线与配额 ✅ / UI 接线 ✅** / PWA 与离线待做 |
+| M5 | 前端本地化改造（IndexedDB + docx JS + 纯静态 PWA） | ✅ 完成：数据层 / 导出引擎（含附页，0 差异）/ 图片管线与配额 / UI 接线 / **PWA 与离线**；**只剩真机验收**（见 checklist） |
 
 **M5 已完成的部分**（新代码全在 `web/`，与 `webapp/` 并存）：
 
@@ -47,6 +47,13 @@ Existing Curtain Wall Inspection Data Recording and Report Generation Tool —�
   报告 / 我的 / 数据管理 / 关于）+ `web/app/ui/*`（DOM 原语、确认弹窗、提示、检测面交互）。
   壳与 `webapp/templates/` + `webapp/static/css/app.css` 一一对应，**CSS 是生成物**（同一份真相源）；
 - **数据管理页**（`#/me/data`）：已用空间、持久化授权、**导出/导入备份 zip**、重建缩略图、清除全部报告；
+- **PWA（离线可用）**：`web/sw.js` + `web/manifest.webmanifest` + 生成的 `web/assets/shell.js`
+  （离线清单 + 内容指纹版本号）。清单是**算出来的**不是手写的 —— SW 最常见的失败是"漏一个文件"，
+  在线全绿、断网白屏；测试会反查"源码 import 到的每个模块在不在清单里"。新版本**不自动 skipWaiting**，
+  以免正在填表的页面被换掉；
+- **闸门 C（不借助 Python 的自检）**：`web/app/report/fingerprint.js` 用 JS 重写了指纹与差异逻辑，
+  与 Python 冻结的 `generated_baseline.fingerprint.json` **逐属性一致**（0 差异），
+  于是"没有 Python 的环境也能自检"这条链闭合了；
 - **备份**：`web/app/import-export.js` —— `backup.json` + 原图打进一个 zip；导入先 `inspectBackup()`
   把"会覆盖什么"讲清楚再确认（备份是完整快照，不做合并）；缩略图不进备份，导入时现重建；
 - **闸门自身的可信度**：`tools/verify_gate_sensitivity.py` 往产物里逐个下毒（图片尺寸/换成别的图/
@@ -62,11 +69,19 @@ M4 交付：报告管理列表（倒序 + 隐患等级徽标 + 缩略图 + 绑�
 
 M3 交付：隐患图片（必填、拍照/相册、≤20MB、原图落盘且保留原文件名）、相关规范/补充建议、绑定项目；项目详情显示真实关联报告与「附加 N 份并导出 / 仅导出检测报告」二选一；导出附页（每份独立成页、9 行两列信息表、导出时现压的图片副本、图片缺失时降级）。
 
-> **架构说明**：M5 将把导出与数据层迁移到前端（IndexedDB + docx JS），移除 Flask 后端改为纯静态 PWA。M2/M3 的 Python 实现是该迁移的**参考实现与规格来源**，`report_layout.json` 中的数值可直接被 JS 复用。
+> **架构说明（M5 已完成）**：数据层与导出引擎都已经迁到前端（IndexedDB + docx JS），
+> **对外交付入口是纯静态的 `web/`（可离线安装的 PWA）**。
+>
+> `webapp/` + `app.py`（Flask 版）**保留但降级为 legacy**：
+> 它是对外交付入口的**参考实现与规格来源** —— 客户换模板时的流程是
+> "先改 Python → 重新 `--bless` 基线 → JS 引擎跟上"，闸门 A/B 的基准也由它产出。
+> 它仍然能跑（`python app.py`），但**不再是要交给现场用的那一版**。
+> 两边的数据是**各自独立的**（SQLite 文件 vs 浏览器 IndexedDB），不会互相同步；
+> 要搬数据请用「我的 → 数据管理」的备份 zip。
 
 ## 范围
 
-**包含**：立柱 / 横梁截面尺寸检测（每检测面 5 个厚度值，自动计算最小值）· 缺陷检测填报 · 报告管理 · 项目管理 · 项目级 Word 报告导出 · 本地 SQLite 存储与本地 Web 部署。
+**包含**：立柱 / 横梁截面尺寸检测（每检测面 5 个厚度值，自动计算最小值）· 缺陷检测填报 · 报告管理 · 项目管理 · 项目级 Word 报告导出 · **本地存储（浏览器 IndexedDB；legacy 版为 SQLite）** 与本地/局域网 Web 部署 · 离线可用。
 
 **不包含**（已确认范围外）：膜厚检测 · 玻璃面板尺寸及厚度检测 · 速记 · 统计 · 登录 · 结构安全评定 · 原生手机 App。
 
@@ -84,6 +99,10 @@ python -m http.server 8080 --directory web
 
 然后浏览器打开 <http://127.0.0.1:8080>。**不要双击 `index.html` 用 `file://` 打开** ——
 IndexedDB 与 ES modules 都会受限（真这样打开时页面会给出这句提示）。
+
+**离线使用**：打开一次之后浏览器会缓存应用壳（Service Worker），之后断网也能打开、能录入、能导出 Word。
+手机上建议「添加到主屏幕」（iOS 只有这样才能拿到较持久的存储）；离线缓存的版本号在「我的 → 关于」里，
+改过任何一个被缓存的文件它就会变（查"怎么还是旧页面"时先看它）。
 
 **Flask 参考实现**（服务端渲染、无 JS 也能录入；中期展示用）：
 
@@ -161,8 +180,8 @@ python tools/verify_all.py --list   # 只列出会跑什么
 ```
 
 它按顺序跑：生成 JS 产物 → 生成物同步（2 条）→ Python 测试 → 前端 JS 测试 →
-4 条 Flask 基线 → 补丁验证 → 附页基线 → 闸门 A（两半）→ 闸门 B → 闸门敏感性。
-**任何代码改动之后都应该跑它**。
+4 条 Flask 基线 → 补丁验证 → 附页基线 → 闸门 A（两半）→ 闸门 B → **闸门 C（纯 JS）** →
+闸门敏感性 → 展示素材版式。**任何代码改动之后都应该跑它**。
 
 逐条手跑（需要看细节时）：
 
@@ -202,7 +221,8 @@ python tools/make_report_template.py
 M5 移植验收（可选，需要 Node.js。设计见 `docs/management/M5-设计.md`）：
 
 ```powershell
-npm test                      # 数据层 + 引擎 + 附页 + 图片管线 + 端到端 UI（178 项）+ 既有 UI 测试（58 项）
+npm test                      # 数据层 + 引擎 + 附页 + 图片管线 + 指纹 + 端到端 UI + 离线清单（193 项）
+                              # 外加既有的 Flask UI 测试（58 项），共 251 项
 
 # 生成两份被测产物：无附页 / 含附页
 node tools/js/generate_from_fixture.mjs
@@ -213,6 +233,9 @@ python tools/compare_report_with_sample.py --expected tests/fixtures/attachment_
 
 # 闸门 B：JS 引擎产物 vs 真实客户报告裁剪版（要求 0 差异）
 python tools/compare_report_with_sample.py --expected tests/fixtures/检测表_真实裁剪.docx --actual _work/js_generated.docx
+
+# 闸门 C：**不借助 Python** 的自检（纯 JS 指纹实现 vs 语言中立的指纹 JSON，要求 0 差异）
+node tools/js/check_gate_c.mjs
 
 # 闸门自身可信吗？阴性对照（原样必须 0 差异）+ 7 项下毒必须全部被抓到
 python tools/verify_gate_sensitivity.py
@@ -243,6 +266,7 @@ python tools/export_fixture_data.py --check
 | `deliverables/m5-gate-a-diff.md` | 闸门 A 的归档报告（两半 0 差异 + 闸门可信度证据） |
 | `deliverables/prp/` | PRP 展示素材：4 张证明类图（收敛曲线 / 敏感性表 / 测试总览 / 架构对比），由 `tools/make_prp_figures.py` 生成，图上的数字取自真实运行输出 |
 | `tests/fixtures/generated_baseline.docx` | 回归基线：生成物偏离即测试失败，直到显式重新冻结 |
+| `tests/fixtures/generated_baseline.fingerprint.json` | **闸门 C** 的期望值（语言中立），纯 JS 自检用它 |
 
 ## 目录结构
 
@@ -273,7 +297,10 @@ Capstone/
 │   │                          projects / records / defects / reports / me
 │   └── static/                css/app.css · js/{app,record_form,defects_form}.js
 ├── web/                       M5：纯前端版（浏览器里跑，数据存 IndexedDB）
-│   ├── index.html             应用壳（含 import map：裸模块名 → vendor/）
+│   ├── index.html             应用壳（含 import map：裸模块名 → vendor/；挂 manifest 与图标）
+│   ├── sw.js                  Service Worker：预缓存应用壳、版本化、不自动 skipWaiting
+│   ├── manifest.webmanifest   PWA 清单（standalone / 主题色 / 三个图标）
+│   ├── icons/                 icon-192 · icon-512 · icon-512-maskable（tools/make_web_icons.py 生成）
 │   ├── styles/
 │   │   ├── app.css            **生成物** ← webapp/static/css/app.css（同一份壳，勿手改）
 │   │   └── m5.css             M5 自己新增的样式（手写）
@@ -294,12 +321,14 @@ Capstone/
 │   │   └── report/
 │   │       ├── engine.js      数据 -> docx（docx JS 库，含附页）
 │   │       ├── attachments.js 附页：版式换算 / 现压图片 / 缺失降级
+│   │       ├── fingerprint.js 指纹 + 差异（纯 JS，供闸门 C）
+│   │       ├── image-size.js  JPEG/PNG 文件头读尺寸（不依赖 canvas）
 │   │       ├── postprocess.js 11 个补丁：把库的输出补齐到与基线逐属性一致
 │   │       └── spec.js        生成物（源自 report_layout.json，勿手改）
-│   ├── assets/                report_layout.json · report_base.docx · fixture_data.json（生成物）
+│   ├── assets/                report_layout.json · report_base.docx · fixture_data.json · shell.js（生成物）
 │   ├── vendor/                docx.mjs · jszip.min.js（vendored）· jszip.js（ESM 包装）
-│   ├── tests/                 178 项：数据层 / 引擎 / 附页 / 图片管线 / 配额 / 路由 /
-│   │                          端到端（jsdom + fake-indexeddb）/ 模块图自检
+│   ├── tests/                 193 项：数据层 / 引擎 / 附页 / 图片管线 / 配额 / 路由 / 指纹（闸门 C）/
+│   │                          端到端（jsdom + fake-indexeddb）/ 模块图自检 / PWA 离线清单
 │   └── package.json           仅声明本目录为 ESM 作用域
 ├── reports/                   导出的 .docx（gitignore）
 ├── uploads/defects/           隐患图片（gitignore）

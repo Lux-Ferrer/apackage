@@ -160,6 +160,29 @@ export async function checkUploadQuota(neededBytes = DEFAULT_MAX_IMAGE_BYTES, op
     };
 }
 
+/**
+ * 当前实际缓存着的应用壳版本（从 Cache Storage 的 key 里读）。
+ *
+ * 为什么不直接 import `assets/shell.js`：那份清单是 **Service Worker 的内部物**，
+ * 内容由"全部被缓存文件"算出来 —— 它要是也被 app import，它自己就得进清单，
+ * 于是"它的内容取决于包含它的集合"成了循环。所以改为在运行时读缓存名，
+ * 好处是显示的是**真正装着的那一版**，而不只是"构建时那一版"。
+ *
+ * @returns {Promise<string|null>} 没有离线缓存时返回 null
+ */
+export async function shellVersion({ caches: cacheStorage = globalThis.caches } = {}) {
+    const prefix = 'curtain-wall-shell-';
+    if (!cacheStorage?.keys) return null;
+    try {
+        const keys = await cacheStorage.keys();
+        const mine = keys.filter((name) => name.startsWith(prefix)).sort();
+        return mine.length ? mine[mine.length - 1].slice(prefix.length) : null;
+    } catch {
+        return null;
+    }
+}
+
+
 /** 「我的 → 数据管理」那一行文案（含未获持久化时的丢数据警告）。 */
 export async function describeStorage(options = {}) {
     const status = await quotaStatus(options.storage ?? defaultStorage());

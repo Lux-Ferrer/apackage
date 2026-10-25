@@ -5,7 +5,14 @@
     <!-- viewport-fit=cover：让 env(safe-area-inset-*) 生效，否则 iPhone 底部横条会压住固定底栏 -->
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#1668dc">
+    <meta name="description" content="Curtain wall inspection data recording and Word report generation, fully on the device.">
     <title>建筑幕墙检测报告工具</title>
+    <!-- PWA：可安装、离线可用（清单与图标见 manifest.webmanifest / icons/） -->
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="apple-touch-icon" href="./icons/icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Curtain Wall">
     <!--
       导入映射（import map）：把裸模块名指到 vendor/ 里的第三方构建产物。
       这样**同一份源码**在浏览器（vendor/）与 Node（node_modules）里都跑得起来 ——
