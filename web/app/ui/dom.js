@@ -11,23 +11,62 @@
  * 用户值一律在渲染后通过 `value` 属性塞进去，所以同样安全。
  */
 
+/* --------------------------------------------------------------------------
+ * SVG：**必须**用 createElementNS（见 h() 的说明）
+ * ------------------------------------------------------------------------ */
+
+export const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/** 需要通过 SVG 命名空间创建的标签（本项目只用到这几个）。 */
+export const SVG_TAGS = new Set(['svg', 'g', 'path', 'circle', 'ellipse', 'line',
+    'polyline', 'polygon', 'rect', 'use', 'defs', 'title', 'text', 'tspan']);
+
+/** 建一个 SVG 元素（语义化入口，避免调用方记错命名空间）。 */
+export function svg(spec, options = null, children = null) {
+    const tag = String(spec).split('.')[0];
+    if (!SVG_TAGS.has(tag)) throw new Error(`不是 SVG 标签：${tag}`);
+    return h(spec, options, children);
+}
+
+/* --------------------------------------------------------------------------
+ * 元素构造
+ * ------------------------------------------------------------------------ */
+
 /**
  * 建一个元素。
  *
  * `h('div.card', {id: 'x'}, [子节点…])` —— 支持 `tag.class1.class2` 简写；
  * 属性名用 HTML 属性名（`class` / `for` / `aria-label`），也接受 `text` / `dataset` / `on` 三个便捷键。
+ *
+ * ⚠️ **SVG 必须用 `createElementNS`**：`document.createElement('svg')` 造出来的是
+ * **HTML 命名空间**里的一个未知标签，浏览器不会把它当矢量图渲染 —— 元素在 DOM 里、
+ * 有尺寸、`querySelector` 也找得到，**但屏幕上什么都没有**。
+ * 这正是"底部 Tab 图标看不见"的根因（真机上才发现，jsdom 里查 DOM 结构完全正常）。
  */
 export function h(spec, options = null, children = null) {
-    const [tag, ...classes] = String(spec).split('.');
-    const element = document.createElement(tag || 'div');
-    if (classes.length) element.className = classes.join(' ');
+    const [tag = 'div', ...classes] = String(spec).split('.');
+    const inSvg = SVG_TAGS.has(tag);
+    const element = inSvg
+        ? document.createElementNS(SVG_NS, tag)
+        : document.createElement(tag || 'div');
+
+    /** 设 class：SVG 元素的 `className` 是只读的 SVGAnimatedString，只能走属性。 */
+    const setClass = (value) => {
+        if (inSvg) element.setAttribute('class', value);
+        else element.className = value;
+    };
+    if (classes.length) setClass(classes.join(' '));
 
     if (options) {
         for (const [key, value] of Object.entries(options)) {
             if (value === null || value === undefined || value === false) continue;
             if (key === 'text') element.textContent = String(value);
-            else if (key === 'class') element.className = [element.className, value].filter(Boolean).join(' ');
-            else if (key === 'dataset') Object.assign(element.dataset, value);
+            else if (key === 'class') {
+                const merged = inSvg
+                    ? [element.getAttribute('class'), value].filter(Boolean).join(' ')
+                    : [element.className, value].filter(Boolean).join(' ');
+                setClass(merged);
+            } else if (key === 'dataset') Object.assign(element.dataset, value);
             else if (key === 'on') {
                 for (const [event, handler] of Object.entries(value)) {
                     element.addEventListener(event, handler);
