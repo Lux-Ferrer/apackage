@@ -221,7 +221,7 @@ python tools/make_report_template.py
 M5 移植验收（可选，需要 Node.js。设计见 `docs/management/M5-设计.md`）：
 
 ```powershell
-npm test                      # 数据层 + 引擎 + 附页 + 图片管线 + 指纹 + 端到端 UI + 离线清单（193 项）
+npm test                      # 数据层 + 引擎 + 附页 + 图片管线 + 指纹 + 端到端 UI + 离线清单（194 项）
                               # 外加既有的 Flask UI 测试（58 项），共 251 项
 
 # 生成两份被测产物：无附页 / 含附页
@@ -327,7 +327,7 @@ Capstone/
 │   │       └── spec.js        生成物（源自 report_layout.json，勿手改）
 │   ├── assets/                report_layout.json · report_base.docx · fixture_data.json · shell.js（生成物）
 │   ├── vendor/                docx.mjs · jszip.min.js（vendored）· jszip.js（ESM 包装）
-│   ├── tests/                 193 项：数据层 / 引擎 / 附页 / 图片管线 / 配额 / 路由 / 指纹（闸门 C）/
+│   ├── tests/                 194 项：数据层 / 引擎 / 附页 / 图片管线 / 配额 / 路由 / 指纹（闸门 C）/
 │   │                          端到端（jsdom + fake-indexeddb）/ 模块图自检 / PWA 离线清单
 │   └── package.json           仅声明本目录为 ESM 作用域
 ├── reports/                   导出的 .docx（gitignore）

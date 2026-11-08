@@ -141,8 +141,17 @@ export function createApp({
         // 注意：这里**不能**清空提示 —— flash() 后面常常紧跟 navigate()/refresh()，
         // 清了用户就看不到回执。提示由 ui/dialog.js 的小队列管生命周期。
 
+        // ⚠️ 依赖一律从 `app` 上**现取**，不要用 createApp 的参数（它们在构造那一刻就被闭包固定了）。
+        // 真机报过这个错：boot() 曾经是 `createApp({})` 之后再 `app.db = await open()`，
+        // 于是这里的 `db` 永远是 undefined —— 页面一打开就是
+        // "Cannot read properties of undefined (reading 'read')"。
+        // 现在 boot() 改成"先开库、再构造"，这一处也改成从 app 取：
+        // 两道保险，任何一道单独都足以挡住这个 bug。
         const ctx = {
-            db, storage, pipeline, baseDocxBytes,
+            db: app.db,
+            storage: app.storage,
+            pipeline: app.pipeline,
+            baseDocxBytes,
             params: route.params ?? {},
             query: route.query ?? {},
             navigate: app.navigate,
@@ -277,10 +286,26 @@ async function registerServiceWorker() {
     }
 }
 
-export async function boot() {
-    const app = createApp({});
+/**
+ * 启动。
+ *
+ * ⚠️ **顺序很关键：先开库，再构造 app。**
+ * 早先的写法是 `const app = createApp({}); app.db = await Database.open();` ——
+ * 看起来没问题，但 createApp 的参数在**构造那一刻**就被闭包固定了，
+ * 后来给 `app.db` 赋值并不会改变闭包里那个 `db`。结果是第一次渲染就炸：
+ *   Chrome:  Cannot read properties of undefined (reading 'read')
+ *   Firefox: db is undefined
+ * 单元测试没抓到它，因为测试一直是 `createApp({db})`（参数从一开始就有值）——
+ * **这条启动路径当时根本没有测试覆盖**。现在 `web/tests/ui.test.mjs` 里有一项直接调 boot()。
+ *
+ * @param {object} [options]
+ *   open 传给 `Database.open()`（测试里可以指定 name / factory）
+ *   app  传给 `createApp()`（测试里可以注入 pipeline / baseDocxBytes）
+ */
+export async function boot(options = {}) {
+    let db;
     try {
-        app.db = await Database.open();
+        db = await Database.open(options.open);
     } catch (error) {
         byId('view').appendChild(h('div.card', null, [
             h('h1', { text: '无法打开本地数据库' }),
@@ -293,6 +318,8 @@ export async function boot() {
         if (globalThis.console) console.error('[M5] 打开数据库失败', error);
         return null;
     }
+
+    const app = createApp({ ...options.app, db });
     await app.start();
     await registerServiceWorker();
     globalThis.__APP__ = app;                 // 便于真机排错时在控制台里查状态
