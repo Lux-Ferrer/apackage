@@ -21,6 +21,12 @@ export function confirmDialog({ message, okText = '确认删除', title = '请�
     if (!dialog || typeof dialog.showModal !== 'function') {
         return Promise.resolve(globalThis.confirm ? globalThis.confirm(message) : true);
     }
+    // 已经开着就直接忽略这一次：真机上双击/连点很常见，而 `showModal()` 对**已打开**的
+    // dialog 会抛 InvalidStateError（同步抛，外层没有地方接）→ 那个点击变成一次未捕获错误。
+    // ⚠️ 这条分支在 jsdom 里永远走不到（jsdom 没有 showModal，测试一律走上面的 confirm 降级），
+    // 所以它属于"只有真机会踩"的那一类，只能靠这条显式判断兜住。
+    if (dialog.open) return Promise.resolve(false);
+
     byId('confirm-title').textContent = title;
     byId('confirm-message').textContent = message;
     byId('confirm-ok').textContent = okText;
@@ -32,7 +38,13 @@ export function confirmDialog({ message, okText = '确认删除', title = '请�
             resolve(dialog.returnValue === 'confirm');
         };
         dialog.addEventListener('close', done);
-        dialog.showModal();
+        try {
+            dialog.showModal();
+        } catch {
+            // 极端情况（例如浏览器在 showModal 过程中重排）：退化成原生 confirm，绝不静默吞掉这次操作
+            dialog.removeEventListener('close', done);
+            resolve(globalThis.confirm ? globalThis.confirm(message) : false);
+        }
     });
 }
 

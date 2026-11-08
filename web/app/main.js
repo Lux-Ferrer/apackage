@@ -180,7 +180,15 @@ export function createApp({
         const chrome = result.chrome ?? (route.name ? chromeFor(route.name) : 'tabbar');
 
         renderNav(tabbar, active, { withIcons: true });
-        tabbar.hidden = chrome !== 'tabbar';         // 表单页隐藏底部 Tab，改用固定操作条
+        // 表单页隐藏底部 Tab，改用固定操作条。
+        // ⚠️ 只设 `hidden` 在真机上**不够**：作者样式 `.tabbar { display: flex }` 会压过
+        // UA 的 `[hidden] { display: none }`（级联里 author 优先）。所以 `web/styles/m5.css`
+        // 里还有一条 `[hidden] { display: none !important; }` 兜底 —— 两处必须同时存在。
+        const isForm = chrome !== 'tabbar';
+        tabbar.hidden = isForm;
+        // 桌面端（≥960px）app.css 把正文留白收回到 32px，但表单页仍有 56px 的固定操作条
+        // → 最后一个输入框会被压住。用 body 上的类让 m5.css 补回留白（不用 :has()）。
+        doc.body.classList.toggle('has-action-bar', isForm);
         renderNav(topnav, active, { withIcons: false });
 
         clear(viewRoot);

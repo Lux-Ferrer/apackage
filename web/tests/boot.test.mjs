@@ -96,3 +96,34 @@ test('boot()：真实启动路径能用数据库（回归：ctx.db 曾经是 und
 
     app.db.close();
 });
+
+test('boot()：外壳切换 —— 列表页显示底部 Tab，表单页隐藏它并挂上 has-action-bar', async () => {
+    await installDom();
+    const factory = new IDBFactory();
+    const app = await boot({ open: { factory, name: `boot_${Math.random()}` } });
+    assert.ok(app);
+
+    const tabbar = document.getElementById('tabbar');
+    const body = document.body;
+
+    // 列表页：底部 Tab 显示、没有操作条
+    await waitFor(() => body.dataset.route === 'projects.index', '项目列表渲染');
+    assert.equal(tabbar.hidden, false, '列表页应显示底部 Tab');
+    assert.equal(body.classList.contains('has-action-bar'), false, '列表页不该挂 has-action-bar');
+
+    // 表单页：Tab 隐藏 + body 挂上 has-action-bar（桌面端靠它补回正文留白）
+    window.location.hash = '#/projects/new';
+    await waitFor(() => body.dataset.route === 'projects.new', '表单页渲染');
+    assert.equal(tabbar.hidden, true, '表单页必须隐藏底部 Tab（否则会盖住操作条）');
+    assert.equal(body.classList.contains('has-action-bar'), true,
+        '表单页必须在 body 上挂 has-action-bar —— 桌面端 ≥960px 的正文留白靠它');
+    assert.ok(document.querySelector('.action-bar'), '表单页必须有底部操作条');
+
+    // 回到列表页要能还原（不能一次性地把 Tab 关掉）
+    window.location.hash = '#/projects';
+    await waitFor(() => body.dataset.route === 'projects.index', '回列表页');
+    assert.equal(tabbar.hidden, false, '回列表页应重新显示底部 Tab');
+    assert.equal(body.classList.contains('has-action-bar'), false);
+
+    app.db.close();
+});
