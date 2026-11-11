@@ -57,22 +57,25 @@ export async function choose(ctx) {
  * ------------------------------------------------------------------------ */
 
 export async function form(ctx, { editing }) {
-    const templateType = editing
-        ? (await measurements.getRecord(ctx.db, ctx.params.id))?.template_type
-        : ctx.params.template;
+    // 一次读到位：原来这里读了两次（先取 template_type、再取 record），既浪费也容易走样
+    const record = editing ? await measurements.getRecord(ctx.db, ctx.params.id) : null;
+    const templateType = editing ? record?.template_type : ctx.params.template;
     if (!CONFIG.TEMPLATE_TYPES.includes(templateType)) {
         return notFound(editing ? '检测记录不存在' : `未知的模板类型：${templateType}`);
     }
 
-    const record = editing ? await measurements.getRecord(ctx.db, ctx.params.id) : null;
-    if (editing && !record) return notFound('检测记录不存在');
     const project = await projects.get(ctx.db, editing ? record.project_id : ctx.params.id);
     if (!project) return notFound('项目不存在');
 
+    // ⚠️ `getReadings()` 返回的是 **thickness_readings 的原始行**（字段是 `value_1..value_5`），
+    // 而表单要的是已经格式化好的 `readings_text` —— 必须过一遍 `faceView()`。
+    // 早先这里直接取 `row.readings_text`（undefined），于是 `readings[offset]` 立刻炸：
+    // "Cannot read properties of undefined (reading '0')"（真机上点检测记录的「编辑」就崩溃）。
     const rows = editing
-        ? (await measurements.getReadings(ctx.db, record.id)).map((row) => ({
-            face: row.face, readings: row.readings_text,
-        }))
+        ? (await measurements.getReadings(ctx.db, record.id)).map((raw) => {
+            const view = measurements.faceView(raw);
+            return { face: view.face, readings: view.readings_text };
+        })
         : [{ face: '', readings: Array.from({ length: CONFIG.THICKNESS_VALUE_COUNT }, () => '') }];
 
     // 编辑时：能匹配到预置条文就选中它，匹配不到就走「历史条文」哨兵项（与 Flask 一致）

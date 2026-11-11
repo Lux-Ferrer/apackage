@@ -6,7 +6,7 @@
  * 版本号只取决于被缓存文件的内容 —— 改了任何一个文件，SW 都会装新版本并清掉旧缓存。
  */
 
-export const SHELL_VERSION = "d98825e4ed96";
+export const SHELL_VERSION = "0304cd4c8073";
 
 export const SHELL_ASSETS = Object.freeze([
     "app/clauses.js",

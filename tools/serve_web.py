@@ -98,15 +98,21 @@ def main() -> int:
     handler = functools.partial(Handler, directory=str(WEB_DIR))
     socketserver.TCPServer.allow_reuse_address = True
     with socketserver.ThreadingTCPServer((args.host, args.port), handler) as server:
-        print("M5 纯静态前端已启动（Ctrl+C 停止）")
-        print("  目录：%s" % WEB_DIR)
-        print("  本机：http://127.0.0.1:%d" % args.port)
+        # ⚠️ 每条都要 flush：被托管运行（输出重定向到文件/由别的进程读取）时，
+        # Python 的 stdout 是**块缓冲**的 —— 不 flush 的话这几行地址根本不会出现，
+        # 而这个脚本的主要用途就是把地址打出来。（本地实测过一次：起了服务但看不到地址。）
+        def say(message=""):
+            print(message, flush=True)
+
+        say("M5 纯静态前端已启动（Ctrl+C 停止）")
+        say("  目录：%s" % WEB_DIR)
+        say("  本机：http://127.0.0.1:%d" % args.port)
         if args.host == "0.0.0.0":
             for address in local_addresses():
-                print("  手机：http://%s:%d   ← 手机与电脑需在同一 Wi-Fi" % (address, args.port))
-        print()
-        print("  提示：不要用 file:// 直接打开 index.html —— IndexedDB 与 ES modules 都会受限。")
-        print("  真机验收清单：docs/management/M5-真机验证checklist.md（B 组是拍照方向）")
+                say("  手机：http://%s:%d   ← 手机与电脑需在同一 Wi-Fi" % (address, args.port))
+        say()
+        say("  提示：不要用 file:// 直接打开 index.html —— IndexedDB 与 ES modules 都会受限。")
+        say("  真机验收清单：docs/management/M5-真机验证checklist.md（B 组是拍照方向）")
         try:
             server.serve_forever()
         except KeyboardInterrupt:
