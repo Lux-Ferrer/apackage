@@ -5,7 +5,7 @@
 
   ``gate-convergence.png``  闸门 A 的差异收敛曲线：201 → 33 → 2 → 0
   ``gate-sensitivity.png``  闸门敏感性验证表：7 项下毒 + 落点路径
-  ``test-summary.png``      测试总览：Python 348 / 前端 231 / 四条基线 / 闸门 A·B 双 0 差异
+  ``test-summary.png``      测试总览：Python / 前端（M5 + 既有）/ 四条基线 / 闸门 A·B 双 0 差异
   ``architecture.png``      Flask（服务端 + SQLite）↔ PWA（浏览器 + IndexedDB + docx JS）
 
 两条纪律
@@ -460,7 +460,7 @@ def figure_test_summary(path: Path, facts: dict) -> list:
     front_total = facts["front_m5_tests"] + facts["front_legacy_tests"]
     head = title_block(fig, "Verification Summary",
                 "Everything below is produced by one command: "
-                "python tools/verify_all.py (14 checks, ~70 s).")
+                "python tools/verify_all.py (16 checks, ~100 s).")
 
     tiles = [
         ("Python test suite", "%d" % facts["python_tests"], "tests passed",

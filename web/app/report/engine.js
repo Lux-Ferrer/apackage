@@ -465,11 +465,31 @@ export function buildProjectReport(project, groups, attachments = []) {
     return new Document({ sections: [{ properties: sectionProperties(), children }] });
 }
 
+/**
+ * Document → docx 字节。
+ *
+ * ⚠️ **必须用 `toArrayBuffer`，不能用 `toBuffer`。** 真机 Bug（M5 验收）：
+ * 手机上点「导出」，页面顶部报 `导出失败：nodebuffer is not supported by this platform`。
+ *
+ * 原因在库的实现里：`Packer.toBuffer` 就是 `Packer.pack(file, "nodebuffer")`，
+ * 而 JSZip 在真正打包前会 `checkSupport("nodebuffer")` —— 它要求存在**全局 Buffer**
+ * （`support.nodebuffer = typeof Buffer !== "undefined"`）。Node 里有，浏览器里没有，
+ * 于是同一份代码在闸门（跑在 Node）里全绿，到手机上必炸。
+ *
+ * `arraybuffer` 是两边都成立的输出类型（`typeof ArrayBuffer !== "undefined"`），
+ * 而且**浏览器和闸门走的是同一条语句** —— 这也是选它而不是"判断有没有 Buffer 再分叉"
+ * 的理由：分叉出来的那半条腿没人跑过，下一次照样会烂。
+ * 回归测试见 `web/tests/platform.test.mjs`（把全局 Buffer 删掉再导出一次）。
+ */
+async function packDocx(doc) {
+    return new Uint8Array(await Packer.toArrayBuffer(doc));
+}
+
 /** 生成 docx（经后处理补齐 7 个补丁），返回字节。 */
 export async function renderDocx(project, groups, options = {}) {
     const doc = buildProjectReport(project, groups, options.attachments ?? []);
-    const raw = await Packer.toBuffer(doc);
-    const { bytes } = await postprocess(new Uint8Array(raw), {
+    const raw = await packDocx(doc);
+    const { bytes } = await postprocess(raw, {
         baseDocxBytes: options.baseDocxBytes,
         spec: options.spec,
     });

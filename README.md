@@ -14,6 +14,11 @@ Existing Curtain Wall Inspection Data Recording and Report Generation Tool —�
 > 补法与验证见 `docs/management/M5-设计.md` 4.6、`deliverables/m5-gate-a-diff.md`，
 > 可执行的判据是 `python tools/verify_gate_sensitivity.py`（阴性对照 + 7 项下毒）。
 >
+> 还有下半句（M5 验收当天补的）：**也要先问"被测的环境和用户的环境是不是同一个"。**
+> 出处是手机上一按导出就报 `nodebuffer is not supported by this platform` ——
+> 205 个测试 + 16 条闸门全绿，因为它们全跑在 Node/jsdom 上，而 Node 有浏览器没有的 `Buffer`。
+> 测试环境比真实环境宽容，就会把浏览器的缺失悄悄补上。见 `M5-设计.md` §9 第 8 条。
+>
 > 文档索引见 README 末尾。
 
 ---
@@ -221,8 +226,8 @@ python tools/make_report_template.py
 M5 移植验收（可选，需要 Node.js。设计见 `docs/management/M5-设计.md`）：
 
 ```powershell
-npm test                      # 数据层 + 引擎 + 附页 + 图片管线 + 指纹 + 端到端 UI + 离线清单（205 项）
-                              # 外加既有的 Flask UI 测试（58 项），共 251 项
+npm test                      # 数据层 + 引擎 + 附页 + 图片管线 + 指纹 + 端到端 UI + 离线清单 + 平台假设（211 项）
+                              # 外加既有的 Flask UI 测试（58 项），共 269 项
 
 # 生成两份被测产物：无附页 / 含附页
 node tools/js/generate_from_fixture.mjs
@@ -327,8 +332,9 @@ Capstone/
 │   │       └── spec.js        生成物（源自 report_layout.json，勿手改）
 │   ├── assets/                report_layout.json · report_base.docx · fixture_data.json · shell.js（生成物）
 │   ├── vendor/                docx.mjs · jszip.min.js（vendored）· jszip.js（ESM 包装）
-│   ├── tests/                 205 项：数据层 / 引擎 / 附页 / 图片管线 / 配额 / 路由 / 指纹（闸门 C）/
-│   │                          端到端（jsdom + fake-indexeddb）/ 模块图自检 / PWA 离线清单
+│   ├── tests/                 211 项：数据层 / 引擎 / 附页 / 图片管线 / 配额 / 路由 / 指纹（闸门 C）/
+│   │                          端到端（jsdom + fake-indexeddb）/ 模块图自检 / PWA 离线清单 /
+│   │                          平台假设（浏览器没有 Buffer，真机导出的那个 bug）
 │   └── package.json           仅声明本目录为 ESM 作用域
 ├── reports/                   导出的 .docx（gitignore）
 ├── uploads/defects/           隐患图片（gitignore）
