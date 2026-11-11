@@ -9,6 +9,9 @@
     <title>建筑幕墙检测报告工具</title>
     <!-- PWA：可安装、离线可用（清单与图标见 manifest.webmanifest / icons/） -->
     <link rel="manifest" href="./manifest.webmanifest">
+    <!-- 图标兼作 favicon：不声明的话浏览器每次都会去请求 /favicon.ico 并拿到 404
+         （多一个请求，也让排错时的网络日志里多一条红字） -->
+    <link rel="icon" href="./icons/icon-192.png" type="image/png">
     <link rel="apple-touch-icon" href="./icons/icon-192.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
