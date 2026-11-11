@@ -1,22 +1,25 @@
-/* 我的 / 数据管理 / 关于。
+/* 我的 / 个人信息 / 数据管理 / 关于。
  *
- * `#/me` 对应 `webapp/templates/me/index.html`；`#/me/data` 是 M5 **新增**的一页 ——
- * 纯前端版把"数据在哪、会不会丢"变成了用户必须知道的事（Flask 版数据在服务端的文件里，
- * 用户不用操心；这一版数据在浏览器的 IndexedDB 里，系统可能清理它）。
- * 这一页因此不是"锦上添花"，而是把 M5-3 的配额/持久化/备份能力交到用户手上的入口。
+ * `#/me` 对应 `webapp/templates/me/index.html`；`#/me/data` 与 `#/me/profile` 是
+ * **交付版新增/改写的两页**：
+ *   - 数据管理：纯前端版把"数据在哪、会不会丢"变成了用户必须知道的事（Flask 版数据在
+ *     服务端的文件里，用户不用操心；这一版数据在浏览器的 IndexedDB 里，系统可能清理它），
+ *     所以它不是"锦上添花"，而是把配额/持久化/备份能力交到用户手上的入口；
+ *   - 个人信息：本期没有登录（范围外），报告人只能由每台设备自己填一次。
  *
- * 关于页对应 `webapp/templates/about.html`，模块进度改成 M1~M5 的实际情况。
+ * 「关于」页不再展示模块进度（那是开发期的进度表），改为**产品信息**：
+ * 名称、版本、出品方、本版本包含什么、使用顺序、数据在哪里。
  */
 
-import { CONFIG } from '../config.js';
+import { PRODUCT, versionLabel } from '../product.js';
 import { pathFor } from '../router.js';
 import * as defects from '../repo/defects.js';
 import * as images from '../repo/images.js';
-import * as measurements from '../repo/measurements.js';
+import * as profileRepo from '../repo/profile.js';
 import * as projects from '../repo/projects.js';
 import { describeStorage, formatBytes, requestPersistence, shellVersion } from '../storage.js';
 import { STORE } from '../db.js';
-import { badge, h, infoTable, link } from '../ui/dom.js';
+import { h, infoTable, link } from '../ui/dom.js';
 import { confirmDialog, flash } from '../ui/dialog.js';
 import { card, pageHead } from './layout.js';
 
@@ -25,7 +28,7 @@ import { card, pageHead } from './layout.js';
  * ------------------------------------------------------------------------ */
 
 export async function index(ctx) {
-    const reporter = CONFIG.DEFAULT_REPORTER;
+    const reporter = await profileRepo.read(ctx.db);
     const overview = await counts(ctx.db);
 
     return {
@@ -33,16 +36,18 @@ export async function index(ctx) {
             card([
                 h('h1', { text: '我的' }),
                 h('div.profile', null, [
-                    h('div.profile-avatar', { 'aria-hidden': 'true', text: reporter.name.slice(0, 1) }),
+                    h('div.profile-avatar', { 'aria-hidden': 'true', text: reporter.reporter_name.slice(0, 1) }),
                     h('div.profile-body', null, [
-                        h('p.profile-name', { text: reporter.name }),
-                        h('p.report-meta.muted', {
-                            text: `${reporter.department}${reporter.department_code ? `（${reporter.department_code}）` : ''}`,
-                        }),
-                        reporter.employee_no ? h('p.report-meta.muted', { text: `工号 ${reporter.employee_no}` }) : null,
+                        h('p.profile-name', { text: reporter.reporter_name }),
+                        h('p.report-meta.muted', { text: reporter.reporter_department }),
                     ]),
                 ]),
-                h('p.hint', { text: '登录功能未纳入本期范围，报告人取默认配置（config.DEFAULT_REPORTER）。' }),
+                h('p.hint', {
+                    text: '这里填写的姓名与部门，会成为之后新填写缺陷报告的报告人署名。',
+                }),
+                h('p', null, h('a.btn.ghost', {
+                    href: pathFor('me.profile'), text: '个人信息配置 →',
+                })),
             ]),
             card([
                 h('h2', { text: '数据概览' }),
@@ -55,19 +60,20 @@ export async function index(ctx) {
             card([
                 h('h2', { text: '数据管理' }),
                 h('p.hint', {
-                    text: '这一版把数据存在浏览器里（IndexedDB），所以「导出备份」是你保住数据的唯一手段。'
-                        + '进入数据管理可以看到已用空间、申请持久化授权、导入/导出备份，以及清除全部报告。',
+                    text: '数据存在这台设备的浏览器里（IndexedDB），不会上传到任何服务器。'
+                        + '「导出备份」是防止数据丢失的主要手段 —— 进入数据管理可以看已用空间、'
+                        + '申请持久化授权、导入/导出备份，以及清除全部报告。',
                 }),
                 h('p', null, h('a.btn', { href: pathFor('me.data'), text: '进入数据管理 →' })),
             ]),
             card([
                 h('h2', { text: '应用信息' }),
                 infoTable([
-                    ['名称', CONFIG.APP_INFO.name],
-                    ['版本', CONFIG.APP_INFO.version],
-                    ['出品', CONFIG.APP_INFO.org],
+                    ['名称', PRODUCT.name],
+                    ['版本', versionLabel()],
+                    ['出品', PRODUCT.vendor],
                 ]),
-                h('p', null, link(pathFor('pages.about'), '模块进度与范围说明 →')),
+                h('p', null, link(pathFor('pages.about'), '关于本工具 →')),
             ]),
         ],
     };
@@ -284,36 +290,43 @@ export async function data(ctx) {
 }
 
 /* --------------------------------------------------------------------------
- * 关于（模块进度）
+ * 关于（产品信息）
  * ------------------------------------------------------------------------ */
 
-const MODULES = [
-    ['项目管理与检测记录', '可用（M1）', 'projects.index', true],
-    ['项目级 Word 导出', '可用（M2）', 'projects.index', true],
-    ['缺陷填报与附页', '可用（M3）', 'reports.index', true],
-    ['报告管理', '可用（M4）', 'reports.index', true],
-    ['移动端界面', '可用（UI）', 'projects.index', true],
-    ['纯前端版（IndexedDB + docx JS）', '进行中（M5）', 'me.data', true],
-    ['登录 / 统计 / 速记', '范围外', null, false],
+/** 本版本提供的功能（交给客户看的清单，不写开发期里程碑编号）。 */
+const FEATURES = [
+    '幕墙立柱 / 横梁截面尺寸检测：每个检测面录 5 个厚度读数，自动取最小值',
+    '项目与检测记录管理：楼层、构件位置、截面尺寸、条文要求',
+    '缺陷检测填报：隐患图片（拍照或相册）、隐患等级、整改方案、相关规范',
+    '项目级 Word 报告导出：版式与客户既有报告一致，可把关联缺陷报告作为附页一起输出',
+    '报告管理：按隐患等级筛选、查看详情、删除',
+    '数据备份与恢复：一键导出 / 导入整库备份（.zip）',
+    '离线可用：装到主屏后即使没有网络也能记录与导出',
 ];
 
 export async function about(ctx) {
     const offlineVersion = await shellVersion();
+    const rows = [
+        ['产品名称', PRODUCT.name],
+        ['English', PRODUCT.name_en],
+        ['版本', versionLabel()],
+        ['出品方', PRODUCT.vendor],
+        PRODUCT.support ? ['技术支持', PRODUCT.support] : null,
+        // 离线缓存的版本号：改过任何一个被缓存的文件它就会变，
+        // 出"怎么还是旧页面"这类问题时，第一眼就能对比出来
+        ['离线缓存版本', offlineVersion ?? '（还没有离线缓存）'],
+    ].filter(Boolean);
+
     return {
         nodes: [
             card([
-                h('h1', { text: '模块进度' }),
-                h('p.sub', { text: 'M1 项目管理与检测记录 · M2 项目级 Word 导出 · M3 缺陷附页 · M4 报告管理 · UI 移动端 · M5 纯前端版' }),
-                h('table.grid', null, [
-                    h('thead', null, h('tr', null, [h('th', { text: '模块' }), h('th', { text: '状态' }), h('th')])),
-                    h('tbody', null, MODULES.map(([name, status, routeName, ready]) => h('tr', null, [
-                        h('td', { text: name }),
-                        h('td', null, badge(status, ready ? 'ok' : 'todo')),
-                        h('td.right', null, ready && routeName
-                            ? h('a.btn.small', { href: pathFor(routeName), text: '进入' })
-                            : h('span.muted', { text: '—' })),
-                    ]))),
-                ]),
+                h('h1', { text: PRODUCT.name }),
+                h('p.sub', { text: `版本 ${versionLabel()} · ${PRODUCT.vendor}` }),
+                infoTable(rows),
+            ]),
+            card([
+                h('h2', { text: '本版本包含' }),
+                h('ul.plain', null, FEATURES.map((line) => h('li', { text: line }))),
             ]),
             card([
                 h('h2', { text: '使用顺序' }),
@@ -326,30 +339,27 @@ export async function about(ctx) {
                 ].map((line) => h('li', { text: line }))),
             ]),
             card([
-                h('h2', { text: '本期不做（已确认范围外）' }),
-                h('p.sub', { text: '膜厚检测 · 玻璃面板尺寸及厚度检测 · 速记 · 统计 · 登录 · 结构安全评定' }),
+                h('h2', { text: '不在本版本范围' }),
+                h('p.sub', { text: '膜厚检测 · 玻璃面板尺寸及厚度检测 · 速记 · 统计 · 用户登录与权限 · 结构安全评定' }),
             ]),
             card([
-                h('h2', { text: '运行方式' }),
+                h('h2', { text: '数据与备份' }),
                 h('p.hint', {
-                    text: '这是一个纯静态页面：用任意静态服务器指向 web/ 目录即可（例如 '
-                        + 'python -m http.server 8080 --directory web）。用 file:// 直接打开不行 —— '
-                        + 'IndexedDB 与 ES modules 都会受限。',
+                    text: '所有项目、检测记录、缺陷报告与原始照片都保存在这台设备的浏览器里'
+                        + '（IndexedDB），不会上传到服务器。清除浏览器数据、换设备、或系统自动清理'
+                        + '都会导致数据丢失 —— 请定期在「我的 → 数据管理」里导出备份。',
                 }),
                 h('p.hint', {
-                    text: '装过一次之后可以离线使用（浏览器缓存了应用壳）；iOS 上请用'
-                        + '「添加到主屏幕」，并在「我的 → 数据管理」里申请持久化授权。',
+                    text: '个人信息（报告人 / 部门）也保存在本机，不随备份文件迁移；换设备后需要重新填写。',
                 }),
-                h('table.grid', null, h('tbody', null, [
-                    ['名称', CONFIG.APP_INFO.name],
-                    ['English', CONFIG.APP_INFO.name_en],
-                    ['版本', CONFIG.APP_INFO.version],
-                    ['出品', CONFIG.APP_INFO.org],
-                    ['需求方', CONFIG.APP_INFO.client],
-                    // 离线缓存的版本号：改过任何一个被缓存的文件它就会变，
-                    // 出"怎么还是旧页面"这类问题时，第一眼就能对比出来
-                    ['离线缓存版本', offlineVersion ?? '（还没有离线缓存）'],
-                ].map(([label, value]) => h('tr', null, [h('th', { text: label }), h('td', { text: value })])))),
+            ]),
+            card([
+                h('h2', { text: '部署与支持' }),
+                h('p.hint', {
+                    text: '本工具是纯静态页面，由内网服务器（Nginx / IIS 或任意静态服务）托管即可使用，'
+                        + '不需要数据库服务。手机用同一局域网的地址打开后可「添加到主屏幕」。'
+                        + '详细步骤见随包的《客户部署与使用说明.md》。',
+                }),
             ]),
         ],
     };

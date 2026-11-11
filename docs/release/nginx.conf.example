@@ -1,0 +1,61 @@
+# Nginx 部署片段 —— 建筑幕墙检测报告工具 v1.0.0
+#
+# 用法：
+#   1. 把交付包解压到服务器，例如 /var/www/mcc-inspection-tool
+#   2. 把本文件的 server { } 整段放进 /etc/nginx/conf.d/mcc.conf（或 sites-available + ln -s）
+#   3. 改 root 指向真实目录、server_name 改成实际访问用的地址（或 _ ）
+#   4. nginx -t && nginx -s reload
+#
+# 关键点只有三条，但每一条漏了都会出问题：
+#   ① `.mjs` 必须以 JavaScript 返回 —— 漏了 → ES module 被拒 → **整页白屏**；
+#   ② `.webmanifest` 的 MIME 要正确 —— 否则"添加到主屏幕"拿不到应用名/图标；
+#   ③ `sw.js` 与 `index.html` 不能长缓存 —— 否则手机一直用旧版本的应用壳。
+#
+# 本应用用的是 hash 路由（#/projects），**不需要** try_files 回退到 index.html。
+
+server {
+    listen 80;
+    server_name _;                      # 内网可直接用服务器 IP 访问；有域名就填域名
+
+    charset utf-8;
+    root  /var/www/mcc-inspection-tool;
+    index index.html;
+
+    # ① ES module / 清单 / 报告模板的 MIME（Nginx 默认没有 .mjs 与 .webmanifest）
+    types {
+        text/javascript                                 mjs js;
+        application/manifest+json                       webmanifest;
+        application/vnd.openxmlformats-officedocument.wordprocessingml.document  docx;
+    }
+
+    # ③ 入口与 Service Worker：每次都要来问一次（文件本身带内容指纹，不怕问）
+    location = /sw.js {
+        add_header Cache-Control "no-cache";
+        try_files $uri =404;
+    }
+    location = /index.html {
+        add_header Cache-Control "no-cache";
+    }
+    location = /manifest.webmanifest {
+        add_header Cache-Control "no-cache";
+    }
+
+    # 带内容的静态资源：短缓存即可（重新部署后版本号会变，Service Worker 会拉新的）
+    location ~* \.(?:js|mjs|css|png|svg|docx|json)$ {
+        add_header Cache-Control "public, max-age=300";
+        try_files $uri =404;
+    }
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    # 可选：压缩（体积本来就小，收益有限；不想要可以删掉整段）
+    gzip on;
+    gzip_types text/css text/javascript application/javascript application/manifest+json
+               image/svg+xml application/json;
+
+    # 安全响应头（与本工具的功能无关，但内网部署也建议有）
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "same-origin" always;
+}

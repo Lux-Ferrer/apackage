@@ -6,8 +6,10 @@ import { test } from 'node:test';
 
 import { CONFIG } from '../app/config.js';
 import { STORE } from '../app/db.js';
+import { DEFAULT_PROFILE } from '../app/product.js';
 import { fieldValues, imageFileText, formatReportTime } from '../app/repo/defects.js';
 import { originalNameFromPath, sanitizeOriginalName, makeImageKey, validateFile } from '../app/repo/images.js';
+import * as profile from '../app/repo/profile.js';
 import { freshDb, makeDefect, makeProject, projects, defects } from './helpers.mjs';
 
 const IMAGE = Object.freeze({
@@ -19,7 +21,7 @@ const IMAGE = Object.freeze({
  * 表单解析（对应 test_parse_*）
  * ------------------------------------------------------------------------ */
 
-test('合法表单：选填转 null，默认等级「中」，报告人取默认配置', async () => {
+test('合法表单：选填转 null，默认等级「中」，报告人取出厂默认值', async () => {
     const db = await freshDb();
     const { data, errors } = await defects.parseForm(db, {
         defect_type: '密封胶开裂', project_part: '东立面三层 1# 立柱',
@@ -31,9 +33,31 @@ test('合法表单：选填转 null，默认等级「中」，报告人取默认
     assert.equal(data.extra_advice, null);
     assert.equal(data.project_id, null);
     assert.equal(data.risk_level, '高');
-    assert.equal(data.reporter_name, CONFIG.DEFAULT_REPORTER.name);
-    assert.equal(data.reporter_department, CONFIG.DEFAULT_REPORTER.department);
+    // 交付版：报告人来自「我的 → 个人信息配置」，没配过就是 product.js 的出厂默认值
+    assert.equal(data.reporter_name, DEFAULT_PROFILE.reporter_name);
+    assert.equal(data.reporter_department, DEFAULT_PROFILE.reporter_department);
     assert.match(data.created_at, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+    db.close();
+});
+
+test('报告人取「个人信息配置」里保存的值（不是出厂默认值）', async () => {
+    const db = await freshDb();
+    await profile.save(db, { reporter_name: '李四', reporter_department: '幕墙检测二部' });
+
+    const { data } = await defects.parseForm(db, {
+        defect_type: '密封胶开裂', project_part: '东立面', rectification_plan: '打胶',
+    });
+    assert.equal(data.reporter_name, '李四');
+    assert.equal(data.reporter_department, '幕墙检测二部');
+
+    const id = await defects.create(db, data, null);
+    const stored = await defects.get(db, id);
+    assert.equal(stored.reporter_name, '李四', '报告里存的是写入当时的快照');
+
+    // 之后改个人信息，历史报告不受影响
+    await profile.save(db, { reporter_name: '王五', reporter_department: '检测部' });
+    const again = await defects.get(db, id);
+    assert.equal(again.reporter_name, '李四');
     db.close();
 });
 
@@ -152,8 +176,8 @@ async function insertDefectAt(db, createdAt, riskLevel = '中') {
         project_id: null, defect_type: '密封胶开裂', project_part: '东立面',
         risk_level: riskLevel, rectification_plan: '打胶',
         related_standards: null, extra_advice: null,
-        reporter_name: CONFIG.DEFAULT_REPORTER.name,
-        reporter_department: CONFIG.DEFAULT_REPORTER.department,
+        reporter_name: DEFAULT_PROFILE.reporter_name,
+        reporter_department: DEFAULT_PROFILE.reporter_department,
         image_path: null, created_at: createdAt,
     }));
 }

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  IIS 部署配置 —— 建筑幕墙检测报告工具 v1.0.0
+
+  用法：
+    1. 在 IIS 里新建站点（或应用程序），物理路径指向解压后的目录
+    2. 把本文件复制到该目录下，改名为 web.config
+    3. 浏览器访问 http://<服务器IP>/ 即可
+
+  两个必须做对的地方（漏了就是白屏或"添加到主屏幕"不生效）：
+    ① IIS 默认**没有** .mjs 的 MIME 类型 → 请求直接 404 → ES module 加载失败 → 白屏。
+       下面 <staticContent> 里补了 .mjs 与 .webmanifest。
+    ② sw.js 与 index.html 不能长缓存，否则手机一直跑旧版本。
+
+  如果你的 IIS 上装了 "MIME Types" 功能但报"无法添加重复的 mimeMap"，
+  说明服务器级别已经配过同扩展名 —— 把对应 <mimeMap> 行删掉即可。
+-->
+<configuration>
+    <system.webServer>
+        <staticContent>
+            <mimeMap fileExtension=".mjs" mimeType="text/javascript" />
+            <mimeMap fileExtension=".webmanifest" mimeType="application/manifest+json" />
+            <mimeMap fileExtension=".json" mimeType="application/json" />
+            <mimeMap fileExtension=".docx"
+                     mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+            <mimeMap fileExtension=".svg" mimeType="image/svg+xml" />
+        </staticContent>
+
+        <defaultDocument>
+            <files>
+                <clear />
+                <add value="index.html" />
+            </files>
+        </defaultDocument>
+
+        <httpProtocol>
+            <customHeaders>
+                <add name="X-Content-Type-Options" value="nosniff" />
+                <remove name="X-Powered-By" />
+            </customHeaders>
+        </httpProtocol>
+
+        <!-- sw.js / index.html / manifest：每次都回源（文件本身带内容指纹） -->
+        <rewrite>
+            <outboundRules>
+                <rule name="no-cache-entry-files" preCondition="isEntryFile">
+                    <match serverVariable="RESPONSE_Cache_Control" pattern=".*" />
+                    <action type="Rewrite" value="no-cache" />
+                </rule>
+                <preConditions>
+                    <preCondition name="isEntryFile">
+                        <add input="{URL}" pattern="(sw\.js|index\.html|manifest\.webmanifest)$" />
+                    </preCondition>
+                </preConditions>
+            </outboundRules>
+        </rewrite>
+    </system.webServer>
+</configuration>
+
+<!--
+  说明：上面用了 URL Rewrite 的出站规则来改 Cache-Control。
+  如果服务器没装 URL Rewrite 模块，**删掉整个 <rewrite> 节**也能正常使用 ——
+  只是浏览器会按 IIS 默认策略缓存，更新版本后需要用户手动清一次站点数据。
+  想简单一点也可以直接在 IIS 管理器里给这三个文件加 HTTP 响应头 Cache-Control: no-cache。
+-->

@@ -1,8 +1,8 @@
-/* Service Worker：把应用壳缓存成**离线可用**（M5-5）。
+/* Service Worker：把应用壳缓存成**离线可用**。
  *
  * 三条设计决定，都是踩过坑之后才这么写的：
  *
- * 1. **缓存清单是算出来的**（`assets/shell.js`，由 `tools/export_web_assets.py` 生成）。
+ * 1. **缓存清单是算出来的**（`assets/shell.js`，由构建脚本生成）。
  *    SW 最常见的失败是"漏了一个文件"：在线一切正常，一断网就白屏，且现场很难复现。
  *    清单里带**内容指纹版本号** —— 改了任何一个被缓存的文件，装的就是新 SW，旧缓存被清掉。
  *
@@ -69,9 +69,9 @@ self.addEventListener('fetch', (event) => {
             } catch {
                 // 真的什么都没有时给一句人话，而不是浏览器的恐龙页
                 return new Response(
-                    '<!doctype html><meta charset="utf-8"><title>Offline</title>'
+                    '<!doctype html><meta charset="utf-8"><title>离线</title>'
                     + '<p style="font:16px/1.6 system-ui;padding:24px">'
-                    + 'The app shell is not cached yet. Reconnect once, then it will work offline.</p>',
+                    + '本机还没有缓存好这个应用。请先联网打开一次，之后即可离线使用。</p>',
                     { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } },
                 );
             }

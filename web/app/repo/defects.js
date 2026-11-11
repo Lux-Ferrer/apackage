@@ -15,6 +15,9 @@ import { CONFIG } from '../config.js';
 import { LookupError, STORE, translateConstraintError } from '../db.js';
 import { clean } from '../clauses.js';
 import { displayText } from '../clauses.js';
+import { DEFAULT_PROFILE } from '../product.js';
+
+import { read as readProfile } from './profile.js';
 
 /* --------------------------------------------------------------------------
  * 表单解析
@@ -53,6 +56,9 @@ export async function parseForm(db, form) {
         else bound = project.id;
     }
 
+    // 报告人是**当前设备**在「我的 → 个人信息配置」里填的名字（没填过 → 出厂默认值）。
+    const reporter = await readProfile(db);
+
     return {
         data: {
             defect_type: defectType,
@@ -62,8 +68,8 @@ export async function parseForm(db, form) {
             related_standards: read('related_standards') || null,
             extra_advice: read('extra_advice') || null,
             project_id: bound,
-            reporter_name: CONFIG.DEFAULT_REPORTER.name,
-            reporter_department: CONFIG.DEFAULT_REPORTER.department,
+            reporter_name: reporter.reporter_name,
+            reporter_department: reporter.reporter_department,
             created_at: timestamp(),
         },
         errors,
@@ -79,6 +85,10 @@ export async function parseForm(db, form) {
  *
  * `image` 是已经压缩好的图片记录（`{id, blob, thumb, width, height, bytes, mime}`）或 null；
  * 图片与报告**同一事务**写入 —— 任一步失败一起回滚，不留孤儿图片。
+ *
+ * `data.reporter_*` 一般由 `parseForm()` 从「个人信息配置」里带出来；这里只兜底
+ * （直接调用本函数的场景：备份导入、测试），兜底值是 `product.js` 的出厂默认值。
+ * 报告里存的是**写入当时的快照** —— 以后改了个人信息，历史报告不受影响。
  */
 export function create(db, data, image = null) {
     assertRiskLevel(data.risk_level);
@@ -93,8 +103,8 @@ export function create(db, data, image = null) {
                 rectification_plan: data.rectification_plan,
                 related_standards: data.related_standards ?? null,
                 extra_advice: data.extra_advice ?? null,
-                reporter_name: data.reporter_name ?? CONFIG.DEFAULT_REPORTER.name,
-                reporter_department: data.reporter_department ?? CONFIG.DEFAULT_REPORTER.department,
+                reporter_name: data.reporter_name ?? DEFAULT_PROFILE.reporter_name,
+                reporter_department: data.reporter_department ?? DEFAULT_PROFILE.reporter_department,
                 image_path: image ? image.id : null,
                 created_at: data.created_at ?? timestamp(),
             });

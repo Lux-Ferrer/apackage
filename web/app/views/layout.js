@@ -45,14 +45,6 @@ export function actionBar({ cancelHref, cancelLabel = '取消', submitLabel = '�
     ]);
 }
 
-/** 只读值（表单里的「报告人」这类不可编辑项）。 */
-export function readonlyRow(label, value) {
-    return h('div.form-row', null, [
-        h('label', { text: label }),
-        h('div.form-control', null, h('p.readonly-value', { text: value })),
-    ]);
-}
-
 /** 一行「标签 + 控件」的表单行（label 左 / 控件右的横向表格布局，UI 设计第 3 节）。 */
 export function formRow({ label, forId = null, required = false, block = false, control, hint = null, error = null }) {
     return h('div.form-row', { class: block ? 'form-row-block' : null }, [

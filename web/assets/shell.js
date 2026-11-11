@@ -1,12 +1,10 @@
-/* 本文件由 tools/export_web_assets.py 生成，请勿手改。
- * 真相源：web/ 目录（规则见脚本里的 shell_assets()）
- * 重新生成：python tools/export_web_assets.py
+/* 构建产物，请勿手改。
  *
- * 用途：Service Worker 的离线预缓存清单 + 内容指纹版本号。
+ * 用途：离线预缓存清单 + 内容指纹版本号（Service Worker 据此判断要不要更新）。
  * 版本号只取决于被缓存文件的内容 —— 改了任何一个文件，SW 都会装新版本并清掉旧缓存。
  */
 
-export const SHELL_VERSION = "88f87e59ce21";
+export const SHELL_VERSION = "9ac9be170ebb";
 
 export const SHELL_ASSETS = Object.freeze([
     "app/clauses.js",
@@ -16,9 +14,11 @@ export const SHELL_ASSETS = Object.freeze([
     "app/image-pipeline.js",
     "app/import-export.js",
     "app/main.js",
+    "app/product.js",
     "app/repo/defects.js",
     "app/repo/images.js",
     "app/repo/measurements.js",
+    "app/repo/profile.js",
     "app/repo/projects.js",
     "app/report/attachments.js",
     "app/report/engine.js",
@@ -31,10 +31,12 @@ export const SHELL_ASSETS = Object.freeze([
     "app/thickness.js",
     "app/ui/dialog.js",
     "app/ui/dom.js",
+    "app/ui/form.js",
     "app/ui/objecturl.js",
     "app/ui/record-form.js",
     "app/views/layout.js",
     "app/views/me.js",
+    "app/views/profile.js",
     "app/views/projects.js",
     "app/views/records.js",
     "app/views/reports.js",

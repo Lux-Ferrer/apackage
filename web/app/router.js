@@ -10,6 +10,8 @@
  * 这样路由表可以脱离浏览器单独测试 —— 路由错配是"页面打不开"类 bug 的主要来源。
  */
 
+import { PRODUCT } from './product.js';
+
 /**
  * 路由表。字段含义：
  *   name     路由名（`pathFor()` 用它生成链接）
@@ -30,6 +32,7 @@ export const ROUTES = Object.freeze([
     { name: 'reports.new', pattern: '/reports/new', tab: 'reports', chrome: 'form', title: '缺陷检测填报' },
     { name: 'reports.detail', pattern: '/reports/:id', tab: 'reports', chrome: 'tabbar', title: '缺陷报告' },
     { name: 'me.index', pattern: '/me', tab: 'me', chrome: 'tabbar', title: '我的' },
+    { name: 'me.profile', pattern: '/me/profile', tab: 'me', chrome: 'form', title: '个人信息配置' },
     { name: 'me.data', pattern: '/me/data', tab: 'me', chrome: 'tabbar', title: '数据管理' },
     { name: 'pages.about', pattern: '/about', tab: 'me', chrome: 'tabbar', title: '关于' },
 ]);
@@ -130,11 +133,11 @@ export function chromeFor(routeName) {
     return route ? route.chrome : 'tabbar';
 }
 
-/** 页面标题（`<title>` 与顶栏用）。 */
+/** 页面标题（`<title>` 与顶栏用）。产品名来自 `product.js`，改版时只改那一处。 */
 export function titleFor(routeName, extra = null) {
     const route = ROUTES.find((item) => item.name === routeName);
     const base = extra || (route ? route.title : '');
-    return base ? `${base} - 建筑幕墙检测报告工具` : '建筑幕墙检测报告工具';
+    return base ? `${base} - ${PRODUCT.name}` : PRODUCT.name;
 }
 
 /**

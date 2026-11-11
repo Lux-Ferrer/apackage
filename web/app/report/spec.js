@@ -1,6 +1,8 @@
-/* 本文件由 tools/export_web_assets.py 生成，请勿手改。
- * 真相源：webapp/resources/report_layout.json
- * 重新生成：python tools/export_web_assets.py
+/* 本文件为构建产物，请勿手改（改了下次构建会被覆盖）。
+ * 内容：Word 版式规格（字号 pt / 几何 twips）
+ *
+ * 要换默认报告人/部门：改 app/product.js 里的 DEFAULT_PROFILE，
+ * 或者直接用界面「我的 → 个人信息配置」填一次（保存在本机，优先级更高）。
  */
 
 export const SPEC = Object.freeze({

@@ -1,8 +1,8 @@
 {
-    "name": "Curtain Wall Inspection Report Tool",
-    "short_name": "Curtain Wall",
-    "description": "Record curtain-wall inspection data and generate Word reports on the device. Works offline.",
-    "lang": "en",
+    "name": "建筑幕墙检测报告工具",
+    "short_name": "幕墙检测",
+    "description": "建筑幕墙检测数据记录与 Word 报告生成，全部在本机完成，支持离线使用。",
+    "lang": "zh-CN",
     "dir": "ltr",
     "id": "/",
     "start_url": "./index.html",

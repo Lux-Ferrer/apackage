@@ -30,6 +30,7 @@ import { Database } from '../app/db.js';
 import { STORE } from '../app/db.js';
 import { createApp } from '../app/main.js';
 import { CONFIG } from '../app/config.js';
+import { PRODUCT } from '../app/product.js';
 import { clearFlashes } from '../app/ui/dialog.js';
 
 const ROOT = new URL('../../', import.meta.url);
@@ -601,6 +602,71 @@ test('配置：默认风险等级与表单默认值一致（防止两处硬编�
     await goto(window, '#/reports/new', 'reports.new');
     const checked = $(window, '[name="risk_level"]:checked');
     assert.equal(checked.value, CONFIG.DEFAULT_RISK_LEVEL);
+});
+
+/* --------------------------------------------------------------------------
+ * 9. 交付版（v1.0.0）：页面级自检
+ * ------------------------------------------------------------------------ */
+
+test('关于页：产品名称 / 版本 / 出品方，不再有开发期的模块进度', async () => {
+    const { window } = await bootApp();
+    await goto(window, '#/about', 'pages.about');
+    const text = $(window, '#view').textContent;
+
+    assert.match(text, new RegExp(PRODUCT.name));
+    assert.match(text, new RegExp(`v${PRODUCT.version.replace(/\./g, '\\.')}`));
+    assert.match(text, /中冶建筑研究总院/);
+
+    // 开发/课程痕迹（这条是交付前专门加的：它们不影响功能，所以只有"盯着看"才会发现）
+    for (const [pattern, why] of [
+        [/模块进度/, '模块进度表'],
+        [/\bM[0-5]\b/, '里程碑编号'],
+        [/Capstone|NYU/i, '课程/学校信息'],
+        [/Zeyu|结构工程部/i, '开发者名字/部门'],
+        [/Flask|python/i, '参考实现的运行说明'],
+    ]) {
+        assert.doesNotMatch(text, pattern, `关于页里还有${why}`);
+    }
+});
+
+test('个人信息配置：改名字后「我的」页与新建报告都用新署名', async () => {
+    const { window } = await bootApp();
+
+    await goto(window, '#/me', 'me.index');
+    assert.match($(window, '#view').textContent, /检测员/, '默认报告人来自 product.js');
+    const entry = $$(window, '#view a').find((item) => /个人信息配置/.test(item.textContent));
+    assert.ok(entry, '「我的」页必须有个人信息配置入口');
+    assert.equal(entry.getAttribute('href'), '#/me/profile');
+
+    await goto(window, '#/me/profile', 'me.profile');
+    const form = $(window, '#profile-form');
+    assert.ok(form, '个人信息配置页应有表单');
+    assert.equal($(window, '#tabbar').hidden, true, '表单页要隐藏底部 Tab');
+    fill(window, form.querySelector('[name="reporter_name"]'), '张三');
+    fill(window, form.querySelector('[name="reporter_department"]'), '幕墙检测二部');
+    await submitAndWait(window, form, '保存个人信息');
+
+    await waitFor(window, () => window.location.hash === '#/me', { label: '保存后回到我的' });
+    const meText = $(window, '#view').textContent;
+    assert.match(meText, /张三/);
+    assert.match(meText, /幕墙检测二部/);
+    assert.match($(window, '#flashes').textContent, /个人信息已保存/);
+
+    // 真正的验证点：**新**填写的缺陷报告用的是新署名（旧代码在这里写死开发者）
+    await goto(window, '#/reports/new', 'reports.new');
+    assert.match($(window, '#view').textContent, /张三（幕墙检测二部）/,
+        '缺陷填报页的「报告人」应显示当前个人信息');
+
+    const defectForm = $(window, '#defect-form');
+    attachFile(window, defectForm.querySelector('#image'), jpegFile(window));
+    fill(window, defectForm.querySelector('[name="defect_type"]'), '密封胶开裂');
+    fill(window, defectForm.querySelector('[name="project_part"]'), '东立面三层 1# 立柱');
+    fill(window, defectForm.querySelector('[name="rectification_plan"]'), '更换密封胶');
+    await submitAndWait(window, defectForm, '保存报告');
+    await waitFor(window, () => /^#\/reports\/\d+$/.test(window.location.hash));
+
+    assert.match($(window, '#view').textContent, /张三（幕墙检测二部）/,
+        '保存下来的报告里也应是新署名（写入时快照）');
 });
 
 /* --------------------------------------------------------------------------

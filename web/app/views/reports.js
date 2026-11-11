@@ -10,14 +10,16 @@
  */
 
 import { CONFIG } from '../config.js';
+import { profileLabel } from '../product.js';
 import { pathFor } from '../router.js';
 import * as defects from '../repo/defects.js';
 import * as images from '../repo/images.js';
+import * as profileRepo from '../repo/profile.js';
 import * as projects from '../repo/projects.js';
 import { badge, h, infoTable, link } from '../ui/dom.js';
 import { confirmDialog, flash } from '../ui/dialog.js';
 import { createObjectURL } from '../ui/objecturl.js';
-import { actionBar, backLink, card, formRow, input, pageHead, readonlyRow, select, textarea, thumbnail } from './layout.js';
+import { actionBar, backLink, card, formRow, input, pageHead, select, textarea, thumbnail } from './layout.js';
 import { notFound } from './projects.js';
 
 /* --------------------------------------------------------------------------
@@ -199,6 +201,7 @@ export async function detail(ctx) {
 
 export async function form(ctx) {
     const projectOptions = await projects.listOptions(ctx.db);
+    const profile = await profileRepo.read(ctx.db);
     const maxImageMb = Math.floor(CONFIG.MAX_IMAGE_BYTES / (1024 * 1024));
 
     const imageInput = h('input', {
@@ -285,7 +288,11 @@ export async function form(ctx) {
                     h('p.hint', { text: '绑定后，该报告可作为附页随项目报告一并导出' }),
                 ],
             }),
-            readonlyRow('报告人', `${CONFIG.DEFAULT_REPORTER.name}（${CONFIG.DEFAULT_REPORTER.department}）`),
+            formRow({
+                label: '报告人',
+                control: h('p.readonly-value', { text: profileLabel(profile) }),
+                hint: '取自「我的 → 个人信息配置」，在那一页修改',
+            }),
         ]),
     ]);
 

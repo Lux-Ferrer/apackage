@@ -5,7 +5,7 @@
     <!-- viewport-fit=cover：让 env(safe-area-inset-*) 生效，否则 iPhone 底部横条会压住固定底栏 -->
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#1668dc">
-    <meta name="description" content="Curtain wall inspection data recording and Word report generation, fully on the device.">
+    <meta name="description" content="建筑幕墙检测数据记录与 Word 报告生成，全部在本机完成，支持离线使用。">
     <title>建筑幕墙检测报告工具</title>
     <!-- PWA：可安装、离线可用（清单与图标见 manifest.webmanifest / icons/） -->
     <link rel="manifest" href="./manifest.webmanifest">
@@ -15,11 +15,11 @@
     <link rel="apple-touch-icon" href="./icons/icon-192.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Curtain Wall">
+    <meta name="apple-mobile-web-app-title" content="幕墙检测">
     <!--
       导入映射（import map）：把裸模块名指到 vendor/ 里的第三方构建产物。
       这样**同一份源码**在浏览器（vendor/）与 Node（node_modules）里都跑得起来 ——
-      不需要打包器，也不需要在源码里写两套路径（M5 设计第 5 节）。
+      不需要打包器，也不需要在源码里写两套路径。
       需要浏览器支持 import maps（Chrome 89+ / Safari 16.4+ / Firefox 108+）。
     -->
     <script type="importmap">
@@ -30,16 +30,16 @@
         }
     }
     </script>
-    <!-- 移植自 Flask 侧（生成物，见 tools/export_web_assets.py），保证"长得跟 UI 阶段定下的壳一样" -->
+    <!-- 界面样式（随版本发布，无需修改） -->
     <link rel="stylesheet" href="./styles/app.css">
-    <!-- M5 自己新增的少量样式（手写） -->
+    <!-- 补充样式 -->
     <link rel="stylesheet" href="./styles/m5.css">
 </head>
 <body>
     <header class="topbar">
         <div class="wrap bar">
             <a class="brand" href="#/projects">建筑幕墙检测报告工具</a>
-            <!-- 桌面端导航：与底部 Tab 同一份定义、两处渲染（由 app/ui/nav.js 生成） -->
+            <!-- 桌面端导航：与底部 Tab 同一份定义、两处渲染 -->
             <nav class="topnav" id="topnav" aria-label="主导航"></nav>
         </div>
     </header>
@@ -50,13 +50,13 @@
     </main>
 
     <footer class="wrap foot">
-        本期范围：立柱 / 横梁截面尺寸检测（5 个厚度值自动计算最小值）· 缺陷检测填报 · 项目级 Word 导出 · 报告管理
+        适用范围：立柱 / 横梁截面尺寸检测（5 个厚度值自动取最小值）· 缺陷检测填报 · Word 报告导出
     </footer>
 
-    <!-- 底部 Tab（移动端）。表单类页面在渲染时清空它，改用固定的底部操作条 -->
+    <!-- 底部 Tab（移动端）。表单类页面在渲染时隐藏它，改用固定的底部操作条 -->
     <nav class="tabbar" id="tabbar" aria-label="主导航"></nav>
 
-    <!-- 应用内确认弹窗（移植自 Flask 侧 app.js 的语义） -->
+    <!-- 应用内确认弹窗 -->
     <dialog id="confirm-dialog" class="dialog">
         <form method="dialog">
             <h2 id="confirm-title">请确认</h2>
@@ -72,15 +72,14 @@
         <div class="wrap">
             <div class="card">
                 <h1>需要启用 JavaScript</h1>
-                <p class="sub">这一版把数据与导出都放在浏览器里（IndexedDB + docx JS），因此必须启用 JavaScript。</p>
-                <p class="hint">参考实现（Flask 版，服务端渲染、无 JS 也能用）仍保留在仓库的 <code>webapp/</code> 里：
-                    <code>python app.py</code> 即可运行。</p>
+                <p class="sub">这一版把数据与报告生成都放在浏览器里，因此必须启用 JavaScript。</p>
+                <p class="hint">请使用较新版本的 Chrome / Edge / Safari 打开本工具。</p>
             </div>
         </div>
     </noscript>
 
-    <!-- 显式的启动标记：main.js 只在看到它时才自动 boot()。
-         这样 Node 测试 import main.js（jsdom 环境里 document/window 都在）不会误触发启动。 -->
+    <!-- 显式的启动标记：只有设置了它，main.js 才会自动启动应用
+         （便于复用这个入口而不启动整个应用，例如自动化测试）。 -->
     <script>globalThis.__APP_BOOT__ = true;</script>
     <script type="module" src="./app/main.js"></script>
 </body>

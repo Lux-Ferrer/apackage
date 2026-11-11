@@ -19,6 +19,7 @@ import * as projectsView from './views/projects.js';
 import * as recordsView from './views/records.js';
 import * as reportsView from './views/reports.js';
 import * as meView from './views/me.js';
+import * as profileView from './views/profile.js';
 
 /** 路由名 → 渲染函数。视图函数签名统一是 `(ctx) => {nodes, chrome?}`。 */
 const VIEWS = {
@@ -33,6 +34,7 @@ const VIEWS = {
     'reports.new': (ctx) => reportsView.form(ctx),
     'reports.detail': (ctx) => reportsView.detail(ctx),
     'me.index': (ctx) => meView.index(ctx),
+    'me.profile': (ctx) => profileView.form(ctx),
     'me.data': (ctx) => meView.data(ctx),
     'pages.about': (ctx) => meView.about(ctx),
 };
@@ -137,7 +139,7 @@ export function createApp({
             return;
         }
 
-        releaseObjectURLs();                 // 上一屏建的图片 URL 全部释放（见 ui/objecturl.js）
+        releaseObjectURLs();                 // 上一屏建的图片 URL 全部释放
         // 注意：这里**不能**清空提示 —— flash() 后面常常紧跟 navigate()/refresh()，
         // 清了用户就看不到回执。提示由 ui/dialog.js 的小队列管生命周期。
 
@@ -172,7 +174,7 @@ export function createApp({
                     h('p', null, h('a', { class: 'link', href: pathFor('projects.index'), text: '← 回到项目列表' })),
                 ])],
             };
-            if (globalThis.console) console.error('[M5] 渲染失败', error);
+            if (globalThis.console) console.error('渲染失败', error);
         }
 
         // —— 渲染 ——
@@ -289,7 +291,7 @@ async function registerServiceWorker() {
         return registration;
     } catch (error) {
         // 常见原因：非安全上下文，或静态服务器不支持 module worker。功能不受影响，只是不能离线。
-        if (globalThis.console) console.warn('[M5] Service Worker 注册失败（不影响在线使用）', error);
+        if (globalThis.console) console.warn('Service Worker 注册失败（不影响在线使用）', error);
         return null;
     }
 }
@@ -323,20 +325,20 @@ export async function boot(options = {}) {
                     + '（请改用静态服务器，例如 python -m http.server 8080 --directory web）。',
             }),
         ]));
-        if (globalThis.console) console.error('[M5] 打开数据库失败', error);
+        if (globalThis.console) console.error('打开数据库失败', error);
         return null;
     }
 
     const app = createApp({ ...options.app, db });
     await app.start();
     await registerServiceWorker();
-    globalThis.__APP__ = app;                 // 便于真机排错时在控制台里查状态
+    globalThis.__APP__ = app;                 // 便于现场排错时在浏览器控制台里查看应用状态
     return app;
 }
 
 if (globalThis.__APP_BOOT__) {
     boot().catch((error) => {
         flash(`启动失败：${error.message}`, 'error');
-        if (globalThis.console) console.error('[M5] 启动失败', error);
+        if (globalThis.console) console.error('启动失败', error);
     });
 }

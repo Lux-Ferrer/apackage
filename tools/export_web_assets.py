@@ -79,19 +79,19 @@ BINARY_ASSETS = {
     WEB_DIR / "assets" / "report_base.docx": ROOT / "webapp" / "resources" / "report_base.docx",
 }
 
-HEADER = """/* 本文件由 tools/export_web_assets.py 生成，请勿手改。
- * 真相源：%s
- * 重新生成：python tools/export_web_assets.py
+HEADER = """/* 本文件为构建产物，请勿手改（改了下次构建会被覆盖）。
+ * 内容：%s
+ *
+ * 要换默认报告人/部门：改 app/product.js 里的 DEFAULT_PROFILE，
+ * 或者直接用界面「我的 → 个人信息配置」填一次（保存在本机，优先级更高）。
  */
 """
 
-CSS_HEADER = """/* 本文件由 tools/export_web_assets.py 生成，请勿手改。
- * 真相源：webapp/static/css/app.css
- * 重新生成：python tools/export_web_assets.py
+CSS_HEADER = """/* 界面样式（构建产物，请勿手改）。
+ * 需要局部调整时请写进 styles/m5.css —— 它在本次加载之后，可以覆盖这里的规则。
  *
- * 为什么要生成而不是手抄：M5 的前端必须"长得跟 UI 阶段定下的壳一模一样"，
- * 手抄一份就有两个真相源，改了 Flask 侧忘了同步会慢慢走样（而且肉眼看不出来）。
- * M5 自己新增的样式在手写的 web/styles/m5.css 里，不混进来。
+ * 为什么是生成的而不是手写：界面在原型阶段就定了版，样式作为"已验收的壳"整体随版本发布，
+ * 避免同一份样式在两个副本之间慢慢走样（那种差异肉眼看不出来，只能靠对拍发现）。
  */
 """
 
@@ -145,10 +145,10 @@ def config_payload() -> dict:
     }
 
 
-def _render_module(header_source: str, const_name: str, payload: dict) -> str:
+def _render_module(description: str, const_name: str, payload: dict) -> str:
     body = json.dumps(payload, ensure_ascii=False, indent=2)
     return "%s\nexport const %s = Object.freeze(%s);\n\nexport default %s;\n" % (
-        HEADER % header_source, const_name, body, const_name)
+        HEADER % description, const_name, body, const_name)
 
 
 def shell_assets() -> list:
@@ -221,9 +221,11 @@ def package_version(source: Path) -> str:
 
 def build(check_only: bool = False) -> int:
     sources = {
-        CONFIG_JS: _render_module("webapp/config.py", "CONFIG", config_payload()),
+        CONFIG_JS: _render_module("业务预置数据（模板 / 条文 / 字段上限…）",
+                                  "CONFIG", config_payload()),
         SPEC_JSON_COPY: json.dumps(config_payload_spec(), ensure_ascii=False, indent=2) + "\n",
-        SPEC_JS: _render_module("webapp/resources/report_layout.json", "SPEC", config_payload_spec()),
+        SPEC_JS: _render_module("Word 版式规格（字号 pt / 几何 twips）",
+                                "SPEC", config_payload_spec()),
         STYLE_CSS: CSS_HEADER + style_source(),
         SHELL_JS: shell_source(),
     }
@@ -293,11 +295,9 @@ def shell_source() -> str:
     if missing:
         raise SystemExit("离线清单里有不存在的文件：%s" % "、".join(missing))
     lines = [
-        "/* 本文件由 tools/export_web_assets.py 生成，请勿手改。",
-        " * 真相源：web/ 目录（规则见脚本里的 shell_assets()）",
-        " * 重新生成：python tools/export_web_assets.py",
+        "/* 构建产物，请勿手改。",
         " *",
-        " * 用途：Service Worker 的离线预缓存清单 + 内容指纹版本号。",
+        " * 用途：离线预缓存清单 + 内容指纹版本号（Service Worker 据此判断要不要更新）。",
         " * 版本号只取决于被缓存文件的内容 —— 改了任何一个文件，SW 都会装新版本并清掉旧缓存。",
         " */",
         "",
