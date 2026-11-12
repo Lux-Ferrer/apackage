@@ -12,13 +12,22 @@
  *   1. 默认报告人：改下面 `DEFAULT_PROFILE` 的两行 —— 或者不改，直接在 app 里
  *      「我的 → 个人信息配置」里填一次（保存在本机 IndexedDB，改一次就够）。
  *      **两者优先级：界面里保存过的 > 这里的出厂默认值。**
- *   2. 版本号：改 `PRODUCT.version`（它与交付包文件名 `mcc-inspection-tool-v1.0.0.zip`
+ *   2. 版本号：改 `PRODUCT.version`（它与交付包文件名 `mcc-inspection-tool-v<版本>.zip`
  *      一致；`tools/make_release_zip.py` 会读这个字段来命名压缩包）。
  *   3. 出品方 / 技术支持：改 `PRODUCT.vendor` / `PRODUCT.support`。
  *
  * ⚠️ 改完必须重新生成离线清单（版本号会变，Service Worker 才会更新）：
  *      python tools/export_web_assets.py
  *   然后把「我的 → 关于」里的「离线缓存版本」与上一版比一眼 —— 变了才算生效。
+ *
+ * 版本历史
+ * --------
+ *   1.0.0  首个交付包（真机验收当场暴露 3 个 P0：boot 崩溃 / 导出 nodebuffer / 备份导入失效）
+ *   1.0.1  两轮真实浏览器 + 安卓模拟器验证后的**最终交付版**：
+ *          · 修复「导入备份」必然失败（`zip.files` 被当数组用）
+ *          · 修复软键盘弹起时「保存」被键盘挡住（visualViewport → `--keyboard-inset`）
+ *          · 操作条「取消」触控区 28×22 → 44×44
+ *          · 交付包不再打包测试资产（`web/e2e`）
  */
 
 export const PRODUCT = Object.freeze({
@@ -26,8 +35,8 @@ export const PRODUCT = Object.freeze({
     name: '建筑幕墙检测报告工具',
     /** 英文名（安装到主屏时部分系统会用它） */
     name_en: 'Curtain Wall Inspection Report Tool',
-    /** 版本号：不带 "v" 前缀，界面统一显示成 v1.0.0 */
-    version: '1.0.0',
+    /** 版本号：不带 "v" 前缀，界面统一显示成 v1.0.1 */
+    version: '1.0.1',
     /** 出品方 */
     vendor: '中冶建筑研究总院（深圳）有限公司',
     /** 技术支持（可留空：留空时关于页不显示这一行） */
@@ -51,7 +60,7 @@ export const PROFILE_LIMITS = Object.freeze({
     reporter_department: 30,
 });
 
-/** 界面上的版本标签：`v1.0.0`。 */
+/** 界面上的版本标签：`v1.0.1`。 */
 export function versionLabel() {
     return `v${PRODUCT.version}`;
 }

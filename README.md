@@ -23,24 +23,24 @@ Existing Curtain Wall Inspection Data Recording and Report Generation Tool —�
 
 ---
 
-## 交付版（`release/v1.0.0`）
+## 交付版（`release/v1.0.1`）
 
-`master` 是开发线（保留全部里程碑文档与测试）；**交给客户的是 `release/v1.0.0` 分支**：
+`master` 是开发线（保留全部里程碑文档与测试）；**交给客户的是 `release/v1.0.1` 分支**：
 去掉了开发/课程痕迹，报告人可在界面里配置，并产出一个可以直接内网部署的静态包。
 
 ```powershell
-git checkout release/v1.0.0
-python tools/make_release_zip.py         # → dist/mcc-inspection-tool-v1.0.0.zip（含 .sha256 与清单）
+git checkout release/v1.0.1
+python tools/make_release_zip.py         # → dist/mcc-inspection-tool-v1.0.1.zip（含 .sha256 与清单）
 npm run test:e2e                         # 真实浏览器 E2E（21 条，测的就是上面那个 zip）
 ```
 
 | 交付物 | 位置 |
 | --- | --- |
-| 部署包（53 个文件，465 KB） | `dist/mcc-inspection-tool-v1.0.0.zip` |
+| 部署包（53 个文件，465 KB） | `dist/mcc-inspection-tool-v1.0.1.zip` |
 | 客户文档（随包发给客户） | `docs/release/客户部署与使用说明.md` |
 | 部署样例（Nginx / IIS / 零依赖静态服务） | `docs/release/{nginx.conf.example,web.config.example,serve_static.py}` |
-| 本次清理的完整说明 | `docs/management/v1.0.0-发布清理.md` |
-| **真实浏览器验证报告** | `docs/management/v1.0.0-浏览器E2E验证报告.md` |
+| 本次清理的完整说明 | `docs/management/v1.0.1-发布清理.md` |
+| **真实浏览器验证报告** | `docs/management/v1.0.1-浏览器E2E验证报告.md` |
 
 客户要改默认报告人时只碰两个地方：界面「我的 → 个人信息配置」，或 `app/product.js` 里的
 `DEFAULT_PROFILE`（产品名 / 版本 / 出品方也在这个文件里，**版本号只有这一处真相源**）。

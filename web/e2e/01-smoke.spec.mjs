@@ -11,6 +11,7 @@ import { join } from 'node:path';
 
 import { expect, test } from '@playwright/test';
 
+import { PRODUCT } from '../app/product.js';
 import {
     FIXTURES, addColumnRecord, addDefect, attachDiagnostics, createProject, downloadFrom,
     expectFormChrome, expectNoHorizontalOverflow, expectNoProblems, expectTabbarChrome,
@@ -143,7 +144,10 @@ test('主流程（375×812 真机视口）：建项目 → 检测记录 → 缺�
     /* ---- 8. 关于页：产品信息，没有开发期痕迹 ---- */
     await gotoRoute(page, '#/about', 'pages.about');
     const aboutText = await page.locator('#view').textContent();
-    expect(aboutText).toContain('v1.0.0');
+    /* 版本号不写死在这里：唯一真相源是 `web/app/product.js`，
+     * 页面必须显示 `v<PRODUCT.version>`。写死的话每次发版都要改测试，
+     * 而且改了测试就等于"放过"了版本号不一致的 bug。 */
+    expect(aboutText).toContain(`v${PRODUCT.version}`);
     expect(aboutText).toContain('中冶建筑研究总院');
     expect(aboutText).not.toContain('模块进度');
     shots.push(await screenshot(page, '08-关于'));
