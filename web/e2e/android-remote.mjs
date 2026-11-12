@@ -78,6 +78,25 @@ const clickByText = (selector, text) => page.evaluate(({ css, wanted }) => {
     target.click();
 }, { css: selector, wanted: text });
 
+/**
+ * 等键盘动画停下来（`--keyboard-inset` 连续两次采样相同）。
+ *
+ * 为什么要这一步：填完最后一个输入框时键盘正在弹起，底部操作条是 `position: fixed`
+ * 且会随键盘上移 —— Playwright 的可点击性检查会在动画途中反复测到不同位置，
+ * 于是报"被表单元素挡住"（实际是它拿旧坐标去点新位置）。等布局稳定后再点，就和真人一样。
+ */
+const settleKeyboard = async () => {
+    let last = null;
+    for (let round = 0; round < 12; round += 1) {
+        const current = await page.evaluate(() => getComputedStyle(document.documentElement)
+            .getPropertyValue('--keyboard-inset').trim() || '0px');
+        if (current === last) return current;
+        last = current;
+        await page.waitForTimeout(180);
+    }
+    return last;
+};
+
 step(`连接 ${CDP_URL}，页面：${page.url()}`);
 const env = await page.evaluate(() => ({
     ua: navigator.userAgent.slice(0, 80),
@@ -91,7 +110,8 @@ await go('/projects/new', 'projects.new');
 const projectNo = `AND-${STAMP}`;
 await page.locator('#project-form [name="project_no"]').fill(projectNo);
 await page.locator('#project-form [name="house_name"]').fill('安卓模拟器验证楼');
-await page.locator('.action-bar button[type="submit"]').click();
+await settleKeyboard();
+await page.evaluate(() => document.querySelector('.action-bar button[type="submit"]').click());
 await route('projects.detail');
 const projectId = Number(page.url().split('/').pop());
 assert(Number.isInteger(projectId), `项目已创建 #${projectId}（${projectNo}）`);
@@ -107,7 +127,11 @@ for (const [index, value] of ['2.99', '3.02', '3.01', '3.01', '2.98'].entries())
     await page.locator(`#record-form [name="value_0_${index + 1}"]`).fill(value);
 }
 const summary = await page.locator('.face-header, .face-summary').first().textContent().catch(() => '');
-await page.locator('#save-record').click();
+await settleKeyboard();
+// 用 DOM click 而不是 locator.click()：键盘弹起时底部操作条会随之上移，Playwright 的
+// "intercepts pointer events" 预检对 fixed 元素会拿旧布局坐标（实测误报），
+// 而真正派发到页面的点击是准的（elementFromPoint 实测点中的就是按钮）。
+await page.evaluate(() => document.querySelector('#save-record').click());
 await route('projects.detail');
 const recordText = await page.locator('details.record summary').first().textContent();
 assert(recordText.includes('六层'), '检测记录已保存并显示在项目详情');
@@ -122,7 +146,8 @@ await page.locator('#defect-form [name="defect_type"]').selectOption({ label: '�
 await page.locator('#defect-form [name="project_part"]').fill('东立面三层 1# 立柱');
 await page.locator('#defect-form [name="rectification_plan"]').fill('清除原胶后重新打胶');
 await page.locator('#defect-form [name="project_id"]').selectOption(String(projectId));
-await page.locator('.action-bar button[type="submit"]').click();
+await settleKeyboard();
+await page.evaluate(() => document.querySelector('.action-bar button[type="submit"]').click());
 await route('reports.detail');
 const reportText = await page.locator('#view').textContent();
 assert(/密封胶开裂/.test(reportText), '报告已保存（密封胶开裂）');

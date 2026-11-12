@@ -13,6 +13,7 @@ import { Database } from './db.js';
 import { flash, renderFlashes } from './ui/dialog.js';
 import { byId, clear, h } from './ui/dom.js';
 import { releaseObjectURLs } from './ui/objecturl.js';
+import { trackKeyboardInset } from './ui/viewport.js';
 import { NAV_ITEMS, activeTab, chromeFor, normalizePath, pathFor, resolve, titleFor } from './router.js';
 
 import * as projectsView from './views/projects.js';
@@ -246,6 +247,9 @@ export function createApp({
 
     async function start() {
         win.addEventListener('hashchange', () => { render(); });
+        // 软键盘：把"键盘占掉的高度"写成 CSS 变量，操作条据此上移（见 ui/viewport.js）。
+        // jsdom 里没有 visualViewport → 这个调用是空操作，测试不受影响。
+        trackKeyboardInset({ window: win, document: doc });
         if (!win.location.hash || win.location.hash === '#') {
             win.location.replace(`#${normalizePath('/projects')}`);
         }

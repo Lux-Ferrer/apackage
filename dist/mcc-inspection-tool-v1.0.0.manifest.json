@@ -1,9 +1,9 @@
 {
   "product": "建筑幕墙检测报告工具",
   "version": "1.0.0",
-  "shell_version": "04bcb040d93e",
-  "built_at": "2026-11-12 06:00:31",
-  "file_count": 52,
+  "shell_version": "7da450473f6b",
+  "built_at": "2026-11-12 07:24:02",
+  "file_count": 53,
   "files": [
     "VERSION.txt",
     "app/clauses.js",
@@ -33,6 +33,7 @@
     "app/ui/form.js",
     "app/ui/objecturl.js",
     "app/ui/record-form.js",
+    "app/ui/viewport.js",
     "app/views/layout.js",
     "app/views/me.js",
     "app/views/profile.js",
