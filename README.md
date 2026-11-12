@@ -31,14 +31,16 @@ Existing Curtain Wall Inspection Data Recording and Report Generation Tool —�
 ```powershell
 git checkout release/v1.0.0
 python tools/make_release_zip.py         # → dist/mcc-inspection-tool-v1.0.0.zip（含 .sha256 与清单）
+npm run test:e2e                         # 真实浏览器 E2E（21 条，测的就是上面那个 zip）
 ```
 
 | 交付物 | 位置 |
 | --- | --- |
-| 部署包（52 个文件，461 KB） | `dist/mcc-inspection-tool-v1.0.0.zip` |
+| 部署包（52 个文件，462 KB） | `dist/mcc-inspection-tool-v1.0.0.zip` |
 | 客户文档（随包发给客户） | `docs/release/客户部署与使用说明.md` |
 | 部署样例（Nginx / IIS / 零依赖静态服务） | `docs/release/{nginx.conf.example,web.config.example,serve_static.py}` |
 | 本次清理的完整说明 | `docs/management/v1.0.0-发布清理.md` |
+| **真实浏览器验证报告** | `docs/management/v1.0.0-浏览器E2E验证报告.md` |
 
 客户要改默认报告人时只碰两个地方：界面「我的 → 个人信息配置」，或 `app/product.js` 里的
 `DEFAULT_PROFILE`（产品名 / 版本 / 出品方也在这个文件里，**版本号只有这一处真相源**）。
@@ -248,8 +250,11 @@ python tools/make_report_template.py
 M5 移植验收（可选，需要 Node.js。设计见 `docs/management/M5-设计.md`）：
 
 ```powershell
-npm test                      # 数据层 + 引擎 + 附页 + 图片管线 + 指纹 + 端到端 UI + 离线清单 + 平台假设（211 项）
-                              # 外加既有的 Flask UI 测试（58 项），共 269 项
+npm test                      # 数据层 + 引擎 + 附页 + 图片管线 + 指纹 + 端到端 UI + 离线清单 + 平台假设 + 备份导入导出（234 项）
+                              # 外加既有的 Flask UI 测试（58 项），共 292 项
+
+npm run test:e2e              # 真实浏览器 E2E（21 项：主流程 / 布局 / 负载 / 离线 / 图片 / 数据安全）
+                              # 被测对象是 dist/ 里的交付包本身，需要先在装了 Edge/Chrome 的机器上 npm install
 
 # 生成两份被测产物：无附页 / 含附页
 node tools/js/generate_from_fixture.mjs
@@ -354,9 +359,11 @@ Capstone/
 │   │       └── spec.js        生成物（源自 report_layout.json，勿手改）
 │   ├── assets/                report_layout.json · report_base.docx · fixture_data.json · shell.js（生成物）
 │   ├── vendor/                docx.mjs · jszip.min.js（vendored）· jszip.js（ESM 包装）
-│   ├── tests/                 211 项：数据层 / 引擎 / 附页 / 图片管线 / 配额 / 路由 / 指纹（闸门 C）/
+│   ├── tests/                 234 项：数据层 / 引擎 / 附页 / 图片管线 / 配额 / 路由 / 指纹（闸门 C）/ 备份导入导出 /
 │   │                          端到端（jsdom + fake-indexeddb）/ 模块图自检 / PWA 离线清单 /
 │   │                          平台假设（浏览器没有 Buffer，真机导出的那个 bug）
+│   ├── e2e/                   21 项**真实浏览器**用例（Playwright，测的是 dist/ 里的交付包）：
+│   │                          主流程 / 移动端布局 / 边界负载 / 离线 / 图片管线 / 鲁棒性 / 数据安全
 │   └── package.json           仅声明本目录为 ESM 作用域
 ├── reports/                   导出的 .docx（gitignore）
 ├── uploads/defects/           隐患图片（gitignore）

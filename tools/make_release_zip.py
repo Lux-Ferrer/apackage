@@ -56,7 +56,9 @@ STAGE_ROOT = ROOT / "_work" / "release-stage"
 PACKAGE_DIR_NAME = "mcc-inspection-tool"
 
 # ---- 不进包的文件/目录（按相对 web/ 的路径匹配）----
-EXCLUDE_DIRS = {"tests", "node_modules", ".git", "__pycache__"}
+# `e2e` 是 Playwright 的浏览器测试（`web/e2e/`），和单元测试一样属于开发资产 ——
+# 打包时漏掉它，客户拿到的包里就会多出一堆 .mjs/.py 测试脚本。
+EXCLUDE_DIRS = {"tests", "e2e", "node_modules", ".git", "__pycache__"}
 EXCLUDE_FILES = {
     "assets/fixture_data.json",     # 对拍夹具（含开发期人名），运行时不需要
     "package.json",                 # 只是给 Node 声明 ESM 作用域，浏览器用不到
@@ -207,6 +209,17 @@ def verify(package_dir: Path) -> None:
             if re.search(r"console\.(log|debug)\s*\(", code) or "debugger" in code:
                 problems.append(
                     f"调试输出残留：{path.relative_to(package_dir)}:{number}  {line.strip()}")
+
+    # 开发资产（测试脚本 / 夹具）一个都不能进包
+    for path in package_dir.rglob("*"):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(package_dir).as_posix()
+        parts = relative.split("/")
+        if {"tests", "e2e"} & set(parts[:-1]) or relative.startswith("tests/"):
+            problems.append(f"开发资产混进了交付包：{relative}")
+        if path.suffix in {".spec.mjs", ".test.mjs"}:
+            problems.append(f"测试文件混进了交付包：{relative}")
 
     # 产品身份与文档里的版本号必须一致
     version = read_product_version()

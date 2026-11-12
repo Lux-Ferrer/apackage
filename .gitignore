@@ -16,6 +16,10 @@ uploads/defects/*
 .coverage
 node_modules/
 package-lock.json
+# Playwright 的失败现场（截图 / trace / HTML 报告）都是过程性产物
+test-results/
+playwright-report/
+blob-report/
 
 # 过程性文件（PDF 拆分中间产物、截图等）
 _work/

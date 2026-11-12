@@ -134,9 +134,17 @@ export async function inspectBackup(file) {
     const zip = await loadZip(file);
     const data = await readBackupJson(zip);
 
-    const listed = new Set(zip.files
-        .filter((name) => name.startsWith(IMAGE_PREFIX) && !zip.files[name].dir)
-        .map((name) => name.slice(IMAGE_PREFIX.length)));
+    /* ⚠️ `zip.files` 是**对象**（`{ 路径: ZipObject }`），不是数组。
+     * 真机 bug：这里曾经写成 `zip.files.filter(...)` → `TypeError: zip.files.filter is not a
+     * function`，而 UI 在导入前**必须先调本函数**，于是「导入备份」这条唯一的救命通道
+     * 100% 失败（提示：导入失败：zip.files.filter is not a function）。
+     * 之所以没被测试抓到：当时**没有任何测试覆盖备份导入**（现在有了：
+     * `web/tests/import_export.test.mjs` + `web/e2e/07-data-safety.spec.mjs`）。 */
+    const listed = new Set(
+        Object.entries(zip.files)
+            .filter(([name, entry]) => name.startsWith(IMAGE_PREFIX) && !entry.dir)
+            .map(([name]) => name.slice(IMAGE_PREFIX.length)),
+    );
 
     const registered = data.tables.images.map((row) => row.id);
     return {

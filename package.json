@@ -7,9 +7,14 @@
     "test": "npm run test:data && npm run test:js",
     "test:data": "node --test \"web/tests/*.test.mjs\"",
     "test:js": "node tests/js/record_form.test.js",
-    "export:assets": "python tools/export_web_assets.py"
+    "export:assets": "python tools/export_web_assets.py",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "report:e2e": "playwright show-report _work/e2e/html",
+    "test:all": "npm test && npm run test:e2e"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.0",
     "docx": "^9.9.0",
     "fake-indexeddb": "^6.2.2",
     "jsdom": "^29.1.1",
