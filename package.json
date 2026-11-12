@@ -11,7 +11,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "report:e2e": "playwright show-report _work/e2e/html",
-    "test:all": "npm test && npm run test:e2e"
+    "test:all": "npm test && npm run test:e2e",
+    "test:android": "node web/e2e/android-remote.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.0",

@@ -255,6 +255,7 @@ npm test                      # 数据层 + 引擎 + 附页 + 图片管线 + 指
 
 npm run test:e2e              # 真实浏览器 E2E（21 项：主流程 / 布局 / 负载 / 离线 / 图片 / 数据安全）
                               # 被测对象是 dist/ 里的交付包本身，需要先在装了 Edge/Chrome 的机器上 npm install
+npm run test:android          # 安卓模拟器回归（12 项，需 MuMu + adb 端口转发，见脚本文件头）
 
 # 生成两份被测产物：无附页 / 含附页
 node tools/js/generate_from_fixture.mjs
@@ -364,6 +365,7 @@ Capstone/
 │   │                          平台假设（浏览器没有 Buffer，真机导出的那个 bug）
 │   ├── e2e/                   21 项**真实浏览器**用例（Playwright，测的是 dist/ 里的交付包）：
 │   │                          主流程 / 移动端布局 / 边界负载 / 离线 / 图片管线 / 鲁棒性 / 数据安全
+│   │                          android-remote.mjs = 安卓模拟器回归（CDP over adb，12 项）
 │   └── package.json           仅声明本目录为 ESM 作用域
 ├── reports/                   导出的 .docx（gitignore）
 ├── uploads/defects/           隐患图片（gitignore）
