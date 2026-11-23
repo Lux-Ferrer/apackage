@@ -361,7 +361,7 @@ adb install -r app\build\outputs\apk\debug\app-debug.apk
 
 仓库里已经有一个 GitHub Actions 工作流：`.github/workflows/build-android.yml`
 
-**它会做**：checkout → 装 JDK 21（temurin）→ 装 Node 20 → 装 Android SDK →
+**它会做**：checkout → 装 JDK 21（temurin）→ 装 Node 22（Capacitor 8 的 CLI 要求 ≥22）→ 用 runner 预装的 Android SDK →
 `sdkmanager "platforms;android-36" "build-tools;36.0.0" platform-tools` →
 `npm ci` → `python3 scripts/prepare-www.py`（从 `dist/*.zip` 解出 www）→
 `npx cap sync android` → `./gradlew assembleDebug` → 把 APK 传成 Artifact。

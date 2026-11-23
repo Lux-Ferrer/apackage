@@ -5,6 +5,9 @@
   "description": "把纯前端 PWA（建筑幕墙检测报告工具）包成 Android APK —— 只负责壳，不含业务代码",
   "license": "UNLICENSED",
   "type": "commonjs",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "prepare:www": "python scripts/prepare-www.py",
     "icons": "python scripts/make-icons.py",

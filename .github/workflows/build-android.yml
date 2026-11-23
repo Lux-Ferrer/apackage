@@ -28,7 +28,8 @@ env:
   # 是为了让"依赖预装 SDK"这件事在文件里可见 —— 若以后改动 runs-on，记得回来核对这个路径。
   ANDROID_HOME: /usr/local/lib/android/sdk
   ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-  NODE_VERSION: '20'
+  # Capacitor 8 的 CLI 要求 Node >= 22（@capacitor/cli 的 engines.node）
+  NODE_VERSION: '22'
   JAVA_VERSION: '21'
 
 jobs:
