@@ -20,15 +20,23 @@ permissions:
 
 env:
   # 与 apk-wrapper/android/variables.gradle 里的 compileSdk / targetSdk 保持一致
+  # （这两个值只用于运行摘要里展示；SDK 本身由 runner 镜像预装，见下方说明）
   ANDROID_PLATFORM: android-36
   ANDROID_BUILD_TOOLS: 36.0.0
+  # runner 镜像里已预装 Android SDK（Ubuntu 24.04 镜像提供 android-36、build-tools 36.0.0、
+  # platform-tools 37.0.1 与 cmdline-tools）。镜像本身也导出这两个变量，这里显式写一遍
+  # 是为了让"依赖预装 SDK"这件事在文件里可见 —— 若以后改动 runs-on，记得回来核对这个路径。
+  ANDROID_HOME: /usr/local/lib/android/sdk
+  ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
   NODE_VERSION: '20'
   JAVA_VERSION: '21'
 
 jobs:
   build:
     name: assemble${{ inputs.build_type }}
-    runs-on: ubuntu-latest
+    # 钉住 24.04 而不是 ubuntu-latest：镜像预装的 SDK 版本会随 latest 迁移（26.04）而变，
+    # 这里要的是"已验证过 android-36 就在这套镜像里"。
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     defaults:
       run:
@@ -52,15 +60,9 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install SDK platform and build-tools
-        run: |
-          yes | sdkmanager --licenses > /dev/null || true
-          sdkmanager "platform-tools" "platforms;${ANDROID_PLATFORM}" "build-tools;${ANDROID_BUILD_TOOLS}"
-          sdkmanager --list_installed
-
+      # 不装 Android SDK：runner 镜像已预装（见文件顶部 env 的说明）。
+      # 原来那两步 —— android-actions/setup-android@v3 与 sdkmanager 安装 —— 已经删掉：
+      # 前者会在新版镜像上尝试执行已废弃的 `sdkmanager tools`，直接报 "Failed to find package 'tools'"。
       - name: Install npm dependencies
         run: npm ci
 
