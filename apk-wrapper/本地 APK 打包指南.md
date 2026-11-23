@@ -409,6 +409,10 @@ gh run download -n mcc-inspection-tool-v1.0.1-debug.apk -D ./apk
 - Artifact 是**未签名（debug 签名）**的包：能直接装、能测试，但**不能上架、不能作为正式分发包**。
   正式分发按 §5 生成 keystore 后，把签名配置提交到仓库（或用 GitHub Secrets 注入密码），
   再把 `build_type` 选 `release`。
+- **签名与升级**：debug 包用的是 runner 上自动生成的 debug keystore，**每次运行都不同** ——
+  所以工作流里加了"缓存 `~/.android/debug.keystore`"这一步，否则每次 APK 都装不上（要卸载、丢数据）。
+  运行摘要里会打印签名指纹，**连续两次构建的指纹应当一致**；换仓库/缓存被清会变。
+  给客户正式分发时按 §5 用 release keystore（走 GitHub Secrets），不要依赖 debug 签名。
 - 工作流只构建 **debug** 时也要求 `dist/mcc-inspection-tool-v1.0.1.zip` 已提交 ——
   APK 里的内容永远来自交付包，不从 `web/` 源码直接打包。
 - 想改版本号：改 `web/app/product.js` 的 version → `python tools/make_release_zip.py` →

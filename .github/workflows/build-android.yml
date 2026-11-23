@@ -83,6 +83,17 @@ jobs:
           key: gradle-${{ runner.os }}-${{ hashFiles('apk-wrapper/android/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: gradle-${{ runner.os }}-
 
+      # ⚠️ debug 签名用的密钥必须**跨次构建保持一致**，否则每次跑出来的 APK 签名都不同，
+      # 客户就没法覆盖升级（INSTALL_FAILED_UPDATE_INCOMPATIBLE，只能卸载重装、丢数据）。
+      # 这里把 runner 上自动生成的 ~/.android/debug.keystore 缓存住（固定 key）；
+      # 如果缓存被清掉，会重新生成一份新的 —— 那时升级仍需卸载一次。
+      # 正式分发请改用 §5 的 release keystore + GitHub Secrets。
+      - name: Cache debug keystore (stable APK signature)
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: android-debug-keystore-v1
+
       - name: Build APK (assemble${{ inputs.build_type }})
         working-directory: apk-wrapper/android
         run: |
@@ -106,8 +117,12 @@ jobs:
             echo "| 文件 | \`$NAME\` |"
             echo "| 大小 | $(du -h "$NAME" | cut -f1) |"
             echo "| sha256 | \`$(sha256sum "$NAME" | cut -d' ' -f1)\` |"
+            echo "| 签名指纹 | \`$("$ANDROID_HOME"/build-tools/36.0.0/apksigner verify --print-certs "$NAME" | grep -m1 'SHA-256 digest' | cut -d' ' -f4 | cut -c1-16)…\` |"
             echo "| JDK / SDK | Java ${{ env.JAVA_VERSION }} / ${ANDROID_PLATFORM} + build-tools ${ANDROID_BUILD_TOOLS} |"
             echo "| 提交 | \`${GITHUB_SHA}\` |"
+            echo ""
+            echo "> 覆盖安装要求「签名指纹一致 + versionCode 递增」。本工作流缓存了 debug keystore，"
+            echo "> 只要缓存没被清掉，指纹就稳定；客户侧升级不用卸载。"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload APK
