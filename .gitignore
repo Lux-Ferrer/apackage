@@ -31,3 +31,7 @@ docs/samples/A06YG*.doc
 
 # 已归档的签署类文档（含签名与联系方式），默认不推送到 GitHub
 docs/management/signed/
+
+# 从 CI 下载的调试包（不进仓库；用 .github/workflows/build-android.yml 现build）
+*.apk
+

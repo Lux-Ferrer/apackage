@@ -23,11 +23,15 @@
  * 版本历史
  * --------
  *   1.0.0  首个交付包（真机验收当场暴露 3 个 P0：boot 崩溃 / 导出 nodebuffer / 备份导入失效）
- *   1.0.1  两轮真实浏览器 + 安卓模拟器验证后的**最终交付版**：
+ *   1.0.1  两轮真实浏览器 + 安卓模拟器验证后的交付版：
  *          · 修复「导入备份」必然失败（`zip.files` 被当数组用）
  *          · 修复软键盘弹起时「保存」被键盘挡住（visualViewport → `--keyboard-inset`）
  *          · 操作条「取消」触控区 28×22 → 44×44
  *          · 交付包不再打包测试资产（`web/e2e`）
+ *   1.0.2  APK 体验补丁（Web 端同步受益）：
+ *          · 导出/备份在壳里改走本地插件 DownloadSaver → 写「下载/幕墙检测/」，
+ *            没有可打开 .docx 的应用时弹 Toast 告知路径（不再只剩空分享面板）
+ *          · 返回键在根路由（项目/报告/我的）直接退出 App，不再在历史里绕
  */
 
 export const PRODUCT = Object.freeze({
@@ -35,8 +39,8 @@ export const PRODUCT = Object.freeze({
     name: '建筑幕墙检测报告工具',
     /** 英文名（安装到主屏时部分系统会用它） */
     name_en: 'Curtain Wall Inspection Report Tool',
-    /** 版本号：不带 "v" 前缀，界面统一显示成 v1.0.1 */
-    version: '1.0.1',
+    /** 版本号：不带 "v" 前缀，界面统一显示成 v1.0.2 */
+    version: '1.0.2',
     /** 出品方 */
     vendor: '中冶建筑研究总院（深圳）有限公司',
     /** 技术支持（可留空：留空时关于页不显示这一行） */
@@ -60,7 +64,7 @@ export const PROFILE_LIMITS = Object.freeze({
     reporter_department: 30,
 });
 
-/** 界面上的版本标签：`v1.0.1`。 */
+/** 界面上的版本标签：`v1.0.2`。 */
 export function versionLabel() {
     return `v${PRODUCT.version}`;
 }

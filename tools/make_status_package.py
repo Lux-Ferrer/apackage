@@ -18,7 +18,7 @@
 ------------------------------------------------
 * ``deliverables/Current_WBS_Update.pdf``     ← ``python tools/make_current_wbs.py``
 * ``_work/status/0*.png`` + ``Sample_Report.docx`` ← ``node web/e2e/capture-status-shots.mjs``
-* ``docs/management/交付验收报告-v1.0.1.md``  ← 测试证据的来源
+* ``docs/management/交付验收报告-v1.0.2.md``  ← 测试证据的来源
 
 QA 摘要为什么是"抽取"而不是"手抄"
 -----------------------------------
@@ -48,7 +48,7 @@ ZIP_PATH = DELIVERABLES / "status_update_package.zip"
 
 WBS_PDF = DELIVERABLES / "Current_WBS_Update.pdf"
 SHOTS_DIR = ROOT / "_work" / "status"
-ACCEPTANCE = ROOT / "docs" / "management" / "交付验收报告-v1.0.1.md"
+ACCEPTANCE = ROOT / "docs" / "management" / "交付验收报告-v1.0.2.md"
 
 FONT_DIR = Path(__import__("matplotlib").get_data_path()) / "fonts" / "ttf"
 FONT_REGULAR = FONT_DIR / "DejaVuSans.ttf"

@@ -1,6 +1,6 @@
 {
   "name": "apk-wrapper",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "description": "把纯前端 PWA（建筑幕墙检测报告工具）包成 Android APK —— 只负责壳，不含业务代码",
   "license": "UNLICENSED",

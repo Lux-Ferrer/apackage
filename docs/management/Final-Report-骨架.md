@@ -60,7 +60,7 @@ curtain-wall inspection; offline-first PWA; document fidelity testing; different
 - 4.4 Scope decisions & trade-offs（明示"不做"的 6 项，以及为什么）
 - 4.5 Acceptance criteria（这张表就是最后 §8 的验收清单）
 
-> 素材：`docs/requirements/需求报告.txt`、`docs/management/UI-设计.md`（范围与决策）、`docs/management/交付验收报告-v1.0.1.md` §2
+> 素材：`docs/requirements/需求报告.txt`、`docs/management/UI-设计.md`（范围与决策）、`docs/management/交付验收报告-v1.0.2.md` §2
 > 图表：Table 4.1 需求-验收对照表（直接复用验收报告 §2/§6）
 
 ### 5. System Design（~1,500 词）
@@ -110,7 +110,7 @@ curtain-wall inspection; offline-first PWA; document fidelity testing; different
 - 8.4 Limitations：iOS 未验、手势未验、数据不跨设备、内网 http 无离线/安装（安全上下文）
 - 8.5 Business impact（现场时间节省估算、返工率、报告一致性）
 
-> 素材：`docs/management/交付验收报告-v1.0.1.md` §2/§6/§7（几乎可直接翻译）
+> 素材：`docs/management/交付验收报告-v1.0.2.md` §2/§6/§7（几乎可直接翻译）
 
 ### 9. Conclusion & Future Work（~600 词）
 - 3 条结论（对应 §1.3 的贡献）

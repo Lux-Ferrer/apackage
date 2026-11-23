@@ -142,31 +142,37 @@ test('原生壳：走 Filesystem.writeFile + Share，并且 done 可 await', asy
     }
 });
 
-test('原生壳：没有插件代理时降级到 nativePromise（免打包的 www 就是这条路径）', async () => {
+test('原生壳：没有插件代理时用 nativePromise，且仍然先走 DownloadSaver', async () => {
     const restoreReader = stubFileReader();
     const calls = [];
     const restore = stubCapacitor({
         isNativePlatform: () => true,
-        Plugins: {},                     // 没有 Filesystem / Share 代理
+        Plugins: {},                     // 没有代理
         nativePromise: async (plugin, method, payload) => {
             calls.push([plugin, method, payload]);
-            return { uri: 'file:///cache/ok' };
+            return { saved: true, shared: true, displayPath: '下载/幕墙检测/x.zip' };
         },
     });
     try {
         const { doc } = fakeDocument();
         const result = downloadBlob(bytes(), 'x.zip', { document: doc });
-        await result.done;
+        const saved = await result.done;
 
+        // 桥接原语这条路径下，第一个被调用的应当是本地插件 DownloadSaver
         assert.deepEqual(calls.map(([plugin, method]) => `${plugin}.${method}`),
-            ['Filesystem.writeFile', 'Share.share']);
-        assert.equal(calls[0][2].directory, 'CACHE');
-        assert.equal(calls[1][2].url, 'file:///cache/ok');
+            ['DownloadSaver.saveAndShare']);
+        assert.equal(countsKeyword(calls[0][2]), 1);
+        assert.equal(saved.via, 'downloads');
+        assert.equal(saved.shared, true);
     } finally {
         restore();
         restoreReader();
     }
 });
+
+function countsKeyword(payload) {
+    return payload.mime ? 1 : 0;
+}
 
 test('原生壳：插件都没有 → done 明确 reject（不能假装保存成功）', async () => {
     const restoreReader = stubFileReader();

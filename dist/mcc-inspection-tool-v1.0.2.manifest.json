@@ -1,8 +1,8 @@
 {
   "product": "建筑幕墙检测报告工具",
-  "version": "1.0.1",
-  "shell_version": "3ba0351fb6bb",
-  "built_at": "2026-11-22 21:57:35",
+  "version": "1.0.2",
+  "shell_version": "137a6f9cbb7c",
+  "built_at": "2026-11-22 23:45:39",
   "file_count": 53,
   "files": [
     "VERSION.txt",

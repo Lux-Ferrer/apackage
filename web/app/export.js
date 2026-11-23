@@ -194,16 +194,47 @@ function nativePlugin(name) {
 }
 
 /**
- * 原生壳里保存文件：写进缓存目录 → 拉系统分享面板（"用 WPS 打开 / 保存到…"）。
+ * 原生壳里保存文件。两条路，按能力降级：
  *
- * 为什么是 `CACHE` 目录：不需要任何存储权限。用户通过分享面板把文件交出去，
- * 这才是手机端最顺的交互（直接塞进某个固定目录反而找不到）。
+ * ① **首选**：本地插件 `DownloadSaver`（`apk-wrapper/.../DownloadSaverPlugin.java`）
+ *    把文件写进**公共下载目录** `下载/幕墙检测/<文件名>`（Android 10+ 走 MediaStore，
+ *    不需要任何存储权限），然后再尝试拉起分享面板；没有能接收 .docx 的应用时，
+ *    由插件自己弹 Toast 告知"文件已保存至…"。
+ *
+ * ② **回退**：插件不存在（1.0.1 那版 APK）**或写下载目录失败**（系统拒绝）→
+ *    App 缓存 + `Share`。宁可先落到缓存里让用户能分享走，也不要什么都拿不到；
+ *    回退时会在返回值里带 `fallbackReason`，便于排查。
+ *
+ * 为什么"保存 + 分享"放在插件里做：JS 侧无法判断"系统里有没有应用能接收这个 MIME"，
+ * 只有原生 `intent.resolveActivity()` 知道 —— 判定放在 Java 里才可能给出准确的提示。
  */
 async function saveInNativeShell(blob, filename) {
-    const writeFile = nativePlugin('Filesystem');
-    if (!writeFile) throw new Error('原生壳里找不到 Filesystem 插件，无法保存文件');
-
     const data = await blobToBase64(blob);
+
+    const saver = nativePlugin('DownloadSaver');
+    if (saver) {
+        try {
+            const result = await saver('saveAndShare', {
+                fileName: filename,
+                data,
+                mime: DOCX_MIME,
+                title: filename,
+            });
+            return { via: 'downloads', ...result };
+        } catch (error) {
+            const fallback = await saveToCacheAndShare(data, filename);
+            return { via: 'cache', fallbackReason: error?.message ?? String(error), ...fallback };
+        }
+    }
+
+    return { via: 'cache', ...(await saveToCacheAndShare(data, filename)) };
+}
+
+/** 旧壳的路：App 缓存 + 分享面板（媒体库里看不到，但没有别的选择）。 */
+async function saveToCacheAndShare(data, filename) {
+    const writeFile = nativePlugin('Filesystem');
+    if (!writeFile) throw new Error('原生壳里既没有 DownloadSaver 也没有 Filesystem 插件，无法保存文件');
+
     const saved = await writeFile('writeFile', {
         path: filename,
         data,

@@ -18,12 +18,13 @@
 | `apk-wrapper/` 独立隔离区（不碰 `web/` 源码） | ✅ 已建，`npm init` + 依赖已装 |
 | Capacitor 版本 | ✅ **8.6.2**（core / cli / android）；插件 `@capacitor/filesystem` 8.1.5、`@capacitor/share` 8.0.3 |
 | `capacitor.config.json` | ✅ `appId=com.mccri.curtainwall`、`appName=幕墙检测`、`webDir=www` |
-| Web 资源 | ✅ `www/` = 交付包解压（53 个文件，`VERSION.txt` 里是 v1.0.1），由 `scripts/prepare-www.py` 从 `dist/*.zip` 生成并校验版本 |
+| Web 资源 | ✅ `www/` = 交付包解压（53 个文件，`VERSION.txt` 里是 v1.0.2），由 `scripts/prepare-www.py` 从 `dist/*.zip` 生成并校验版本 |
 | Android 工程 | ✅ `npx cap add android` **成功**，已生成 `apk-wrapper/android/` |
 | 图标 | ✅ 已替换成产品的 PWA 图标（含自适应图标，避开了 Capacitor 默认 logo） |
 | 启动图 | ✅ 11 张 splash 已换成品牌蓝 + 居中图标（原先是 Capacitor 默认画面） |
-| 版本号 | ✅ `versionName "1.0.1"`、`versionCode 1` |
-| **原生适配（导出/返回键/SW）** | ✅ **已实现**，见 §6；Web 端 246 项前端测试 + 21 项 E2E 全绿，行为未变 |
+| 本地原生插件 | ✅ `DownloadSaverPlugin.java`：用 MediaStore 写「下载/幕墙检测/」，无接收方时弹 Toast（见 §6.1） |
+| 版本号 | ✅ `versionName "1.0.2"`、`versionCode 2` |
+| **原生适配（导出/返回键/SW）** | ✅ **已实现**，见 §6；Web 端 250 项前端测试 + 21 项 E2E 全绿，行为未变 |
 | 云端出包 | ✅ `.github/workflows/build-android.yml`（手动触发 → 下载 APK，见 §9） |
 | `npx cap sync android` | ✅ 通过（资源已拷进 `android/app/src/main/assets/public`） |
 | `npx cap doctor` | ✅ `Android looking great` |
@@ -241,8 +242,8 @@ android {
 
 **版本规则**（踩了就装不上）：
 
-- `versionCode` 每次发版 **必须 +1**（当前 1）；
-- `versionName` 与 `web/app/product.js` 保持一致（当前都是 **1.0.1**）；
+- `versionCode` 每次发版 **必须 +1**（当前 2）；
+- `versionName` 与 `web/app/product.js` 保持一致（当前都是 **1.0.2**）；
 - 升级覆盖安装要求**同一个签名**，否则报 `INSTALL_FAILED_UPDATE_INCOMPATIBLE`（只能先卸载，**数据会没**）；
 - `versionCode` 变小 → `INSTALL_FAILED_VERSION_DOWNGRADE`。
 
@@ -252,31 +253,36 @@ android {
 
 下面三条是 WebView 与浏览器的差异，跟 JDK 无关。**都已经落地**，并且只在
 `window.Capacitor.isNativePlatform()` 为真时生效 —— 浏览器里连分支都进不去，
-246 项前端测试与 21 项桌面 E2E 全绿（`web/tests/native_shell.test.mjs` 专门锁这条边界）。
+250 项前端测试与 21 项桌面 E2E 全绿（`web/tests/native_shell.test.mjs` 专门锁这条边界）。
 
-### 6.1 P0：导出的 Word / 备份存不下来 —— 已修
+### 6.1 P0：导出的 Word / 备份存不下来 —— 已修（写公共下载目录）
 
 **问题**：导出走 `URL.createObjectURL(blob)` + `<a download>`。Android WebView **不认**
-`download` 属性、也不处理 `blob:` 链接（`DownloadListener` 只接 http/https），
-表现为"点了没反应、控制台也不报错"。
+`download` 属性、也不处理 `blob:` 链接，表现为"点了没反应、控制台也不报错"。
 
-**实现**（`web/app/export.js`，全项目唯一的下载入口，Word 报告与备份 zip 都走它）：
+**第一版修法（1.0.1）**：写 App 缓存 + `Share` 拉起分享面板。文件是写出来了，但真机验证时发现
+**如果设备上没有能打开 .docx 的应用，分享面板是空的**（"没有应用可执行此操作"）—— 用户还是拿不到文件。
 
-| 函数 | 作用 |
+**现在的修法（1.0.2）**：新增本地原生插件 `DownloadSaverPlugin.java`：
+
+| 步骤 | 做法 |
 | --- | --- |
-| `isNativeShell()` | 只看 `window.Capacitor?.isNativePlatform?.()`，浏览器里恒为 false |
-| `downloadBlob()` | 原生壳 → 返回 `{ native: true, done }`（`done` 可 await）；浏览器 → 原本的 Blob URL + `<a download>`，一行未改 |
-| `nativePlugin(name)` | 三级阶梯：① `Capacitor.Plugins.<Name>` 代理 → ② `Capacitor.nativePromise(name, method, payload)` 桥接原语 → ③ 都没有就抛错（宁可报错，也不假装成功） |
-| `saveInNativeShell()` | base64 → `Filesystem.writeFile({ directory: 'CACHE', recursive: true })` → `Share.share({ url })` 拉起系统面板（"用 WPS 打开 / 保存到…"）；用户取消分享不算失败 |
+| 1 | `MediaStore.Downloads` 写入 **`下载/幕墙检测/<文件名>`**（Android 10+ 无需任何存储权限；9 及以下退到 App 专属外部目录） |
+| 2 | `ACTION_SEND` + `resolveActivity()`：有接收方 → 弹选择器；**没有 → Toast「文件已保存至 下载/幕墙检测/…」** |
+| 3 | 返回 `{ saved, shared, uri, displayPath }`，JS 侧据此给出结果 |
 
-**为什么不用 `import('@capacitor/filesystem')`**：我们的 `www/` 是**免打包**的静态站，
-浏览器里解析不了裸模块名；而原生注入的 `native-bridge.js` **不提供** `registerPlugin`
-（实测该文件里 0 处），插件代理只能由 `@capacitor/core` 在打包时创建。于是这里用桥接原语
-`nativePromise(...)` —— 那正是插件代理内部做的事，免打包也能用。将来若引入 bundler，
-① 分支会自动接管，代码不用改。
+**JS 侧的两级降级**（`web/app/export.js::saveInNativeShell()`）：
 
-**调用方也跟着等结果了**：`exportProject()` 与 `me.js` 的备份按钮都会 `await saved.done`，
-所以壳里"写文件 + 分享"失败会真的弹出错误提示（不会静默）。
+1. 有 `DownloadSaver` 插件 → 直接调它（保存 + 分享 + 提示都在原生侧，因为只有
+   `intent.resolveActivity()` 能判断"系统里有没有应用能收这个 MIME"）；
+2. 插件不存在（1.0.1 的旧壳）**或写下载目录失败** → 回退到 `Filesystem` 缓存 + `Share`，
+   并在返回值里带 `fallbackReason`；两条都失败才 `reject`（不假装成功）。
+
+**为什么是本地插件而不是 npm 插件**：`Filesystem` 插件不提供 MediaStore 写入（它只会写
+App 私有目录），公共下载目录只能自己用 `MediaStore` 写；插件注册在 `MainActivity.onCreate()`
+里 `registerPlugin(DownloadSaverPlugin.class)`（必须在 `super.onCreate()` 之前）。
+
+**调用方也跟着等结果了**：`exportProject()` 与 `me.js` 的备份按钮都会 `await saved.done`。
 
 ### 6.2 P1：硬件返回键会直接退出 App —— 已修（在 Java 里，不在 JS 里）
 
@@ -294,10 +300,22 @@ public void onBackPressed() {
 }
 ```
 
+**根路由直接退出（1.0.2 加的）**：只看 `canGoBack()` 的话，用户在首页按返回会
+在历史里绕（点过几次 tab 就有几步历史），看起来像"返回键没反应"。现在先判断当前 hash：
+
+```java
+private static final Set<String> ROOT_ROUTES = Set.of("/projects", "/reports", "/me");
+if (webView != null && webView.canGoBack() && !isAtRootRoute(webView.getUrl())) {
+    webView.goBack();
+    return;
+}
+super.onBackPressed();          // 根路由 → 退出 App
+```
+
 **为什么没按原计划写在 `main.js` 里监听 `backButton`**：那条路要 `@capacitor/app` 的
 JS 代理，而我们免打包 → 拿不到代理（见 §6.1 的说明）。返回键本来就是 Android 生命周期
-的事，`canGoBack() + goBack()` 既最短又最稳 —— 它复用 WebView 自己的历史，
-和浏览器里按"后退"的行为一致。
+的事，写在这里最短也最稳；
+`canGoBack() + goBack()` 复用 WebView 自己的历史，和浏览器里按"后退"一致。
 
 ### 6.3 P1：Service Worker 会让"更新后还是旧界面" —— 已修
 
