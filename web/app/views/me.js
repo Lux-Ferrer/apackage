@@ -130,7 +130,9 @@ export async function data(ctx) {
             const { exportBackup } = await import('../import-export.js');
             const { downloadBlob } = await import('../export.js');
             const backup = await exportBackup(ctx.db);
-            downloadBlob(backup.blob, backup.filename);
+            const saved = downloadBlob(backup.blob, backup.filename);
+            // 原生壳（APK）里是"写入缓存 + 分享面板"，等它完成再报成功
+            if (saved?.done) await saved.done;
             flash(`已导出备份 ${backup.filename}（${formatBytes(backup.blob.size)}`
                 + `${backup.missingImages.length ? `，另有 ${backup.missingImages.length} 张图片缺失未包含` : ''}）`);
             if (backup.missingImages.length) {

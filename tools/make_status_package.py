@@ -79,7 +79,7 @@ Project Status Update — Work Product Drafts
 ============================================
 
 This submission contains the updated WBS and the actual product deliverables for the
-NTU/NYU capstone project "Curtain Wall Inspection Report Tool".
+NYU capstone project "Curtain Wall Inspection Report Tool".
 
 1. WBS_Update.pdf — the current WBS and Gantt chart (40 tasks) with status as of
    Nov 12, 2026: 33 completed, 3 in progress, 4 planned. Green bars are completed work.

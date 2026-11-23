@@ -115,11 +115,23 @@ export class EmptyProjectError extends Error {
  *
  * 用 Blob URL + `<a download>`，不依赖 File System Access API（iOS Safari 没有）。
  * 一定要 `revokeObjectURL`：手机上几十 MB 的 URL 不释放会一直占着内存。
+ *
+ * ⚠️ **原生壳（Android APK / Capacitor）里的分支**：WebView 不认 `<a download>`，
+ * 也不处理 `blob:` 链接（`DownloadListener` 只接 http/https），点了会**静默无反应**。
+ * 所以在原生壳里改为"写进 App 缓存目录 + 拉起系统分享面板"，Web 端一个字节都不变。
+ * 判断只看 `window.Capacitor.isNativePlatform()`（浏览器里没有这个对象，走原路径）。
  */
 export function downloadBlob(blobOrBytes, filename, { document: doc = globalThis.document } = {}) {
     const blob = blobOrBytes instanceof Blob
         ? blobOrBytes
         : new Blob([blobOrBytes], { type: DOCX_MIME });
+
+    if (isNativeShell()) {
+        // 返回 done 供调用方 await（导出/备份失败要能提示，不能静默吞掉）
+        const done = saveInNativeShell(blob, filename);
+        return { native: true, url: null, size: blob.size, filename, done };
+    }
+
     const url = URL.createObjectURL(blob);
     const anchor = doc.createElement('a');
     anchor.href = url;
@@ -133,11 +145,94 @@ export function downloadBlob(blobOrBytes, filename, { document: doc = globalThis
     return { url, size: blob.size, filename };
 }
 
+/** 当前是不是跑在原生壳里（Capacitor 注入 `window.Capacitor`，浏览器里没有）。 */
+export function isNativeShell() {
+    const capacitor = globalThis.Capacitor;
+    return Boolean(capacitor?.isNativePlatform?.());
+}
+
+/** Blob → base64（Filesystem.writeFile 收 base64，不收 Blob）。 */
+function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+        const Reader = globalThis.FileReader;
+        if (!Reader) {
+            reject(new Error('当前环境没有 FileReader，无法把文件交给原生层'));
+            return;
+        }
+        const reader = new Reader();
+        reader.onload = () => {
+            const result = String(reader.result ?? '');
+            const comma = result.indexOf(',');
+            resolve(comma >= 0 ? result.slice(comma + 1) : result);
+        };
+        reader.onerror = () => reject(reader.error ?? new Error('读取文件内容失败'));
+        reader.readAsDataURL(blob);
+    });
+}
+
+/**
+ * 调原生插件的统一入口（带降级阶梯）。
+ *
+ * 1. `Capacitor.Plugins.<Name>` —— 插件 JS 代理（打包器解析过 `@capacitor/xxx` 时才有）；
+ * 2. `Capacitor.nativePromise(...)` —— 桥接原语，插件代理内部走的就是它，
+ *    免打包的 www 里一定存在；
+ * 3. 都没有 → 返回 null，调用方回退到浏览器方式（宁可提示失败，也不要静默丢失）。
+ */
+function nativePlugin(name) {
+    const capacitor = globalThis.Capacitor;
+    const proxy = capacitor?.Plugins?.[name];
+    if (proxy) {
+        return (method, payload) => {
+            if (typeof proxy[method] !== 'function') throw new Error(`插件 ${name} 没有 ${method}`);
+            return proxy[method](payload);
+        };
+    }
+    if (typeof capacitor?.nativePromise === 'function') {
+        return (method, payload) => capacitor.nativePromise(name, method, payload);
+    }
+    return null;
+}
+
+/**
+ * 原生壳里保存文件：写进缓存目录 → 拉系统分享面板（"用 WPS 打开 / 保存到…"）。
+ *
+ * 为什么是 `CACHE` 目录：不需要任何存储权限。用户通过分享面板把文件交出去，
+ * 这才是手机端最顺的交互（直接塞进某个固定目录反而找不到）。
+ */
+async function saveInNativeShell(blob, filename) {
+    const writeFile = nativePlugin('Filesystem');
+    if (!writeFile) throw new Error('原生壳里找不到 Filesystem 插件，无法保存文件');
+
+    const data = await blobToBase64(blob);
+    const saved = await writeFile('writeFile', {
+        path: filename,
+        data,
+        directory: 'CACHE',
+        recursive: true,
+    });
+
+    const share = nativePlugin('Share');
+    if (share) {
+        try {
+            await share('share', {
+                title: filename,
+                url: saved?.uri ?? saved?.path,
+                dialogTitle: '保存 / 打开',
+            });
+        } catch {
+            // 用户取消分享、或没有可分享的应用：文件已经写好了，不算失败
+        }
+    }
+    return saved;
+}
+
 export const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
 /** 「导出 Word」按钮的统一入口：生成 + 下载 + 给一句结果文案。 */
 export async function exportProject(db, projectId, options = {}) {
     const result = await buildProjectReport(db, projectId, options);
-    downloadBlob(result.bytes, result.filename, options);
+    const saved = downloadBlob(result.bytes, result.filename, options);
+    // 原生壳里"写文件 + 分享"是异步的：等它结束，失败才能提示给用户
+    if (saved?.done) await saved.done;
     return result;
 }

@@ -269,13 +269,16 @@ export function createApp({
 /**
  * 注册 Service Worker（离线可用）。
  *
- * 三处克制的设计：
+ * 四处克制的设计：
+ *  - **原生壳（APK）里直接不注册**：资源已经打包进 APK，SW 不但没用，它的缓存还会
+ *    跨版本升级保留 —— 用户装了 1.0.2 却还看到 1.0.1 的界面，极难排查；
  *  - 只在 http(s) 下注册：`file://` 打开时 SW 根本不可用，试了只会报错；
  *  - **不自动 skipWaiting**：新版本先待在 waiting，等页面说了再切 ——
  *    否则用户正在填的表单会在脚下被换掉；
  *  - 任何失败都只 warning，不打断启动：离线能力是增强，不是前提。
  */
 async function registerServiceWorker() {
+    if (globalThis.Capacitor?.isNativePlatform?.()) return null;
     if (!('serviceWorker' in navigator)) return null;
     if (location.protocol !== 'http:' && location.protocol !== 'https:') return null;
     try {

@@ -1,0 +1,115 @@
+name: Build Android APK
+
+# 云端出 APK：不需要本机装 JDK / Android SDK。
+# 触发：GitHub → Actions → Build Android APK → Run workflow（也可用 gh workflow run）
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 构建类型（debug 可直接安装；release 需要签名，未配置签名时会产出未签名包）
+        type: choice
+        options: [debug, release]
+        default: debug
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # 与 apk-wrapper/android/variables.gradle 里的 compileSdk / targetSdk 保持一致
+  ANDROID_PLATFORM: android-36
+  ANDROID_BUILD_TOOLS: 36.0.0
+  NODE_VERSION: '20'
+  JAVA_VERSION: '21'
+
+jobs:
+  build:
+    name: assemble${{ inputs.build_type }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: apk-wrapper
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apk-wrapper/package-lock.json
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK platform and build-tools
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platform-tools" "platforms;${ANDROID_PLATFORM}" "build-tools;${ANDROID_BUILD_TOOLS}"
+          sdkmanager --list_installed
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      # www/ 不进版本库：每次都从 dist/*.zip（已提交）解出来，并校验版本与 product.js 一致
+      - name: Prepare web assets (dist zip → www)
+        run: python3 scripts/prepare-www.py
+
+      - name: Sync Capacitor (copies www into android/app/src/main/assets/public)
+        run: npx cap sync android
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('apk-wrapper/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Build APK (assemble${{ inputs.build_type }})
+        working-directory: apk-wrapper/android
+        run: |
+          chmod +x gradlew          # 仓库在 Windows 上创建，gradlew 可能没有可执行位
+          ./gradlew "assemble${{ inputs.build_type }}" --no-daemon --stacktrace
+
+      - name: Collect artifact
+        id: collect
+        run: |
+          set -euo pipefail
+          APK="$(ls android/app/build/outputs/apk/${{ inputs.build_type }}/*.apk | head -n 1)"
+          NAME="mcc-inspection-tool-v$(node -p "require('./package.json').version")-${{ inputs.build_type }}.apk"
+          cp "$APK" "$NAME"
+          echo "apk_path=$PWD/$NAME" >> "$GITHUB_OUTPUT"
+          echo "apk_name=$NAME" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Android APK 构建成功"
+            echo ""
+            echo "| 项 | 值 |"
+            echo "| --- | --- |"
+            echo "| 文件 | \`$NAME\` |"
+            echo "| 大小 | $(du -h "$NAME" | cut -f1) |"
+            echo "| sha256 | \`$(sha256sum "$NAME" | cut -d' ' -f1)\` |"
+            echo "| JDK / SDK | Java ${{ env.JAVA_VERSION }} / ${ANDROID_PLATFORM} + build-tools ${ANDROID_BUILD_TOOLS} |"
+            echo "| 提交 | \`${GITHUB_SHA}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.collect.outputs.apk_name }}
+          path: apk-wrapper/${{ steps.collect.outputs.apk_name }}
+          if-no-files-found: error
+          retention-days: 30

@@ -1,32 +1,40 @@
-# 本地 APK 打包指南
+# 本地 / 云端 APK 打包指南
 
 > 目标：把**纯前端交付包 v1.0.1** 装进一个 Capacitor 壳，产出可分发的 `.apk`。
-> 本文档对应 `D:\project\Capstone\apk-wrapper\`，环境是 **Windows + 无 JDK / 无 Android SDK**。
+> 本文档对应 `D:\project\Capstone\apk-wrapper\`，编写时本机环境是 **Windows + 无 JDK / 无 Android SDK**。
+>
+> **两条路，任选**：
+> - **云端（推荐，零安装）**：推到 GitHub → Actions → `Build Android APK` → Run workflow → 下载 Artifact。见 §9。
+> - **本地**：装 JDK 21 + Android SDK 后 `gradlew assembleDebug`。见 §1–§5。
 
 ---
 
-## 0. 现在的状态：壳已经搭好了，只差 JDK
+## 0. 现在的状态：壳与原生适配都已完成，只差构建环境
 
 已经做完（都不需要 Java）：
 
 | 项 | 状态 |
 | --- | --- |
 | `apk-wrapper/` 独立隔离区（不碰 `web/` 源码） | ✅ 已建，`npm init` + 依赖已装 |
-| Capacitor 版本 | ✅ **8.6.2**（core / cli / android 三件套） |
+| Capacitor 版本 | ✅ **8.6.2**（core / cli / android）；插件 `@capacitor/filesystem` 8.1.5、`@capacitor/share` 8.0.3 |
 | `capacitor.config.json` | ✅ `appId=com.mccri.curtainwall`、`appName=幕墙检测`、`webDir=www` |
 | Web 资源 | ✅ `www/` = 交付包解压（53 个文件，`VERSION.txt` 里是 v1.0.1），由 `scripts/prepare-www.py` 从 `dist/*.zip` 生成并校验版本 |
 | Android 工程 | ✅ `npx cap add android` **成功**，已生成 `apk-wrapper/android/` |
 | 图标 | ✅ 已替换成产品的 PWA 图标（含自适应图标，避开了 Capacitor 默认 logo） |
 | 启动图 | ✅ 11 张 splash 已换成品牌蓝 + 居中图标（原先是 Capacitor 默认画面） |
 | 版本号 | ✅ `versionName "1.0.1"`、`versionCode 1` |
+| **原生适配（导出/返回键/SW）** | ✅ **已实现**，见 §6；Web 端 246 项前端测试 + 21 项 E2E 全绿，行为未变 |
+| 云端出包 | ✅ `.github/workflows/build-android.yml`（手动触发 → 下载 APK，见 §9） |
 | `npx cap sync android` | ✅ 通过（资源已拷进 `android/app/src/main/assets/public`） |
 | `npx cap doctor` | ✅ `Android looking great` |
 
-**唯一缺的**是 JDK（以及编 APK 要用的 Android SDK）。现在直接构建会停在：
+**本地构建唯一的缺项**是 JDK（以及编 APK 要用的 Android SDK）。现在直接构建会停在：
 
 ```
 ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
 ```
+
+> 只想拿 APK、不想装环境 → 直接跳到 **§9 云端出包**。
 
 （`gradlew.bat assembleDebug`，退出码 9009。按约定**没有**去下载 SDK。）
 
@@ -168,7 +176,7 @@ D:\MuMuPlayer-12.0\MuMuPlayer\nx_main\adb.exe -s 127.0.0.1:16416 install -r `
 | --- | --- | --- |
 | 1 | 建项目 → 录一条记录（5 个读数） | 最小值自动算出 |
 | 2 | 缺陷填报 → 拍照 | 能调起相机并回填缩略图 |
-| 3 | 项目详情 → **导出 Word** | ⚠️ **会失败**（见 §6.1，出包前必须补） |
+| 3 | 项目详情 → **导出 Word** | 壳里会写文件并弹分享面板（见 §6.1）；浏览器里仍是直接下载 |
 | 4 | 我的 → 导出备份 | ⚠️ 同上（同一个 `downloadBlob` 入口） |
 | 5 | 按手机返回键 | ⚠️ 默认会**直接退出 App**（见 §6.2） |
 | 6 | 装新版本后再打开 | ⚠️ 可能还是旧界面（见 §6.3） |
@@ -240,110 +248,75 @@ android {
 
 ---
 
-## 6. ⚠️ 出包前必须补的 3 处（WebView 与浏览器的差异，不是环境问题）
+## 6. 原生适配：已实现（Web 端行为不变）
 
-这三条和 JDK 无关，但**不补就发不出去**。第 1 条是 P0。
+下面三条是 WebView 与浏览器的差异，跟 JDK 无关。**都已经落地**，并且只在
+`window.Capacitor.isNativePlatform()` 为真时生效 —— 浏览器里连分支都进不去，
+246 项前端测试与 21 项桌面 E2E 全绿（`web/tests/native_shell.test.mjs` 专门锁这条边界）。
 
-### 6.1 P0：导出的 Word / 备份存不下来
+### 6.1 P0：导出的 Word / 备份存不下来 —— 已修
 
-**原因**：导出走的是 `web/app/export.js::downloadBlob()` —— `URL.createObjectURL(blob)` +
-`<a download>` 点击。这个套路在 Android WebView 里**没有任何效果**：WebView 不支持
-`download` 属性，也不处理 `blob:` 链接，`DownloadListener` 只认 http/https。表现为"点了没反应、控制台也不报错"。
+**问题**：导出走 `URL.createObjectURL(blob)` + `<a download>`。Android WebView **不认**
+`download` 属性、也不处理 `blob:` 链接（`DownloadListener` 只接 http/https），
+表现为"点了没反应、控制台也不报错"。
 
-**好消息**：全项目只有**一个**下载入口（`downloadBlob`，`web/app/export.js:119`）。
-Word 报告、备份 zip 都走它，改一处即可。
+**实现**（`web/app/export.js`，全项目唯一的下载入口，Word 报告与备份 zip 都走它）：
 
-**做法**（推荐）：装两个插件，在 `downloadBlob` 里按平台分支。
+| 函数 | 作用 |
+| --- | --- |
+| `isNativeShell()` | 只看 `window.Capacitor?.isNativePlatform?.()`，浏览器里恒为 false |
+| `downloadBlob()` | 原生壳 → 返回 `{ native: true, done }`（`done` 可 await）；浏览器 → 原本的 Blob URL + `<a download>`，一行未改 |
+| `nativePlugin(name)` | 三级阶梯：① `Capacitor.Plugins.<Name>` 代理 → ② `Capacitor.nativePromise(name, method, payload)` 桥接原语 → ③ 都没有就抛错（宁可报错，也不假装成功） |
+| `saveInNativeShell()` | base64 → `Filesystem.writeFile({ directory: 'CACHE', recursive: true })` → `Share.share({ url })` 拉起系统面板（"用 WPS 打开 / 保存到…"）；用户取消分享不算失败 |
 
-```powershell
-cd apk-wrapper
-npm install @capacitor/filesystem @capacitor/share
-npx cap sync android
-```
+**为什么不用 `import('@capacitor/filesystem')`**：我们的 `www/` 是**免打包**的静态站，
+浏览器里解析不了裸模块名；而原生注入的 `native-bridge.js` **不提供** `registerPlugin`
+（实测该文件里 0 处），插件代理只能由 `@capacitor/core` 在打包时创建。于是这里用桥接原语
+`nativePromise(...)` —— 那正是插件代理内部做的事，免打包也能用。将来若引入 bundler，
+① 分支会自动接管，代码不用改。
 
-```js
-// web/app/export.js —— 在 downloadBlob 开头加分支（浏览器行为完全不变）
-export async function downloadBlob(blobOrBytes, filename, options = {}) {
-    const blob = blobOrBytes instanceof Blob ? blobOrBytes : new Blob([blobOrBytes], { type: DOCX_MIME });
+**调用方也跟着等结果了**：`exportProject()` 与 `me.js` 的备份按钮都会 `await saved.done`，
+所以壳里"写文件 + 分享"失败会真的弹出错误提示（不会静默）。
 
-    // 原生壳里：写进 App 的缓存目录，再拉起系统"分享/打开"面板
-    if (globalThis.Capacitor?.isNativePlatform?.()) {
-        const { Filesystem, Directory } = await import('@capacitor/filesystem');
-        const { Share } = await import('@capacitor/share');
-        const base64 = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(String(reader.result).split(',')[1]);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        });
-        const { uri } = await Filesystem.writeFile({
-            path: filename, data: base64, directory: Directory.Cache, recursive: true,
-        });
-        await Share.share({ title: filename, url: uri, dialogTitle: '保存 / 打开' });
-        return { uri, size: blob.size, filename };
+### 6.2 P1：硬件返回键会直接退出 App —— 已修（在 Java 里，不在 JS 里）
+
+**实现**：`apk-wrapper/android/app/src/main/java/com/mccri/curtainwall/MainActivity.java`
+
+```java
+@Override
+public void onBackPressed() {
+    WebView webView = getBridge() != null ? getBridge().getWebView() : null;
+    if (webView != null && webView.canGoBack()) {
+        webView.goBack();          // hash 变化 → 页面 hashchange → 路由自然重绘
+        return;
     }
-
-    // …浏览器分支保持原样（Blob URL + <a download>）…
+    super.onBackPressed();         // 已在第一页 → 退出 App
 }
 ```
 
-> 用 `Directory.Cache` + 分享面板：用户可以直接"用 WPS 打开"或"保存到文件"，
-> 不需要申请存储权限（Android 10+ 的存储权限对 App 目录之外才需要）。
-> 也可以换成 `Directory.Documents`（App 专属外部目录），但分享面板仍是手机端最顺的交互。
+**为什么没按原计划写在 `main.js` 里监听 `backButton`**：那条路要 `@capacitor/app` 的
+JS 代理，而我们免打包 → 拿不到代理（见 §6.1 的说明）。返回键本来就是 Android 生命周期
+的事，`canGoBack() + goBack()` 既最短又最稳 —— 它复用 WebView 自己的历史，
+和浏览器里按"后退"的行为一致。
 
-### 6.2 P1：硬件返回键会直接退出 App
+### 6.3 P1：Service Worker 会让"更新后还是旧界面" —— 已修
 
-WebView 里按返回键默认关闭 Activity。表单填到一半按返回 → 整个 App 没了。
-
-```powershell
-npm install @capacitor/app && npx cap sync android
-```
+APK 里的资源是打包进去的，本来不需要 SW；但 `https://localhost` 是安全上下文，
+原代码会真的注册并缓存，而缓存**跨 APK 升级保留** → 装了 1.0.2 还显示 1.0.1 的界面。
 
 ```js
-// web/app/main.js（start() 里，仅原生壳生效）
-if (globalThis.Capacitor?.isNativePlatform?.()) {
-    const { App } = await import('@capacitor/app');
-    App.addListener('backButton', ({ canGoBack }) => {
-        if (globalThis.history.length > 1) globalThis.history.back();
-        else App.exitApp();
-    });
-}
+// web/app/main.js::registerServiceWorker() 第一行
+if (globalThis.Capacitor?.isNativePlatform?.()) return null;
 ```
 
-（我们的路由是 hash 路由，`history.back()` 会走 `hashchange` → 正常返回上一页。）
+### 6.4 仍需注意（未改代码，属已知限制）
 
-### 6.3 P1：Service Worker 会让"更新后还是旧界面"
-
-APK 里的资源是打包进去的，本来不需要 SW；但 `web/app/main.js:278` 的 `registerServiceWorker()`
-在 `https://localhost`（安全上下文）下**会真的注册并缓存**。缓存跨 APK 升级保留 →
-装了 1.0.2 却还显示 1.0.1 的界面，很难排查。
-
-```js
-// web/app/main.js —— 原生壳里跳过注册
-async function registerServiceWorker() {
-    if (globalThis.Capacitor?.isNativePlatform?.()) return null;   // ← 加这一行
-    if (!('serviceWorker' in navigator)) return null;
-    …
-}
-```
-
-### 6.4 P2：相机
-
-缺陷表单用的是 `<input type="file" accept="image/*" capture="environment">`（`web/app/views/reports.js:208`）。
-Capacitor 的 `BridgeWebChromeClient` 实现了 `onShowFileChooser`，会弹"相机 / 文件"选择器，**多数机型直接可用**。
-如果某些机型调不起相机，再上 `@capacitor/camera`（那时才需要在
-`AndroidManifest.xml` 加 `<uses-permission android:name="android.permission.CAMERA"/>` 并处理运行时授权）。
-
-### 6.5 P2：数据和浏览器版**不互通**
-
-APK 里的页面源是 `https://localhost`，IndexedDB 按 origin 隔离 —— 与浏览器里那份（`http://内网IP`
-或 `http://localhost:9000`）**不是同一个库**。从 PWA 迁到 APK 要走"**导出备份 → 在 APK 里导入备份**"。
-同理，卸载 App 或"清除数据"会连库一起删掉 —— 备份纪律照旧。
-
-### 6.6 P2：APK 没有热更新
-
-装了 APK 的设备只能靠**发新包**升级（PWA 那套"关页面重开就更新"在壳里不成立）。
-建议两个渠道都保留：现场用 APK（完全离线、无浏览器差异），需要快速修文案时先用 PWA 顶上。
+| # | 事项 | 说明 |
+| --- | --- | --- |
+| 1 | **相机** | `<input type="file" accept="image/*" capture="environment">`（`views/reports.js`）在 Core 的 `BridgeWebChromeClient` 下会弹"相机 / 文件"选择器，多数机型可用。个别机型调不起相机时再上 `@capacitor/camera`（那时才需要 `CAMERA` 权限与运行时授权） |
+| 2 | **数据不互通** | APK 的页面源是 `https://localhost`，IndexedDB 按 origin 隔离 → 与浏览器里那份**不是同一个库**。从 PWA 迁到 APK 要走"导出备份 → 在 APK 里导入备份"；卸载 App / "清除数据"会连库删掉 |
+| 3 | **没有热更新** | 新版本 = 新 APK（`versionCode` 递增 + 同签名）。需要快速修文案时先走 PWA |
+| 4 | **导出后文件在哪** | 写在 App 缓存目录（`CACHE`），用户通过分享面板交出去。若希望"直接落到下载目录"可改 `Directory.Documents`，但安卓 10+ 的文件可见性反而更差 |
 
 ---
 
@@ -376,8 +349,49 @@ cd android
 .\gradlew.bat assembleDebug                        # 首次 5~15 分钟
 adb install -r app\build\outputs\apk\debug\app-debug.apk
 
-# 上线前还要做：§6.1 导出保存（P0）、§6.2 返回键、§6.3 关掉 SW、§5 正式签名
+# 原生适配（导出/返回键/SW）已内置；正式分发前只需做 §5 签名
 ```
 
-**判断"能不能发"的三条硬指标**：① 导出 Word 能用（§6.1 补完）；② 返回键不退出（§6.2）；
-③ 同签名 + `versionCode` 递增能覆盖安装（§5）。
+**判断"能不能发"的三条硬指标**：① 壳里导出 Word 能落到"分享/打开"面板（§6.1 已实现）；
+② 返回键先回上一页、首页才退出（§6.2 已实现）；③ 同签名 + `versionCode` 递增能覆盖安装（§5）。
+
+---
+
+## 9. 云端出包（不装 JDK / SDK 也能拿 APK）
+
+仓库里已经有一个 GitHub Actions 工作流：`.github/workflows/build-android.yml`
+
+**它会做**：checkout → 装 JDK 21（temurin）→ 装 Node 20 → 装 Android SDK →
+`sdkmanager "platforms;android-36" "build-tools;36.0.0" platform-tools` →
+`npm ci` → `python3 scripts/prepare-www.py`（从 `dist/*.zip` 解出 www）→
+`npx cap sync android` → `./gradlew assembleDebug` → 把 APK 传成 Artifact。
+
+**用法**
+
+1. 把仓库推到 GitHub（**私有库也行**，Actions 对私有库同样免费额度）；
+2. 打开仓库 → **Actions** → 左侧选 **Build Android APK** → 右侧 **Run workflow**
+   （默认 `debug`；选 `release` 会得到未签名包，签名见 §5）；
+3. 等约 3–6 分钟（首次要下 Gradle 依赖，之后有缓存会快很多）；
+4. 在本次运行页面底部 **Artifacts** 下载：
+   `mcc-inspection-tool-v1.0.1-debug.apk`（保留 30 天）。
+
+也可以命令行触发：
+
+```bash
+gh workflow run build-android.yml -f build_type=debug
+gh run watch
+gh run download -n mcc-inspection-tool-v1.0.1-debug.apk -D ./apk
+```
+
+**跑完在运行摘要（Summary）里能直接看到**：文件名、体积、sha256、JDK/SDK 版本、提交号 ——
+发给客户时把 sha256 一起给，对方可以自己校验。
+
+**注意**
+
+- Artifact 是**未签名（debug 签名）**的包：能直接装、能测试，但**不能上架、不能作为正式分发包**。
+  正式分发按 §5 生成 keystore 后，把签名配置提交到仓库（或用 GitHub Secrets 注入密码），
+  再把 `build_type` 选 `release`。
+- 工作流只构建 **debug** 时也要求 `dist/mcc-inspection-tool-v1.0.1.zip` 已提交 ——
+  APK 里的内容永远来自交付包，不从 `web/` 源码直接打包。
+- 想改版本号：改 `web/app/product.js` 的 version → `python tools/make_release_zip.py` →
+  `apk-wrapper/package.json` 与 `android/app/build.gradle` 的 versionName/versionCode → 推代码。
