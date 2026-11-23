@@ -1,0 +1,23 @@
+{
+  "name": "apk-wrapper",
+  "version": "1.0.1",
+  "private": true,
+  "description": "把纯前端 PWA（建筑幕墙检测报告工具）包成 Android APK —— 只负责壳，不含业务代码",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "scripts": {
+    "prepare:www": "python scripts/prepare-www.py",
+    "icons": "python scripts/make-icons.py",
+    "splash": "python scripts/make-splash.py",
+    "sync": "npm run prepare:www && cap sync android",
+    "apk:debug": "npm run sync && cd android && gradlew.bat assembleDebug",
+    "apk:release": "npm run sync && cd android && gradlew.bat assembleRelease",
+    "apk:install": "adb install -r android/app/build/outputs/apk/debug/app-debug.apk",
+    "cap:doctor": "cap doctor"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/cli": "^8.6.2",
+    "@capacitor/core": "^8.6.2"
+  }
+}

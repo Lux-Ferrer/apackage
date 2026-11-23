@@ -1,0 +1,9 @@
+{
+  "appId": "com.mccri.curtainwall",
+  "appName": "幕墙检测",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "webContentsDebuggingEnabled": true
+  }
+}

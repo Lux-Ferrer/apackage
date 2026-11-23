@@ -1,0 +1,28 @@
+# 依赖
+node_modules/
+
+# www/ 是「交付包解出来的产物」，不是源码：换版本时由
+#   python scripts/prepare-www.py
+# 重新生成（来源永远是 dist/*.zip），所以不进版本库。
+www/
+
+# 构建产物
+android/app/build/
+android/build/
+android/.gradle/
+.gradle/
+android/app/release/
+*.apk
+*.aab
+
+# Capacitor 每次 sync 都会重写这两个：不提交
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+
+# 本机路径（Android Studio / SDK 位置），每台机器不同
+android/local.properties
+
+# 签名材料：**绝对不要**进版本库
+*.jks
+*.keystore
+key.properties
