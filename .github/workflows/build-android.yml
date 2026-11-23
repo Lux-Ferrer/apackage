@@ -44,12 +44,13 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
+      # 不开 npm 缓存：cache-dependency-path 在这种"仓库根不是 npm 包根"的布局里
+      # 容易解析不到（Error: Some specified paths were not resolved），而缓存只省半分钟，
+      # 不值得为它增加一个失败点。
       - name: Set up Node ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: apk-wrapper/package-lock.json
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
