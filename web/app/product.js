@@ -32,6 +32,8 @@
  *          · 导出/备份在壳里改走本地插件 DownloadSaver → 写「下载/幕墙检测/」，
  *            没有可打开 .docx 的应用时弹 Toast 告知路径（不再只剩空分享面板）
  *          · 返回键在根路由（项目/报告/我的）直接退出 App，不再在历史里绕
+ *   1.0.3  界面文案修正：5 处文案里残留的 markdown 星号（`**…**`）改成「…」，
+ *          随《用户操作手册》一起交付（手册截图正是这些页面）
  */
 
 export const PRODUCT = Object.freeze({
@@ -39,8 +41,8 @@ export const PRODUCT = Object.freeze({
     name: '建筑幕墙检测报告工具',
     /** 英文名（安装到主屏时部分系统会用它） */
     name_en: 'Curtain Wall Inspection Report Tool',
-    /** 版本号：不带 "v" 前缀，界面统一显示成 v1.0.2 */
-    version: '1.0.2',
+    /** 版本号：不带 "v" 前缀，界面统一显示成 v1.0.3 */
+    version: '1.0.3',
     /** 出品方 */
     vendor: '中冶建筑研究总院（深圳）有限公司',
     /** 技术支持（可留空：留空时关于页不显示这一行） */
@@ -64,7 +66,7 @@ export const PROFILE_LIMITS = Object.freeze({
     reporter_department: 30,
 });
 
-/** 界面上的版本标签：`v1.0.2`。 */
+/** 界面上的版本标签：`v1.0.3`。 */
 export function versionLabel() {
     return `v${PRODUCT.version}`;
 }

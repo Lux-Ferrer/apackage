@@ -160,7 +160,7 @@ export async function data(ctx) {
             const { inspectBackup, importBackup } = await import('../import-export.js');
             const info = await inspectBackup(file);
             const ok = await confirmDialog({
-                message: `导入会用备份内容**覆盖当前全部数据**（当前有 ${projectRows.length} 个项目、`
+                message: `导入会「覆盖当前全部数据」（当前有 ${projectRows.length} 个项目、`
                     + `${recordCount_} 条检测记录、${reportStats.total} 份报告）。`
                     + `备份导出时间：${info.exportedAt}，含 ${info.counts.projects} 个项目、`
                     + `${info.counts.records} 条检测记录、${info.counts.defects} 份报告、`
@@ -247,7 +247,7 @@ export async function data(ctx) {
             card([
                 h('h2', { text: '持久化授权' }),
                 h('p.hint', {
-                    text: 'iOS Safari 对**未获持久化授权**的站点有约 7 天的闲置清理策略。'
+                    text: 'iOS Safari 会对未获「持久化授权」的站点做约 7 天的闲置清理。'
                         + '现场记录、回办公室导出这种用法一定要把授权拿到手。',
                 }),
                 persistStatus,
@@ -256,7 +256,7 @@ export async function data(ctx) {
             card([
                 h('h2', { text: '导出备份' }),
                 h('p.hint', {
-                    text: '把所有项目、检测记录、缺陷报告与**原图**打包成一个 zip。'
+                    text: '把所有项目、检测记录、缺陷报告与「原图」打包成一个 zip。'
                         + '缩略图不在备份里 —— 它是可从原图重新生成的派生值，导入时会自动重建。',
                 }),
                 exportButton,
@@ -264,7 +264,7 @@ export async function data(ctx) {
             card([
                 h('h2', { text: '导入备份' }),
                 h('p.hint', {
-                    text: '导入会**覆盖当前全部数据**（备份是完整快照，不做合并）。导入前会让你确认一次要覆盖的内容。',
+                    text: '导入会「覆盖当前全部数据」（备份是完整快照，不做合并）。导入前会让你确认一次要覆盖的内容。',
                 }),
                 h('div.field', null, [
                     h('label', { for: 'backup-file', text: '备份文件' }),
@@ -282,7 +282,7 @@ export async function data(ctx) {
                 reportStats.total
                     ? h('p.hint', {
                         text: `清除全部 ${reportStats.total} 份缺陷报告；隐患图片会一并删除。`
-                            + '此操作**不可恢复**，建议先导出一份备份。',
+                            + '此操作「不可恢复」，建议先导出一份备份。',
                     })
                     : h('p.hint', { text: '没有可清除的报告。' }),
                 h('div.danger-zone', null, clearButton),

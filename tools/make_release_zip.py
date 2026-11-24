@@ -91,10 +91,15 @@ REQUIRED = [
 # ---- 要在包里额外放进去的交付文档 ----
 RELEASE_FILES = {
     "客户部署与使用说明.md": RELEASE_SRC / "客户部署与使用说明.md",
+    "用户操作手册.md": RELEASE_SRC / "用户操作手册.md",
+    "用户操作手册.pdf": RELEASE_SRC / "用户操作手册.pdf",
     "serve_static.py": RELEASE_SRC / "serve_static.py",
     "deploy/nginx.conf.example": RELEASE_SRC / "nginx.conf.example",
     "deploy/web.config.example": RELEASE_SRC / "web.config.example",
 }
+
+# 手册里的界面图（`用户操作手册.md` 用相对路径 manual/xx.png 引用）
+MANUAL_IMAGE_DIR = "manual"
 
 
 def read_product_version() -> str:
@@ -156,6 +161,17 @@ def stage(stage_dir: Path) -> list:
     for relative, source in RELEASE_FILES.items():
         if not source.exists():
             raise SystemExit(f"× 缺少交付文档：{source.relative_to(ROOT)}")
+        target = package_dir / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+        copied.append(relative)
+
+    # 手册里的界面图：整目录带走（数量少、体积可控，少一张手册就有破图）
+    manual_dir = RELEASE_SRC / MANUAL_IMAGE_DIR
+    if not manual_dir.is_dir():
+        raise SystemExit(f"× 缺少手册图片目录：{manual_dir.relative_to(ROOT)}")
+    for source in sorted(manual_dir.glob("*.png")):
+        relative = f"{MANUAL_IMAGE_DIR}/{source.name}"
         target = package_dir / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)
