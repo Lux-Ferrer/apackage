@@ -1,0 +1,506 @@
+# §1 Front matter, §2, §3, §8, §9, References, Appendices
+
+## 1.1 Title page
+
+**Faithful by Construction: An Offline-First Field Tool that Reproduces Corporate Inspection
+Reports Attribute by Attribute**
+
+A paper submitted in partial fulfillment of the requirements for the degree of
+
+Master of Science
+
+at the
+
+Division of Programs in Business
+School of Professional Studies
+New York University
+
+Zeyu Jin
+Fall, 2026
+
+Sponsoring organisation: MCC Central Research Institute of Building and Construction
+(Shenzhen) Co., Ltd.
+
+## 1.2 Abstract
+
+Field inspectors at a building-research institute record curtain-wall cross-section
+measurements and defect findings on paper, then re-type them into a fixed corporate Word
+template at the office. The re-typing introduces transcription errors, the five-reading
+minimum is computed by hand twice, and the report layout is rebuilt for every project. This
+applied project delivered a server-less, offline-first mobile web application that removes
+that step: inspectors capture five thickness readings per detection face with the minimum
+computed automatically, photograph defects, and generate the client's existing Word
+inspection report — including defect-report attachment pages — directly on the phone.
+
+The main technical risk was fidelity. "Looks the same" is not the same as "is the same", and
+a general-purpose document library emits valid markup, not identical markup. The project
+therefore treated the sponsor's report as an executable specification and built three
+independent comparison gates over a language-neutral layout specification plus eleven
+deterministic post-processing patches: a frozen baseline, a comparison against the client's
+real report, and a Python-free structural self-check. All three report zero differences, and
+a seven-case poisoning harness confirms that each gate fails on the right attribute, not
+merely that it fails.
+
+Verification then moved one environment closer to the user at a time, and this is where the
+project's most transferable finding lies: nine defects that reached a user-facing
+environment were all found by the layer above the one that was green, including three
+priority-0 faults — an application that could not start, an export that crashed only in a
+browser, and a backup import that had never been executed by any test. The result is a
+reproducible delivery package (static web bundle plus Android package) with a recorded
+SHA-256, a deployment guide and an end-user manual, in use on real devices without any
+back-end service.
+
+**Keywords:** curtain-wall inspection; offline-first PWA; document fidelity; differential
+testing; field data collection; mobile web
+
+## 1.3 Contents, figures and tables
+
+| Chapter | Title |
+| --- | --- |
+| 2 | Introduction |
+| 3 | Related work |
+| 4 | Requirements and analysis |
+| 5 | System design |
+| 6 | Implementation |
+| 7 | Evaluation and quality assurance |
+| 8 | Results, discussion and limitations |
+| 9 | Conclusion and future work |
+| — | References |
+| — | Appendices A–E |
+
+Figures: 5.1 architecture; 7.1 gate convergence; 7.2 gate sensitivity.
+
+Tables: 4.1 as-is vs to-be; 4.2 functional requirements; 5.1 layers; 5.2 object stores;
+5.3 the eleven patches; 7.1 verification layers; 7.2 gate domains; 7.3 seven poisons;
+7.4 jsdom blind spots; 7.5 the nine defects; 7.6 measured performance; 8.1 requirement
+coverage.
+
+---
+
+# §2 Introduction
+
+## 2.1 Context
+
+Curtain-wall inspection is a measurement discipline with a documentary output. An inspector
+stands in front of a façade — on a scaffold, at the edge of a floor slab, inside a lift shaft
+— and measures the aluminium profiles of vertical mullions and horizontal transoms with a
+coating-thickness gauge, taking five readings on each detection face. Separately, the
+inspector photographs defects: cracked or missing glass panels, sealant failure, corroded
+fixings. Both bodies of evidence end up in one deliverable, a Word inspection report that the
+institute signs and hands to the building owner, and that is subsequently used as contractual
+evidence when a defect is disputed.
+
+The client for this project is the Shenzhen branch of MCC Central Research Institute of
+Building and Construction, a materials-testing institute operating under a central
+state-owned enterprise. Its curtain-wall group inspects façades for owners and main
+contractors, and the report it issues is standardised: a fixed table layout, prescribed
+requirement clauses quoted verbatim from the technical code, and — when defects were found —
+attachment pages, one per defect report, each carrying a nine-row information block and a
+photograph.
+
+## 2.2 Problem
+
+The measurement is digital only at its two ends. In between sits a chain of transcription:
+gauge display → paper form → spreadsheet → Word template → print or PDF. Each hand-off is a
+place where a digit can change. The five-reading minimum is recomputed by hand at two of
+them. Photographs are transferred through a chat application and later re-selected by
+filename. The table layout is rebuilt for each project, because the corporate template is
+*edited* rather than *instantiated*, and an edited template drifts.
+
+Three constraints make the obvious fix unavailable. The inspectors work where there is no
+usable mobile data, so a cloud form does not solve the problem on site. The institute's IT
+function has no budget for a new server and no administrative rights over inspectors' personal
+phones, so a hosted application is out. And the deliverable is not merely "a report": its
+layout is contractually fixed, so any tool that produces a *nearly* identical report has made
+the problem worse, not better, by adding a second house style to reconcile.
+
+## 2.3 Objectives
+
+Three objectives follow directly, and they are the ones against which the project was
+accepted:
+
+1. **Capture once, on the phone, with no network.** A complete session — create a project,
+   record both component types, file defect reports with photographs, export the report,
+   export a backup — must succeed with the application's traffic blocked.
+2. **Reproduce the report attribute by attribute.** The generated document must equal the
+   approved template in table width, border weights, cell margins, row alignment, merge
+   encoding and style parts, not merely "open and look right".
+3. **Prove it, rather than assert it, in environments that keep getting closer to the user's.**
+   Fidelity and usability claims must be backed by comparisons that could fail, in a browser
+   rather than a DOM emulator, and on a phone rather than a desktop.
+
+## 2.4 Contributions
+
+The project offers three contributions, ordered by how transferable they are.
+
+**A way to make "the deliverable's format" an executable requirement.** The client's report is
+treated as the specification; a language-neutral layout description plus a fixed set of
+deterministic post-processing patches reproduces it exactly; and three comparison gates with
+disjoint domains assert equality continuously. The sensitivity harness is part of the
+contribution: it asserts not only that a gate fails on a poisoned document, but *where* it
+fails, which is what distinguishes a real comparison from a decorative one.
+
+**An environment ladder, and the arithmetic of what it finds.** Verification moved from a DOM
+emulator to a real desktop browser to a real Android device, and nine defects — three of them
+priority 0 — were found by the layer above the one that was green. The defects are not
+anecdotes: each is documented with its root cause, the reason the cheaper layer could not see
+it, and the guard that now exists. The distilled rule is two questions asked of any green
+run: *was this attribute actually compared, and is this environment the same as the user's?*
+
+**A delivery pattern for server-less field tools.** With no back-end, durability, sharing and
+upgrading all become the client's problem, and the project answers each concretely: a
+whole-database backup that includes originals, an Android channel that writes to the public
+Downloads folder, and a content-fingerprinted cache that never mixes generations.
+
+## 2.5 Structure of the paper
+
+§3 reviews the literature on field data capture, offline-first delivery and document fidelity
+testing, and identifies the gap this project addresses. §4 derives stakeholders, requirements
+and scope from the client's process. §5 presents the architecture, the data model, the
+fidelity design and five architectural decisions. §6 describes the implementation and the
+traps that only appear once the code runs. §7 is the evaluation: the three gates, their
+sensitivity, and the environment ladder with the nine defects. §8 maps results back to
+requirements, discusses what worked, and states the limitations. §9 concludes.
+
+---
+
+# §3 Related work
+
+## 3.1 Field data capture in construction
+
+Construction-informatics research has spent two decades moving site data from paper into
+information systems, and the dominant architecture is BIM-centred and server-mediated. Park
+et al. (2013) frame defect management as a problem of *data-collection templates* linked to a
+BIM model, arguing that the ontology of a defect record determines what can later be
+reasoned about; Ma et al. (2018) combine BIM with indoor positioning so that a captured record
+knows where it was captured. Both are convincing on the value of structured capture, and both
+assume an infrastructure this client does not have.
+
+The adoption literature is more sobering and more useful here. Davies and Harty (2013),
+studying "Site BIM" on a large hospital project, document how site staff reshape a digital tool
+to fit existing practice, and how a tool that does not fit is quietly abandoned rather than
+rejected. Sacks et al. (2018) make the complementary point at the level of deliverables:
+exchange requirements — what a document must contain and in what form — are part of the
+information specification, not an afterthought to it.
+
+This project sits inside that literature but inverts its priorities. There is no BIM model to
+link to and no server to link through; the deliverable's *format* is the specification that
+matters, because a report in the wrong format is rejected regardless of the quality of the data
+inside it. That inversion is what makes the fidelity problem (§3.3) the centre of the work
+rather than an output-formatting detail.
+
+## 3.2 Offline-first delivery and progressive web apps
+
+The case for progressive web apps as a cross-platform delivery mechanism is well documented.
+Biørn-Hansen et al. (2017) describe the architectural ingredients — app shell, service worker,
+cache — and Majchrzak et al. (2018) evaluate the approach against native development, noting
+both the reduced distribution cost and the platform-specific limits, storage eviction and iOS
+behaviour among them. The normative foundations are equally clear: the Indexed Database API
+(W3C, 2018) defines the transactional storage model used here, and practitioner catalogues
+such as Archibald's (2019) offline cookbook enumerate the caching strategies that a service
+worker can implement.
+
+What this literature says less about is the *consequence* of having no server at all. Once the
+back-end disappears, three ordinary functions lose their home: durability (there is no backup
+job, so the user must be given one), sharing (there is no upload endpoint, so the artifact must
+be written to the device and handed to the operating system), and upgrading (there is no
+deployment pipeline in the usual sense, so cache invalidation becomes the release mechanism).
+The design in §5.5 and the release engineering in §6.6 are responses to those three
+consequences, and the "no automatic activation" rule in particular is a direct consequence of
+ES modules being cached individually.
+
+## 3.3 Proving document fidelity
+
+The testing literature supplies the vocabulary for what this project had to do. McKeeman
+(1998) introduced differential testing: run two implementations on the same input and compare
+their outputs, using one as an oracle for the other. Gate B (§7.2) is differential testing with
+a human-authored oracle — the client's actual delivered report. Feathers (2004) names the
+complementary technique: when no specification exists, freeze the current behaviour as a
+characterization test and defend it. Gate A is exactly that, applied to a document. Chen et
+al. (1998) contribute the third idea, metamorphic testing: when the correct output for a
+mutated input is unknown, assert a *relation* instead. The poisoning harness (§7.3) is
+metamorphic in this sense — we do not know what a correct rendering of a corrupted document
+looks like, but we know the gate must fail, and we know which attribute it must fail on.
+
+On the document side, the specification is explicit and public: ECMA-376 (Ecma International,
+2021), also published as ISO/IEC 29500, defines every attribute that the eleven patches touch,
+from the document grid to the vertical-merge encoding. The practical problem is that
+general-purpose generators — `python-docx` (Canny, 2013) and the JavaScript `docx` library
+(Miu, 2024), the two used here — implement the schema faithfully but make independent choices
+wherever the schema permits alternatives. A document can therefore be perfectly valid and
+still differ from an approved template in dozens of attributes.
+
+The gap, then, is a framing gap. The literature treats document generation as an API
+correctness problem ("does the file open, does it contain the values?") and rarely as an
+*equality* problem ("is every attribute the same as the accepted document?"). Where equality
+is discussed, it is usually visual regression on rendered pages, which introduces fonts and
+pagination and is therefore expensive to run in continuous integration. This project's
+contribution is to make equality an executable, cheap, structural assertion — and then to
+prove that the assertion is sensitive.
+
+## 3.4 The gap this project addresses
+
+Two gaps motivate the work. First, fidelity is under-specified in practice: teams assert
+"the report looks right" and discover otherwise at the client's desk. Second, and less
+commonly reported, test environments are systematically more permissive than production
+environments, and the resulting defects are invisible to the suites that are supposed to catch
+them. The literature on testing discusses environment fidelity in general terms (test doubles,
+emulation, staging); it says little about the specific case where the *runtime* differs — a DOM
+emulator versus a browser, a desktop browser versus a phone — and where each step of realism
+has a measurable defect yield. §7.5 reports that yield for this project: nine defects, three of
+them blocking, all found in the step above the green one.
+
+---
+
+# §8 Results, discussion and limitations
+
+## 8.1 Requirements coverage
+
+The requirement set was frozen before implementation and audited at delivery. Of the
+forty-three in-scope requirement rows, forty-three are implemented as specified, two are
+implemented with an agreed adaptation (the report person is taken from a local profile instead
+of a login session; the profile page carries no department code), one optional item
+(single-report JSON export) was not built because no consumer existed, and two rows plus three
+modules — accounts, quick notes, statistics — were removed from scope in writing. Table 8.1
+summarises.
+
+**Table 8.1 — Requirement coverage at acceptance**
+
+| Category | Count | Note |
+| --- | --- | --- |
+| Implemented as specified | 43 | Verified by automated tests, gates or on-device checks |
+| Implemented with agreed adaptation | 2 | Documented in the confirmed requirement set |
+| Not built (optional) | 1 | Single-report JSON export; no consumer identified |
+| Out of scope by agreement | 2 rows + 3 modules | Accounts/login, quick notes, statistics |
+
+## 8.2 What worked, and why
+
+Three mechanisms carried the project, and each is transferable.
+
+**Treating the deliverable as the specification.** The decisive move was not technical: it was
+deciding that the client's Word file *is* the requirement, and that any difference is a defect
+until proven otherwise. That decision converted a vague acceptance conversation into a
+diff list, and the diff list into a to-do list, converging 201 → 33 → 2 → 0 differences over
+four rounds (Figure 7.1). It also produced the eleven patches, each of which is a named,
+tested fact about the template rather than a folk remedy.
+
+**Gates with disjoint domains.** Three comparisons were maintained instead of one, and the
+maintenance cost was repaid twice: once when the frozen baseline and the real-report
+comparison disagreed about a merge encoding (§5.3), and once when the JavaScript self-check
+disagreed with both Python comparators over a property neither had normalised. A single gate
+would have reported green in both cases.
+
+**Moving the environment rather than widening the suite.** The nine defects in Table 7.5 were
+not found by writing more unit tests; they were found by executing the same product in a
+browser and then on a phone. In hindsight this is the cheapest defect-detection investment in
+the project: two days of environment work produced three priority-0 fixes that a thousand
+additional unit tests would not have located.
+
+## 8.3 What we would do differently
+
+**Introduce the real browser earlier.** The DOM-emulator suite was at 205 passing tests when
+the browser round found that export crashed and that backup import had never worked. The
+browser layer existed late because it was assumed to be a confirmation step; it is in fact a
+detection step, and it should have existed from the first vertical slice.
+
+**Test every destructive path on the day it is written.** The import defect was possible
+because import had no test at all — and import is the mechanism by which a user recovers from
+losing a phone. The rule now applied is blunt: a path that can destroy or restore data gets a
+test before it gets a UI.
+
+**Measure the template before writing the patches.** Several of the eleven patches were
+written speculatively and later removed or reshaped once the diff tool existed. Building the
+comparison first, and letting the diff enumerate the work, would have removed that detour.
+
+**Keep the transaction module simpler.** The single-transaction discipline is correct, but the
+first version tried to hide asynchrony in a helper, which is how the `TransactionInactiveError`
+trap was discovered. An explicit, slightly verbose API would have made the constraint visible
+at every call site from the start.
+
+## 8.4 Limitations
+
+**The gates do not render.** All three comparisons are structural. A document can be
+attribute-identical and still paginate differently on a machine with different fonts or a
+different Word version. The mitigation is environmental rather than technical: the deliverable
+is opened in the same corporate Word installation that produced the template.
+
+**No iOS device was available.** Safari differs from Chromium in storage eviction policy, PWA
+installation and service-worker lifetime. The product compensates by requesting persistent
+storage and by shipping an explicit backup, but parity is claimed for Android only.
+
+**The data is device-local.** There is no synchronisation, no multi-inspector collaboration and
+no server-side audit trail; a lost phone loses the work unless a backup was exported. This is a
+consequence of the no-server constraint, acceptable for a single-inspector workflow and not
+acceptable for a team.
+
+**Plain-HTTP intranets lose offline capability and installation.** Offline caching and
+"install as an app" require a secure context; on an intranet served over `http://192.168.x.x`
+the business functions work but the application cannot install or work offline. This is a
+browser rule, documented for the client, not a defect of the implementation.
+
+**Touch gestures and hardware variation were not exercised.** Pinch, long-press and inertial
+scrolling were not systematically tested, and the Android verification used one emulator
+image, one WebView version and one physical keyboard layout.
+
+**Quantified business impact is not established.** The tool removes three of the five
+hand-offs and both manual minimum computations, and the client's team reported the workflow as
+materially faster — but no controlled time measurement was conducted, so no percentage is
+claimed here. That measurement is the first item of future work.
+
+## 8.5 Discussion
+
+The project's generalisable claim is about where verification effort belongs. In a system whose
+value depends on fidelity to an external artefact, the expensive part is not building the
+generator — it is establishing, continuously and cheaply, that the generator's output equals
+the artefact that already has the client's trust. And in a system whose users are mobile
+workers, the expensive part is not the feature list — it is the gap between the environment in
+which the features were written and the environment in which they will be used. Both are
+questions of *comparison against reality*, and both are answerable with gates, harnesses and
+an honest ladder of environments.
+
+---
+
+# §9 Conclusion and future work
+
+## 9.1 Conclusions
+
+**Fidelity can be engineered as an equality property.** By treating the client's report as an
+executable specification, describing its geometry in a language-neutral artefact, and applying
+eleven named post-processing patches, the generated document reaches zero differences against
+the approved template across three independent comparisons — and a seven-case poisoning harness
+demonstrates that those comparisons are sensitive to the attributes that matter.
+
+**Test environments silently bound what can be found.** Nine defects reached a user-facing
+environment while the cheaper layers were green; three of them were blocking, and each failed
+either "was this compared?" or "is this the user's environment?". The transferable practice is
+the ladder: move one environment closer to the user at a time, and treat each step's defect
+yield as the justification for the next one.
+
+**Server-less delivery is a viable architecture for this class of field tool, if its three
+consequences are answered explicitly.** Durability becomes a user-facing backup, sharing
+becomes writing to the device and handing the file to the operating system, and upgrading
+becomes content-fingerprinted cache invalidation with deliberate activation. None of the three
+is free; all three are implementable without a server.
+
+## 9.2 Future work
+
+**Quantified impact.** A controlled time study of report assembly before and after adoption,
+including error-correction time, is the single most valuable next measurement.
+
+**iOS validation.** A real-device Safari pass, focusing on storage eviction, installation and
+service-worker lifetime, would extend the platform claim from one to two.
+
+**Multi-inspector operation.** Collaboration, conflict resolution and an audit trail all
+require the back-end this project deliberately avoided; the natural next step is an optional
+synchronisation service that the app can run without, not one it depends on.
+
+**Template configurability.** The layout specification is already data; exposing it as a
+per-client configuration would let the same engine serve reports from other institutes,
+turning a bespoke tool into a product.
+
+**Signed reports.** The report is contractual evidence; an integrity signature over the
+generated document (and a verifiable hash on the attachment pages) would close the last mile
+between "generated faithfully" and "provably unaltered".
+
+---
+
+# References
+
+Biørn-Hansen, A., Majchrzak, T. A., & Grønli, T. M. (2017). Progressive Web Apps: The possible
+web-native unifier for mobile development. *Proceedings of the 13th International Conference on
+Web Information Systems and Technologies (WEBIST)*, 344–351.
+https://doi.org/10.5220/0006353703440351
+
+Canny, S. (2013). *python-docx* [Computer software]. GitHub.
+https://github.com/python-openxml/python-docx
+
+Chen, T. Y., Cheung, S. C., & Yiu, S. M. (1998). *Metamorphic testing: A new approach for
+generating next test cases* (Technical Report HKUST-CS98-01). Hong Kong University of Science
+and Technology. https://doi.org/10.48550/arXiv.2002.12543
+
+Davies, R., & Harty, C. (2013). Implementing "Site BIM": A case study of ICT innovation on a
+large hospital project. *Automation in Construction, 30*, 15–24.
+https://doi.org/10.1016/j.autcon.2012.11.024
+
+Ecma International. (2021). *ECMA-376: Office Open XML file formats* (5th ed.).
+https://www.ecma-international.org/publications-and-standards/standards/ecma-376/
+
+Feathers, M. (2004). *Working effectively with legacy code*. Prentice Hall.
+
+Ma, Z., Cai, S., Mao, N., Yang, Q., Feng, J., & Wang, P. (2018). Construction quality
+management based on a collaborative system using BIM and indoor positioning. *Automation in
+Construction, 92*, 35–45. https://doi.org/10.1016/j.autcon.2018.03.027
+
+Majchrzak, T. A., Biørn-Hansen, A., & Grønli, T. M. (2018). Progressive Web Apps: The definite
+approach to cross-platform development? *Proceedings of the 51st Hawaii International
+Conference on System Sciences (HICSS)*, 5735–5744. https://doi.org/10.24251/HICSS.2018.718
+
+McKeeman, W. M. (1998). Differential testing for software. *Digital Technical Journal, 10*(1),
+100–107.
+
+Ministry of Construction, P.R. China. (2003). *Technical code for glass curtain wall
+engineering* (JGJ 102-2003). China Architecture & Building Press.
+
+Miu, D. (2024). *docx: Generate .docx files with JavaScript/TypeScript* [Computer software].
+npm. https://www.npmjs.com/package/docx
+
+Park, C. S., Lee, D. Y., Kwon, O. S., & Wang, X. (2013). A framework for proactive construction
+defect management using BIM, augmented reality and ontology-based data collection template.
+*Automation in Construction, 33*, 61–71. https://doi.org/10.1016/j.autcon.2012.09.010
+
+Sacks, R., Eastman, C., Lee, G., & Teicholz, P. (2018). *BIM handbook: A guide to building
+information modeling for owners, designers, engineers, contractors, and facility managers*
+(3rd ed.). Wiley.
+
+W3C. (2018). *Indexed Database API 2.0* (W3C Recommendation). World Wide Web Consortium.
+https://www.w3.org/TR/IndexedDB-2/
+
+Archibald, J. (2019). *The offline cookbook*. web.dev.
+https://web.dev/articles/offline-cookbook
+
+---
+
+# Appendices
+
+## Appendix A — Sponsor's acceptance documents
+
+The signed Project Plan (document 07, Part 1) and Project Acceptance (document 07, Part 2) are
+included in this paper as scanned PDF pages, as required. Both were completed by the sponsor
+and the student at delivery.
+
+## Appendix B — The eleven post-processing patches
+
+Appendix B reproduces Table 5.3 with the exact OOXML attribute each patch rewrites, so that the
+patch chain can be re-derived from the specification alone: document grid line pitch; table
+look attributes and their boolean normalisation; row-height rule attribute; table cell margins;
+continuation cells of merged rows (vertical alignment, paragraph justification and header line
+spacing); styles and theme parts; section column spacing; page-size orientation attribute;
+row-level justification; border spacing; and vertical-merge value encoding.
+
+## Appendix C — Verification inventory and re-run commands
+
+| Artefact | What it proves | Re-run |
+| --- | --- | --- |
+| Python suite (348 tests) | Data rules, layout extraction, export assembly, defect semantics | `python -m pytest -q` |
+| Front-end suite (250 tests) | Data layer, engine, attachments, image pipeline, real-markup UI | `npm test` |
+| Sixteen gates | Generated-asset synchronisation, four Python baselines, Gates A (both halves), B and C, poisoning harness, single-test suites | `python tools/verify_all.py` |
+| Desktop E2E (21 cases) | Canvas, dialogs, service worker, downloads, viewports, keyboard | `npx playwright test` |
+| Android assertions (14) | Camera, file manager, soft keyboard, installation, offline with traffic blocked | `node web/e2e/android-remote.mjs` |
+| Delivery package | No test assets, version coherence, checksums | `python tools/make_release_zip.py` |
+
+## Appendix D — Deployment and data-protection summary
+
+The deliverable is a directory of static files. Deployment requires a static host (Nginx, IIS or
+the bundled Python server) with a correct `text/javascript` MIME type for `.mjs`; offline
+capability and installation additionally require a secure context (HTTPS or localhost). Data
+resides only in the browser's storage on the inspector's device; durability is the
+inspector's responsibility, mediated by a one-file backup that includes original photographs,
+and the only destructive actions in the product state their blast radius before executing.
+
+## Appendix E — Project plan, baseline and actual schedule
+
+The baseline schedule was planned from 10 September 2026 to 5 December 2026. The actual
+delivery completed on 24 November 2026, eleven days ahead of the planned end, with the
+baseline work-breakdown structure unchanged; the deviation is a compression of the
+integration and verification phases rather than a reduction in scope, and the sponsor
+initialled the revised dates in Part 2 of the acceptance document.
