@@ -172,6 +172,64 @@ name that also exists on the previous page; the app now writes a render counter 
 `<body>` and tests wait for it to grow, which removed a whole class of false positives in
 which a test read the previous page's DOM and concluded that a deletion had failed.
 
+## 6.8 Issues encountered: an engineering post-mortem
+
+§7.5 tells the story of the nine defects from the evaluation side — which environment found
+each one, and what that says about verification. This section looks at the same nine from the
+engineering side: what class of failure each belongs to, what the fix cost, and what rule the
+codebase now enforces because of it. The classification matters more than the individual bugs,
+because three of the six classes will recur in any project of this shape.
+
+**Class 1 — a dependency captured at construction time.** The application opened with an empty
+database handle because `boot()` constructed the application first and assigned its dependencies
+afterwards, and the constructor had already closed over its argument. The fix took an hour; the
+*rule* it produced is permanent: the render context resolves dependencies from the application
+object at use time, and an entry point is itself a test target. This is the general shape of
+"late initialisation", and it is invisible to any test that constructs the object with its
+dependencies already present — which is every test written by the person who wrote the
+constructor.
+
+**Class 2 — a platform-provided global.** Export crashed only in browsers because the generator
+was asked for an output type that requires a global `Buffer`. This is a subclass of Class 1 with
+a twist: the dependency is provided by the *runtime*, not by the caller, so no amount of
+construction discipline finds it. The rule: when a library offers an environment-specific
+shortcut, take the portable branch and prove the two branches produce identical bytes — the
+substitution is only safe because Gate A still reported zero differences afterwards. The
+regression test now deletes the global before importing the module, which is the closest a test
+can come to "run on a phone".
+
+**Class 3 — a path that had never executed.** Backup import had no test at all, and its single
+defect made the only data-recovery mechanism unusable. The fix was one line; the work was
+eight test cases plus a real-browser case with a real `File` and a real `<dialog>`. The rule
+adopted from that day: **any path that can destroy or restore data gets a test before it gets a
+user interface.** It is a scheduling rule, not a technical one, and it is the cheapest rule in
+this paper.
+
+**Class 4 — precedence between the author and the platform.** Two defects belong here: author
+CSS beat the `[hidden]` attribute, and an SVG element created in the HTML namespace existed but
+was never painted. Both were invisible to assertions of the form "the element is present and has
+the right attributes". The rule: **assert computed outcomes, not declarations** — computed
+style rather than the attribute, `namespaceURI` rather than the tag name, a measured bounding
+box rather than a class name.
+
+**Class 5 — thresholds that only a body or a viewport reveals.** A 28 × 22 px cancel button and a
+save bar hidden behind the soft keyboard are not logic errors; they are failures to model the
+user's geometry. The rules are now explicit: interactive targets are at least 44 × 44 px, and
+anything `position: fixed` at the bottom must be offset by the visual viewport's keyboard inset,
+never by an assumption about `innerHeight` (which does not change when the keyboard opens).
+
+**Class 6 — a boundary that was only in someone's head.** The delivery package once contained the
+browser test scripts, because the packaging script copied a directory that had acquired a new
+subdirectory. The rule: **a boundary that matters is a build assertion** — the packager now fails
+rather than shipping a package that contains a test asset.
+
+**Cost.** The three priority-0 defects cost roughly a day and a half of the project's four weeks
+of integration time — not because the fixes were large (one was a single line, one deleted an
+argument, one reordered two statements) but because each had to be reproduced, diagnosed and
+then guarded by a test that would fail if it returned. Every one of the nine now has a positive
+control: reverting the fix turns a specific test red with the production error text. That
+practice is what distinguishes a fix from a hope.
+
 ---
 
 # §7 Evaluation and Quality Assurance (~2,100 words)

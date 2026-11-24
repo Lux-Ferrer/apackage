@@ -184,6 +184,76 @@ trip including originals; (6) the tool works offline; (7) it is usable on a real
 keyboard and back key included; (8) the delivery package deploys on a plain static host.
 §7 reports these against measured evidence; §8 maps them back to requirements.
 
+## 4.6 Alternate solutions and selection rationale
+
+Five architectures were considered before the design in §5 was fixed. They are compared against
+the criteria that actually decide this project — not against generic criteria such as "modern"
+or "scalable", but against the six properties a delivery to this client depends on (Table 4.3).
+
+**A1 — Native Android application (Kotlin, Room, system camera).** The strongest option on
+device integration: the camera, the file system and background behaviour are all first-class,
+and a native app can write to the Downloads folder without a plugin. It fails on two criteria.
+Distribution is the first: the client's IT function has no store channel, so an APK would have
+to be handed out and updated by hand anyway — exactly what the eventual solution also does, but
+without the compensating advantage. Report fidelity is the second and decisive one: the
+document-generation problem would have had to be solved from scratch in a Kotlin OOXML library
+of unproven maturity, discarding both the verified Python implementation and the frozen
+baseline that made fidelity measurable. The fidelity risk was the project's central risk; a
+platform choice that multiplies it was rejected on that ground alone.
+
+**A2 — Server-based application (extend the existing Flask implementation).** This was the
+cheapest possible route: the reference implementation already existed and already produced the
+accepted report. It fails on the field criterion. Inspectors work on scaffolds and in unfinished
+floors with no usable mobile data; a server-mediated application solves the office step and
+leaves the site step — the error-prone one — on paper. It also fails the client's IT posture: a
+server, a database and a backup job are exactly the operational burden the institute wanted to
+avoid. A hybrid (local-first with optional sync) was noted as the natural future extension
+rather than the first delivery.
+
+**A3 — Desktop application (Electron or Tauri with a local database).** Good file-system access
+and a familiar desktop feel, and it would have reused the Python engine through a bundled
+runtime. It fails the device criterion outright: inspectors carry phones, not laptops, and the
+tool's whole point is to capture at the member being measured.
+
+**A4 — A low-code form platform or a commercial inspection SaaS.** Fastest to a working form, and
+it would have provided multi-user access and dashboards for free. It fails the fidelity
+criterion: the deliverable is a Word document with a fixed layout, and no form platform emits
+that document attribute by attribute. Buying the capability was also inconsistent with the
+client's constraint that data must not leave the device.
+
+**A5 — Offline-first PWA with IndexedDB (selected).** One codebase; installable without a store;
+no server; and — critically — the document engine runs in the same JavaScript runtime as the rest
+of the application, so the layout specification and the gate harness could be carried over intact
+from the Python reference. The costs are real and were accepted: storage belongs to the browser
+(hence the backup feature), there is no server-side rendering escape hatch (hence §5.3), and iOS
+behaviour is unproven (stated as a limitation).
+
+**A6 — PWA with SQLite compiled to WebAssembly, instead of IndexedDB.** Considered inside A5, and
+rejected in ADR-2: it adds roughly a megabyte of payload, requires a second persistence model
+(origin-private file system for durability), and buys SQL semantics that this data model — four
+tables and a blob store — does not need.
+
+**Table 4.3 — Alternatives against the deciding criteria**
+
+| Criterion | A1 Native | A2 Server web | A3 Desktop | A4 Low-code | A5 PWA + IndexedDB |
+| --- | --- | --- | --- | --- | --- |
+| Works on site with no network | yes | **no** | yes | depends on vendor | yes |
+| Reachable report fidelity | low (new engine) | high (already verified) | high | **very low** | high (verified engine carried over) |
+| No infrastructure for the client | APK by hand | **needs server + DB** | installer | vendor subscription | folder + APK |
+| Reuses the verified layout work | no | yes | yes | no | yes |
+| Single codebase to maintain | no (Android only) | yes | no | n/a | yes |
+| Platform risk accepted | Android fragmentation | server drift | OS/runtime drift | vendor lock-in | browser storage, iOS |
+
+**Selection rationale.** The deciding criterion was not convenience but *reachable fidelity*.
+The acceptance condition is attribute-level equality with the client's report, and the only asset
+the project had that could deliver it was the verified Python engine plus its frozen baseline.
+A5 was the single option that preserved that asset while satisfying the field constraint (no
+network) and the client's infrastructure constraint (no server). Every candidate that scored
+better on some axis — A1 on device integration, A2 on cost, A4 on time-to-form — scored worse on
+fidelity or on the field constraint, and those two were non-negotiable. The decision is recorded
+as ADR-1 in §5.6, together with its consequences: device-local data, an explicit backup path, and
+a cache-fingerprint update mechanism.
+
 ---
 
 ## 中文对照（§4 审阅要点）

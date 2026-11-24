@@ -70,10 +70,10 @@ testing; field data collection; mobile web
 
 Figures: 5.1 architecture; 7.1 gate convergence; 7.2 gate sensitivity.
 
-Tables: 4.1 as-is vs to-be; 4.2 functional requirements; 5.1 layers; 5.2 object stores;
-5.3 the eleven patches; 7.1 verification layers; 7.2 gate domains; 7.3 seven poisons;
-7.4 jsdom blind spots; 7.5 the nine defects; 7.6 measured performance; 8.1 requirement
-coverage.
+Tables: 4.1 as-is vs to-be; 4.2 functional requirements; 4.3 alternatives against the deciding
+criteria; 5.1 layers; 5.2 object stores; 5.3 the eleven patches; 7.1 verification layers;
+7.2 gate domains; 7.3 seven poisons; 7.4 jsdom blind spots; 7.5 the nine defects; 7.6 measured
+performance; 8.1 requirement coverage.
 
 ---
 
@@ -238,7 +238,64 @@ pagination and is therefore expensive to run in continuous integration. This pro
 contribution is to make equality an executable, cheap, structural assertion — and then to
 prove that the assertion is sensitive.
 
-## 3.4 The gap this project addresses
+## 3.4 Situational analysis
+
+The literature says what is possible; the situation says what is worth doing. This section is a
+qualitative analysis of the position the product occupies, conducted from the project's own
+fieldwork (four working sessions with the client's inspection group) rather than from market
+data. No market-sizing study was commissioned, and no figure in this section is a market
+estimate; the analysis is structural, and it is reported as such.
+
+**Buyers and the shape of demand.** The demand for curtain-wall inspection reports comes from
+building owners, main contractors and property managers, and it is *regulatory in origin*: a
+façade must be evidenced as compliant before hand-over and again before major works. The
+institute is paid per engagement, and the report is the artefact that closes it. That has a
+sharp consequence for a tool: the report is not a record of work, it is the deliverable that
+gets invoiced and, later, litigated over. Anything that changes its appearance is a commercial
+risk, which is why "fidelity" appears in this paper so often and "features" so rarely.
+
+**Porter's five forces, applied to the tool's niche.** *Threat of substitutes* is high and
+closer than it looks: the incumbent is a Word template plus manual typing, which costs nothing
+to keep and is already trusted. A tool competes with a habit, not with a product. *Bargaining
+power of buyers* is high: a single institute decides, its inspectors adopt or quietly do not,
+and the switching cost of a rejected tool is a lost project rather than a lost licence.
+*Bargaining power of suppliers* is low in components — the stack is open source and replaceable
+— but high in platforms: the rendering of the Word document is ultimately controlled by
+Microsoft's implementation, and offline behaviour by the WebView version shipped on the
+inspector's phone. Those two suppliers cannot be negotiated with, only measured against.
+*Threat of new entrants* is high at the feature level: a form with photographs is a
+weeks-long build for any competent team. The defensible part is not the form, it is the
+machinery that makes the output identical to the accepted document, which is expensive to
+discover and cheap to copy once discovered. *Rivalry* is intense among BIM and inspection SaaS
+vendors, but it is rivalry on a different axis — integrations, dashboards and cloud
+collaboration — and it leaves the specific problem of this project (one inspector, no network,
+one fixed Word layout) largely unaddressed.
+
+**SWOT.** *Strengths:* the deliverable's format is reproduced attribute by attribute and the
+claim is backed by three gates; the tool needs no infrastructure, so procurement is a folder and
+an APK; the layout specification is data, so a second client's template is a configuration
+exercise rather than a rewrite. *Weaknesses:* the data is device-local, so there is no
+collaboration and no central audit trail; the product is Android-first with untested iOS
+behaviour; the team is one person, which bounds both the feature set and the bus factor.
+*Opportunities:* other institutes in the same group issue structurally similar reports, so the
+same engine with a different layout specification is a plausible product; the inspection
+workflow is regulated and therefore stable, which rewards durable tooling over novelty; and the
+fidelity method transfers to any regulated document (test reports, certificates, acceptance
+records). *Threats:* platform drift — a Word update, a WebView change, a browser storage policy
+change — can invalidate assumptions that took weeks to establish; the incumbent habit can win by
+inertia if the first field week is not smooth; and a client-side-only tool has no answer to a
+procurement requirement for central audit, which is a plausible future requirement in a
+state-owned institute.
+
+**What the analysis changed in the project.** Two decisions were made because of this analysis
+rather than because of the requirements. The fidelity work was put *first* — before any user-
+interface polish — on the grounds that it is the only defensible part of the offer and the only
+thing the incumbent cannot trivially match. And the backup mechanism was treated as a
+first-class feature rather than a maintenance utility, because the SWOT weakness "data is
+device-local" is not an inconvenience in this market, it is an existential objection that a
+reviewer will raise in the first meeting.
+
+## 3.5 The gap this project addresses
 
 Two gaps motivate the work. First, fidelity is under-specified in practice: teams assert
 "the report looks right" and discover otherwise at the client's desk. Second, and less
@@ -358,6 +415,112 @@ which the features were written and the environment in which they will be used. 
 questions of *comparison against reality*, and both are answerable with gates, harnesses and
 an honest ladder of environments.
 
+## 8.6 Detailed project chronology and critique
+
+The project ran from 10 September to 24 November 2026, eleven days inside its planned end of
+5 December. The chronology is worth setting out because the *order* of the work, more than any
+single technique, explains both what went well and what was expensive.
+
+**Phase 1 — proof of concept (September).** The first task was not to build a form but to answer
+one question: could the client's report be reproduced mechanically at all? A Flask reference
+implementation was built with `python-docx`, driven by a layout specification extracted from the
+client's real document, and compared against a cropped copy of that document. It reproduced the
+tables closely enough to make the rest of the project worth attempting, and it established the
+pattern that carried through to the end — the report as specification, the diff as the measure.
+
+**Phase 2 — data model and the office workflow (late September to early October).** Projects,
+records, faces, readings and defect reports were modelled and implemented against the reference
+implementation, together with the image pipeline. This phase produced the part of the product
+that a reviewer can see, and it produced almost none of the part that decides acceptance.
+
+**Phase 3 — the migration decision and the port (October).** The client's constraints (no
+server, no store, phones only) forced the decision recorded as ADR-1: the Flask application
+became a frozen oracle, and the product became an offline-first client. The port was
+substantial — data layer, engine, views — and it carried one asset that made it feasible: the
+layout specification had been written as data, so the JavaScript engine could be driven by the
+same numbers.
+
+**Phase 4 — fidelity convergence (late October to early November).** The export engine was
+brought to zero differences by working the diff list down, 201 → 33 → 2 → 0 over four rounds, with
+a commit per round. Gate B (the client's real report) was built in this phase, and the eleven
+patches were identified here.
+
+**Phase 5 — the environment ladder (12–13 November).** Two days changed the project's self-image.
+A real-browser round of 21 cases found the backup-import defect, the packaging leak and the
+undersized cancel button; the Android round of 14 assertions found the export crash, the keyboard
+occlusion and the secure-context constraint on offline installation; and a user-reported crash on
+open produced the third priority-0 defect. Before these two days the suite had 205 passing tests
+and the product could not start.
+
+**Phase 6 — release engineering and handover (19–24 November).** Versioning, the delivery
+package with its whitelist and checksums, the Android packaging channel with a pinned signature,
+the end-user manual with annotated screenshots, and the sponsor acceptance documents.
+
+**Critique — what went well.** Three things. Freezing the reference implementation early turned
+every later disagreement into a diff. Treating the diff as a to-do list kept the hardest work
+monotonic and measurable. And single-sourcing the version, the layout numbers and the cache
+fingerprint prevented a class of release defects that would have been invisible until a client
+hit them.
+
+**Critique — where the project went wrong.** The most expensive mistake was **starting inside the
+Flask frame**. The port itself was right, but doing the data model and the engine first, in a
+runtime that is more permissive than a browser, meant that six weeks of work was validated in an
+environment the user would never occupy. The second most expensive mistake was **deferring the
+browser** until 205 unit tests were green; the two browser days found three defects that no
+amount of additional unit testing would have found, and they should have been the first two days
+of the port, not the last. Third, the eleven patches were written partly *before* the measurement
+that justified them — several were speculative and were later reshaped, a detour that a
+measure-first order would have avoided entirely. Fourth, the Android release path was
+underestimated: the debug-signature instability and the Downloads-folder behaviour were treated
+as packaging details and cost roughly two days of rework, including one failed upgrade that could
+only be recovered by uninstalling. Finally, documentation was written at the end; the manual and
+the deployment guide exist, but they would have taken hours instead of a day if they had been
+written beside the features.
+
+**The moment that changed the definition of done.** At the end of Phase 4 the suite was green and
+the product did not start on a phone. The sentence we wrote on the whiteboard that afternoon —
+*"green means the compared things match, not that the product works"* — became the project's
+working definition of done and, in retrospect, its most transferable result.
+
+## 8.7 Lessons learned
+
+**Lesson 1 — a green run answers a narrower question than it appears to.** It answers "the things
+I compared agree". It does not answer "the things that matter were compared", and it does not
+answer "they agree in the environment the user occupies". Both gaps were populated with blocking
+defects in this project. The practical form of the lesson is two questions asked before any
+release: *was this attribute actually compared, and is this environment the same as the user's?*
+
+**Lesson 2 — when the deliverable is the requirement, the deliverable is the specification.** The
+client's Word file was treated as executable, not as a style reference, and that single framing
+decision converted an acceptance conversation into a diff and a diff into a task list. It also
+changed what "done" meant at every step: a feature was not done when it worked, but when its
+output was indistinguishable from the accepted document.
+
+**Lesson 3 — test environments bound what can be discovered, and the ladder is cheap.** Two days
+of browser and device work produced three priority-0 fixes; a thousand more unit tests would not
+have produced any of them, because they tested a permissive environment. The generalisable
+practice is to move one environment closer to the user at a time, and to treat each step's defect
+yield as the justification for taking the next one.
+
+**Lesson 4 — derived values should be recomputable, and that is what makes recovery possible.**
+Thumbnails, minimums and page counts are all computed from stored originals, so they can be
+rebuilt, verified and discarded. That discipline is why a backup containing only originals is
+sufficient, and why the restore path could be tested by rebuilding rather than by trusting.
+
+**Lesson 5 — boring constraints prevent spectacular failures.** One version number instead of
+three; a packaging whitelist instead of a copy; a pinned keystore instead of a fresh one per
+build; a cache name derived from content instead of a timestamp. None of these is intellectually
+interesting, and each of them removed a failure mode that would have surfaced only at the client.
+
+**Personal reflection.** I began this project believing the hard part would be building the
+application, and finished it believing the hard part is establishing that the application is
+right. My estimate for the report engine was wrong by roughly a factor of three: the engine
+itself was a week, and proving it was five. The highest-leverage single act of the project was
+asking the client for the *actual* delivered report rather than a description of it — an email
+that cost ten minutes and defined the next six weeks. And the discipline I will carry forward is
+the least glamorous one: when a suite is green, go and use the product the way the user will, on
+the device the user has, before believing anything.
+
 ---
 
 # §9 Conclusion and future work
@@ -414,9 +577,9 @@ https://doi.org/10.5220/0006353703440351
 Canny, S. (2013). *python-docx* [Computer software]. GitHub.
 https://github.com/python-openxml/python-docx
 
-Chen, T. Y., Cheung, S. C., & Yiu, S. M. (1998). *Metamorphic testing: A new approach for
-generating next test cases* (Technical Report HKUST-CS98-01). Hong Kong University of Science
-and Technology. https://doi.org/10.48550/arXiv.2002.12543
+Chen, T. Y., Cheung, S. C., & Yiu, S. M. (1998/2020). *Metamorphic testing: A new approach for
+generating next test cases* (Technical Report HKUST-CS98-01; archived version). Hong Kong
+University of Science and Technology. https://doi.org/10.48550/arXiv.2002.12543
 
 Davies, R., & Harty, C. (2013). Implementing "Site BIM": A case study of ICT innovation on a
 large hospital project. *Automation in Construction, 30*, 15–24.
