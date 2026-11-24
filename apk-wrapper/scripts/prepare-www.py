@@ -31,6 +31,16 @@ HERE = Path(__file__).resolve().parents[1]          # apk-wrapper/
 ROOT = HERE.parent                                   # 仓库根
 WEB = HERE / "www"
 
+# 交付包里"给人和服务器看"、但 APK 不需要的条目（相对包根）
+DOC_ENTRIES = (
+    "manual",                        # 用户操作手册的 12 张界面图
+    "deploy",                        # Nginx / IIS 配置样例
+    "客户部署与使用说明.md",
+    "用户操作手册.md",
+    "用户操作手册.pdf",
+    "serve_static.py",
+)
+
 
 def product_version() -> str:
     text = (ROOT / "web" / "app" / "product.js").read_text(encoding="utf-8")
@@ -68,13 +78,25 @@ def main() -> int:
             shutil.rmtree(WEB)
         shutil.copytree(staged, WEB)
 
+    # APK 里只需要**应用本身**：交付包里那些给人和服务器看的东西（手册、部署样例）
+    # 不该跟着打进安装包 —— 1.0.3 首次构建就因为没剔，APK 从 4.6 MB 涨到 6.6 MB。
+    skipped = []
+    for name in DOC_ENTRIES:
+        target = WEB / name
+        if target.is_dir():
+            skipped.extend(path.name for path in target.rglob("*") if path.is_file())
+            shutil.rmtree(target)
+        elif target.exists():
+            skipped.append(name)
+            target.unlink()
+
     files = sorted(path for path in WEB.rglob("*") if path.is_file())
     version_line = next((line for line in (WEB / "VERSION.txt").read_text(encoding="utf-8").splitlines()
                          if line.startswith("版本：")), "版本：?")
     packaged = version_line.split("：", 1)[1].strip().lstrip("v")
 
     print(f"交付包：{archive.relative_to(ROOT)}")
-    print(f"www    ：{len(files)} 个文件")
+    print(f"www    ：{len(files)} 个文件（已剔除 {len(skipped)} 个非应用文件：手册/部署样例）")
     if packaged != version:
         raise SystemExit(f"版本不一致：交付包里是 {packaged}，product.js 里是 {version}")
     print(f"✅ 版本一致：v{packaged}")

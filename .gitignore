@@ -35,3 +35,7 @@ docs/management/signed/
 # 从 CI 下载的调试包（不进仓库；用 .github/workflows/build-android.yml 现build）
 *.apk
 
+
+# 交付包（含 APK，10 MB 级；用 python tools/make_delivery_bundle.py 一键重建）
+dist/delivery/
+

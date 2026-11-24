@@ -81,11 +81,13 @@ def apk_web_version(apk: Path) -> tuple[str | None, int]:
             return None, 0
         text = archive.read(version_file).decode("utf-8")
         match = re.search(r"版本：v([0-9.]+)", text)
-        app_files = sum(1 for name in names if "/assets/public/" in name)
+        # Capacitor 把 www 放在 assets/public/ 下（路径没有前导斜杠）
+        app_files = sum(1 for name in names if name.startswith("assets/public/") and not name.endswith("/"))
         return (match.group(1) if match else None), app_files
 
 
 def write_readme(target: Path, version: str, apk: Path | None, rows: list[tuple[str, str, str]]) -> None:
+    apk_mb = apk.stat().st_size / 1024 / 1024 if apk else 0
     apk_block = (
         f"| `01-Android-APK/{apk.name}` | **手机安装用**（Android 7.0 及以上） | {sha256(apk)} |"
         if apk else
@@ -100,7 +102,7 @@ def write_readme(target: Path, version: str, apk: Path | None, rows: list[tuple[
         "",
         "| 场景 | 用这个 | 看这个 |",
         "| --- | --- | --- |",
-        "| 现场检测员要用手机记录 | `01-Android-APK/` 里的 **.apk**（约 4.6 MB） | 《用户操作手册》第 1 章（含微信改名成 `.apk.1` 的避坑） |",
+        f"| 现场检测员要用手机记录 | `01-Android-APK/` 里的 **.apk**（约 {apk_mb:.1f} MB） | 《用户操作手册》第 1 章（含微信改名成 `.apk.1` 的避坑） |",
         "| 内网部署、多人用浏览器打开 | `02-网页版部署包/` 里的 **.zip** | 《客户部署与使用说明》 |",
         "| 只想打印一份操作指引 | `03-文档/用户操作手册.pdf` | — |",
         "",
@@ -183,6 +185,8 @@ def main() -> int:
     if apk is not None:
         target_apk = bundle / "01-Android-APK" / apk.name
         shutil.copy2(apk, target_apk)
+        rows.append((target_apk.relative_to(bundle).as_posix(),
+                     "手机安装包（Android 7.0+，覆盖安装不丢数据）", sha256(target_apk)))
         (bundle / "01-Android-APK" / f"{apk.name}.sha256").write_text(
             f"{sha256(target_apk)}  {apk.name}\n", encoding="utf-8")
 
