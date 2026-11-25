@@ -30,14 +30,75 @@ back-end service.
 **Keywords:** curtain-wall inspection; offline-first PWA; document fidelity; differential
 testing; field data collection; mobile web
 
-# Figures and tables
 
-Figures: 5.1 architecture; 7.1 gate convergence; 7.2 gate sensitivity.
+# List of figures
 
-Tables: 4.1 as-is vs to-be; 4.2 functional requirements; 4.3 alternatives against the deciding
-criteria; 5.1 layers; 5.2 object stores; 5.3 the eleven patches; 7.1 verification layers;
-7.2 gate domains; 7.3 seven poisons; 7.4 jsdom blind spots; 7.5 the nine defects; 7.6 measured
-performance; 8.1 requirement coverage.
+| Number | Title | Page |
+| --- | --- | --- |
+| Figure 5.1 | System architecture: the frozen reference implementation and the offline client | 24 |
+| Figure 7.1 | Gate sensitivity: seven poisoned documents, each caught at a specific comparison path | 43 |
+| Figure 7.2 | Fidelity gate A convergence: 201 → 33 → 2 → 0 differences over four rounds | 44 |
+
+# List of tables
+
+| Number | Title | Page |
+| --- | --- | --- |
+| Table 4.1 | As-is versus to-be process | 13 |
+| Table 4.2 | Functional requirements (core) | 14 |
+| Table 4.3 | Alternatives against the deciding criteria | 19 |
+| Table 4.4 | Risk register with outcomes | 22 |
+| Table 5.1 | Layers, responsibilities and failure modes | 23 |
+| Table 5.2 | Object stores | 24 |
+| Table 5.3 | The eleven post-processing patches | 26 |
+| Table 7.1 | The verification layers | 40 |
+| Table 7.2 | What each gate compares, and what it cannot see | 41 |
+| Table 7.3 | The seven poisons | 42 |
+| Table 7.4 | What jsdom cannot see | 45 |
+| Table 7.5 | The nine defects | 47 |
+| Table 7.6 | Measured performance | 49 |
+| Table 8.1 | Requirement coverage at acceptance | 51 |
+
+# Abbreviations
+
+| Abbreviation | Expansion |
+| --- | --- |
+| ADR | Architecture decision record |
+| API | Application programming interface |
+| CDP | Chrome DevTools Protocol |
+| CI | Continuous integration |
+| DOCX / OOXML | Office Open XML (WordprocessingML) document format |
+| E2E | End-to-end (test) |
+| EXIF | Exchangeable image file format (camera metadata) |
+| IndexedDB | Browser-native transactional object database (W3C) |
+| jsdom | A JavaScript DOM implementation used for unit tests, not a browser |
+| PWA | Progressive web app |
+| SW | Service worker |
+| WBS | Work breakdown structure |
+| WASM | WebAssembly |
+
+# Acknowledgements
+
+I sincerely thank my project sponsor at MCC Central Research Institute of Building and
+Construction (Shenzhen) Co., Ltd. for the opportunity to conduct this applied project, and for
+supplying the element that made it possible: the institute's actual delivered inspection report,
+rather than a description of it.
+
+I thank my course professor for the Applied Technical Project course and for the mentoring that
+shaped this work, and the instructors of the NYU SPS Master's programme in Management and
+Systems, from whom I learned how to ask whether a system is *right*, not merely whether it runs.
+
+I also thank the inspection engineers who walked me through their field process and answered
+questions about details that no requirements document would have contained.
+
+# Declaration
+
+I grant powers of discretion to the Department, SPS, and NYU to allow this paper to be copied in
+part or in whole without further reference to me. This permission covers only copies made for
+study purposes or for inclusion in Department, SPS, and NYU research publications, subject to
+normal conditions of acknowledgement.
+
+Zeyu Jin
+New York, November 2026
 
 ---
 
@@ -479,6 +540,71 @@ better on some axis — A1 on device integration, A2 on cost, A4 on time-to-form
 fidelity or on the field constraint, and those two were non-negotiable. The decision is recorded
 as ADR-1 in §5.6, together with its consequences: device-local data, an explicit backup path, and
 a cache-fingerprint update mechanism.
+
+---
+
+## 4.7 Risks and mitigations
+
+Six risks were logged at project planning; two were not logged and materialised anyway. The
+table below lists all eight, with the mitigation as planned and, in the last column, what
+actually happened — because the gap between those two columns is the project's most honest
+result.
+
+**R1 — the client's report might not be reproducible mechanically.** Logged as the project's
+top risk, and correctly so. The mitigation was to attempt reproduction in Python *before*
+committing to a delivery architecture, to compare attribute by attribute rather than visually,
+and to freeze the first output that matched as a baseline. It was the right mitigation and it
+was still underestimated by a factor of three: closing the diff took four rounds and eleven
+distinct patch families.
+
+**R2 — data loss on the device.** Browser storage can be evicted, and uninstalling an Android
+package deletes its data. The mitigation was a whole-database backup, an explicit request for
+persistent storage, and no destructive action without a confirmation that states its blast
+radius. The mitigation was correct and, for a period, decorative: the restore path itself was
+broken and untested (§6.8, class 3). A mitigation that is never executed is a plan, not a
+control.
+
+**R3 — the runtime gap between the development environment and the phone.** Logged late and
+vaguely ("test on a phone before delivery"). It materialised twice — an export that required a
+Node global, and an entry point that only the real application used — which is what turned the
+vague mitigation into the environment ladder of §7.5.
+
+**R4 — scope creep.** The client's wider product line includes coating-thickness and glass-panel
+inspection, either of which would have doubled the report engine. The mitigation was a written
+scope confirmation, a traceability matrix with row-level status, and a standing rule that a new
+requirement displaces an existing one rather than joining it. Three modules were removed by
+agreement; no module was added.
+
+**R5 — sponsor availability.** Sign-off gates a deliverable that depends on a third party's
+calendar. The mitigation was to prepare the acceptance documents early, to keep the acceptance
+criteria testable rather than narrative, and to present evidence measured before the meeting
+rather than after it.
+
+**R6 — single-person team.** The bus factor is one. The mitigation was not documentation
+volume but reproducibility: one command reproduces every gate, the version is single-sourced,
+and the package rebuilds from a script. The risk remains for maintenance after handover.
+
+**R7 — Android distribution and signing (not logged).** Two days were lost to a CI pipeline
+that generated a fresh debug keystore on every run, making each build un-upgradable over the
+last one. The lesson is recorded as Lesson 5 in §8.7.
+
+**R8 — file-system and permission behaviour on Android 10+ (not logged).** Writing an export
+to a shared folder is a permission-sensitive operation whose rules changed with scoped storage.
+The mitigation was adopted during implementation rather than planned: use the media store,
+with a share-sheet fallback and a toast that names the path.
+
+**Table 4.4 — Risk register with outcomes**
+
+| # | Risk | Mitigation as planned | What happened |
+| --- | --- | --- | --- |
+| R1 | Report not reproducible | Python spike first; attribute diff; frozen baseline | Materialised at 3× the estimate; closed to zero differences |
+| R2 | Device data loss | Backup, persistent storage, guarded destructive actions | Backup existed but restore was broken and untested |
+| R3 | Runtime gap (Node vs phone) | "Test on a phone before delivery" | Materialised twice; became the environment ladder |
+| R4 | Scope creep | Written scope, traceability matrix, displacement rule | Held; three modules removed, none added |
+| R5 | Sponsor availability | Early acceptance documents, testable criteria | Held; signed within the planned window |
+| R6 | Single-person team | Reproducible gates, single-sourced version, scripted package | Held during the project; open after handover |
+| R7 | Android signing (not logged) | — | Two days of rework; keystore pinned in CI |
+| R8 | Scoped storage (not logged) | — | Media-store write with fallback and toast |
 
 ---
 
@@ -976,7 +1102,7 @@ fail, and it must fail on the right attribute (Table 7.3).
 | `bold_label` | Remove bold from an attachment label run | `run_props` | caught |
 | `image_media` | Replace the embedded image bytes | `images[…]` | caught |
 
-![Figure 7.2 — Gate sensitivity. Each of the poisoned documents is injected into a known-good report and must be caught at a specific comparison path, not merely rejected.](deliverables/prp/gate-sensitivity.png)
+![Figure 7.1 — Gate sensitivity. Each of the poisoned documents is injected into a known-good report and must be caught at a specific comparison path, not merely rejected.](deliverables/prp/gate-sensitivity.png)
 
 Asserting the *path* of the failure, not merely that the run turned red, is what makes this
 useful: it distinguishes "the gate noticed something" from "the gate noticed the right
@@ -991,7 +1117,7 @@ zero differences. The eleven residual discrepancies that were closed along the w
 attribute-level; none required a semantic deviation, which is why no "declared deviation"
 mechanism exists.
 
-![Figure 7.1 — Fidelity gate A convergence: 201 → 33 → 2 → 0 differences over four rounds, closed by eleven attribute-level patches without loosening the comparison.](deliverables/prp/gate-convergence.png)
+![Figure 7.2 — Fidelity gate A convergence: 201 → 33 → 2 → 0 differences over four rounds, closed by eleven attribute-level patches without loosening the comparison.](deliverables/prp/gate-convergence.png)
 
 Zero differences in our own comparator is still a self-referential claim, so the artefacts
 were re-verified with tools that share no code with the comparison: `python-docx` and Pillow
@@ -1182,7 +1308,7 @@ Three mechanisms carried the project, and each is transferable.
 deciding that the client's Word file *is* the requirement, and that any difference is a defect
 until proven otherwise. That decision converted a vague acceptance conversation into a
 diff list, and the diff list into a to-do list, converging 201 → 33 → 2 → 0 differences over
-four rounds (Figure 7.1). It also produced the eleven patches, each of which is a named,
+four rounds (Figure 7.2). It also produced the eleven patches, each of which is a named,
 tested fact about the template rather than a folk remedy.
 
 **Gates with disjoint domains.** Three comparisons were maintained instead of one, and the

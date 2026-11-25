@@ -256,6 +256,71 @@ a cache-fingerprint update mechanism.
 
 ---
 
+## 4.7 Risks and mitigations
+
+Six risks were logged at project planning; two were not logged and materialised anyway. The
+table below lists all eight, with the mitigation as planned and, in the last column, what
+actually happened — because the gap between those two columns is the project's most honest
+result.
+
+**R1 — the client's report might not be reproducible mechanically.** Logged as the project's
+top risk, and correctly so. The mitigation was to attempt reproduction in Python *before*
+committing to a delivery architecture, to compare attribute by attribute rather than visually,
+and to freeze the first output that matched as a baseline. It was the right mitigation and it
+was still underestimated by a factor of three: closing the diff took four rounds and eleven
+distinct patch families.
+
+**R2 — data loss on the device.** Browser storage can be evicted, and uninstalling an Android
+package deletes its data. The mitigation was a whole-database backup, an explicit request for
+persistent storage, and no destructive action without a confirmation that states its blast
+radius. The mitigation was correct and, for a period, decorative: the restore path itself was
+broken and untested (§6.8, class 3). A mitigation that is never executed is a plan, not a
+control.
+
+**R3 — the runtime gap between the development environment and the phone.** Logged late and
+vaguely ("test on a phone before delivery"). It materialised twice — an export that required a
+Node global, and an entry point that only the real application used — which is what turned the
+vague mitigation into the environment ladder of §7.5.
+
+**R4 — scope creep.** The client's wider product line includes coating-thickness and glass-panel
+inspection, either of which would have doubled the report engine. The mitigation was a written
+scope confirmation, a traceability matrix with row-level status, and a standing rule that a new
+requirement displaces an existing one rather than joining it. Three modules were removed by
+agreement; no module was added.
+
+**R5 — sponsor availability.** Sign-off gates a deliverable that depends on a third party's
+calendar. The mitigation was to prepare the acceptance documents early, to keep the acceptance
+criteria testable rather than narrative, and to present evidence measured before the meeting
+rather than after it.
+
+**R6 — single-person team.** The bus factor is one. The mitigation was not documentation
+volume but reproducibility: one command reproduces every gate, the version is single-sourced,
+and the package rebuilds from a script. The risk remains for maintenance after handover.
+
+**R7 — Android distribution and signing (not logged).** Two days were lost to a CI pipeline
+that generated a fresh debug keystore on every run, making each build un-upgradable over the
+last one. The lesson is recorded as Lesson 5 in §8.7.
+
+**R8 — file-system and permission behaviour on Android 10+ (not logged).** Writing an export
+to a shared folder is a permission-sensitive operation whose rules changed with scoped storage.
+The mitigation was adopted during implementation rather than planned: use the media store,
+with a share-sheet fallback and a toast that names the path.
+
+**Table 4.4 — Risk register with outcomes**
+
+| # | Risk | Mitigation as planned | What happened |
+| --- | --- | --- | --- |
+| R1 | Report not reproducible | Python spike first; attribute diff; frozen baseline | Materialised at 3× the estimate; closed to zero differences |
+| R2 | Device data loss | Backup, persistent storage, guarded destructive actions | Backup existed but restore was broken and untested |
+| R3 | Runtime gap (Node vs phone) | "Test on a phone before delivery" | Materialised twice; became the environment ladder |
+| R4 | Scope creep | Written scope, traceability matrix, displacement rule | Held; three modules removed, none added |
+| R5 | Sponsor availability | Early acceptance documents, testable criteria | Held; signed within the planned window |
+| R6 | Single-person team | Reproducible gates, single-sourced version, scripted package | Held during the project; open after handover |
+| R7 | Android signing (not logged) | — | Two days of rework; keystore pinned in CI |
+| R8 | Scoped storage (not logged) | — | Media-store write with fallback and toast |
+
+---
+
 ## 中文对照（§4 审阅要点）
 
 **4.1 利益相关者与现状流程**：写了四类人（现场检测员 / 检测部负责人 / 报告审核与甲方签字人 /
@@ -275,8 +340,6 @@ a cache-fingerprint update mechanism.
 **需要你确认的两处**：① R3 里"截面尺寸要求"是单条（立柱）/三条（横梁）——与需求 v2 一致；
 ② 我把"膜厚/玻璃检测"也列在"不做"里（原始需求里它们是别的产品线外观），如果答辩时想强调
 "本工具只做幕墙截面+缺陷"，这条留着有用。
-
----
 
 # Part C — §5 System Design (~1,500 words)
 

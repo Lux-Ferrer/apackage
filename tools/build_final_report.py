@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from pathlib import Path
@@ -53,11 +54,11 @@ FIGURES = {
         "and the data live."),
     "sensitivity": (
         ROOT / "deliverables/prp/gate-sensitivity.png",
-        "Figure 7.2 — Gate sensitivity. Each of the poisoned documents is injected into a known-good "
+        "Figure 7.1 — Gate sensitivity. Each of the poisoned documents is injected into a known-good "
         "report and must be caught at a specific comparison path, not merely rejected."),
     "convergence": (
         ROOT / "deliverables/prp/gate-convergence.png",
-        "Figure 7.1 — Fidelity gate A convergence: 201 → 33 → 2 → 0 differences over four rounds, "
+        "Figure 7.2 — Fidelity gate A convergence: 201 → 33 → 2 → 0 differences over four rounds, "
         "closed by eleven attribute-level patches without loosening the comparison."),
 }
 
@@ -82,6 +83,52 @@ def drop_cn_notes(text: str) -> str:
     return re.sub(r"\n## 中文对照.*?(?=\n# |\Z)", "\n", text, flags=re.S)
 
 
+PAGES_JSON = ROOT / "_work" / "report-pages.json"
+
+LIST_ITEMS = {
+    "LOF": [
+        ("Figure 5.1", "System architecture: the frozen reference implementation and the offline client"),
+        ("Figure 7.1", "Gate sensitivity: seven poisoned documents, each caught at a specific comparison path"),
+        ("Figure 7.2", "Fidelity gate A convergence: 201 → 33 → 2 → 0 differences over four rounds"),
+    ],
+    "LOT": [
+        ("Table 4.1", "As-is versus to-be process"),
+        ("Table 4.2", "Functional requirements (core)"),
+        ("Table 4.3", "Alternatives against the deciding criteria"),
+        ("Table 4.4", "Risk register with outcomes"),
+        ("Table 5.1", "Layers, responsibilities and failure modes"),
+        ("Table 5.2", "Object stores"),
+        ("Table 5.3", "The eleven post-processing patches"),
+        ("Table 7.1", "The verification layers"),
+        ("Table 7.2", "What each gate compares, and what it cannot see"),
+        ("Table 7.3", "The seven poisons"),
+        ("Table 7.4", "What jsdom cannot see"),
+        ("Table 7.5", "The nine defects"),
+        ("Table 7.6", "Measured performance"),
+        ("Table 8.1", "Requirement coverage at acceptance"),
+    ],
+}
+
+
+def inject_lists(text: str) -> str:
+    """把 <!--LOF--> / <!--LOT--> 换成真正的图表清单（页码来自 _work/report-pages.json）。
+
+    页码是"建成之后从 PDF 里量出来再回填"的：先跑一遍不带页码的，量完再回填重跑。
+    两遍之间行数不变，所以页码不会因为清单本身而漂移（脚本会自己校验）。
+    """
+    pages = {}
+    if PAGES_JSON.exists():
+        pages = json.loads(PAGES_JSON.read_text(encoding="utf-8"))
+
+    for key, items in LIST_ITEMS.items():
+        rows = ["| Number | Title | Page |", "| --- | --- | --- |"]
+        for number, title in items:
+            page = pages.get(number, "")
+            rows.append(f"| {number} | {title} | {page} |")
+        text = text.replace(f"<!--{key}-->", "\n".join(rows))
+    return text
+
+
 def assemble() -> str:
     for name, path in SOURCES.items():
         if not path.exists():
@@ -92,12 +139,11 @@ def assemble() -> str:
     ch67 = SOURCES["ch67"].read_text(encoding="utf-8")
 
     head = slice_between(front, "# §1 Front matter", "# §8 Results")
-    # 前置部分重整：封面由 docx 生成器画，目录用 TOC 域，所以这里只留摘要与图表清单
+    # 前置部分重整：封面由 docx 生成器画，目录用 TOC 域，其余（图表清单/缩写/致谢/声明）原样保留
     head = head[head.index("## 1.2 Abstract"):]
     head = head.replace("## 1.2 Abstract", "# Abstract", 1)
-    contents_start = head.index("## 1.3 Contents, figures and tables")
-    contents_end = head.index("Figures: ")
-    head = head[:contents_start] + "# Figures and tables\n\n" + head[contents_end:]
+    head = head.replace("## 1.3 Front matter\n", "")
+    head = inject_lists(head)
     # 草稿里每章末尾都有"中文对照"审阅块（内部用），合稿时先整体剔除再切片
     mid45 = drop_cn_notes(ch45)[len(ch45[: ch45.index("# Part B — §4")]):]
     mid67 = drop_cn_notes(ch67)
@@ -182,9 +228,37 @@ def set_base_styles(document: Document) -> None:
         style.paragraph_format.keep_with_next = True
 
 
-def add_page_number_footer(section) -> None:
+def set_page_numbering(section, fmt: str | None = None, start: int | None = None) -> None:
+    """给某一节设置页码格式（lowerRoman / decimal）与起始值。
+
+    `w:pgNumType` 在 CT_SectPr 里有固定次序（pgSz → pgMar → … → pgNumType → cols → docGrid），
+    所以不能直接 append，必须插在 cols/docGrid 之前，否则 Word 会报文档损坏。
+    """
+    sect_pr = section._sectPr
+    existing = sect_pr.find(qn("w:pgNumType"))
+    if existing is not None:
+        sect_pr.remove(existing)
+    element = OxmlElement("w:pgNumType")
+    if fmt:
+        element.set(qn("w:fmt"), fmt)
+    if start is not None:
+        element.set(qn("w:start"), str(start))
+    for tag in ("w:cols", "w:docGrid", "w:printerSettings"):
+        anchor = sect_pr.find(qn(tag))
+        if anchor is not None:
+            anchor.addprevious(element)
+            return
+    sect_pr.append(element)
+
+
+def add_page_number_footer(section, numbering: bool = True) -> None:
+    """页脚：只有居中的页码（规范 41）。numbering=False 时页脚留空（封面页）。"""
     footer = section.footer
+    footer.is_linked_to_previous = False
     paragraph = footer.paragraphs[0]
+    paragraph.text = ""
+    if not numbering:
+        return
     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = paragraph.add_run()
     field_begin = OxmlElement("w:fldChar")
@@ -317,8 +391,18 @@ def convert(markdown: str) -> Document:
     section.top_margin = Inches(1.0)
     section.bottom_margin = Inches(1.0)
     set_base_styles(document)
-    add_page_number_footer(section)
+
+    # 规范 41：封面不编号、也不带页脚；前置页用罗马数字；正文从阿拉伯数字 1 开始
+    add_page_number_footer(section, numbering=False)
     add_title_page(document)
+
+    front = document.add_section(WD_SECTION.NEW_PAGE)
+    front.left_margin = Inches(1.5)
+    front.right_margin = Inches(1.0)
+    front.top_margin = Inches(1.0)
+    front.bottom_margin = Inches(1.0)
+    set_page_numbering(front, fmt="lowerRoman", start=1)
+    add_page_number_footer(front)
 
     # 目录页：用普通粗体段落（不用 Heading，避免目录把自己列进去）
     toc_title = document.add_paragraph()
@@ -362,7 +446,17 @@ def convert(markdown: str) -> Document:
             level = len(heading[1])
             text = heading[2].strip()
             if level == 1:
-                if not first_heading:
+                if text.startswith("§2"):
+                    # 正文起点：切到新一节，页码改用阿拉伯数字并从 1 开始
+                    body = document.add_section(WD_SECTION.NEW_PAGE)
+                    body.left_margin = Inches(1.5)
+                    body.right_margin = Inches(1.0)
+                    body.top_margin = Inches(1.0)
+                    body.bottom_margin = Inches(1.0)
+                    set_page_numbering(body, fmt="decimal", start=1)
+                    add_page_number_footer(body)
+                    first_heading = False
+                elif not first_heading:
                     document.add_page_break()
                 first_heading = False
                 if text.startswith("#"):

@@ -53,27 +53,57 @@ back-end service.
 **Keywords:** curtain-wall inspection; offline-first PWA; document fidelity; differential
 testing; field data collection; mobile web
 
-## 1.3 Contents, figures and tables
+## 1.3 Front matter
 
-| Chapter | Title |
+# List of figures
+
+<!--LOF-->
+
+# List of tables
+
+<!--LOT-->
+
+# Abbreviations
+
+| Abbreviation | Expansion |
 | --- | --- |
-| 2 | Introduction |
-| 3 | Related work |
-| 4 | Requirements and analysis |
-| 5 | System design |
-| 6 | Implementation |
-| 7 | Evaluation and quality assurance |
-| 8 | Results, discussion and limitations |
-| 9 | Conclusion and future work |
-| — | References |
-| — | Appendices A–E |
+| ADR | Architecture decision record |
+| API | Application programming interface |
+| CDP | Chrome DevTools Protocol |
+| CI | Continuous integration |
+| DOCX / OOXML | Office Open XML (WordprocessingML) document format |
+| E2E | End-to-end (test) |
+| EXIF | Exchangeable image file format (camera metadata) |
+| IndexedDB | Browser-native transactional object database (W3C) |
+| jsdom | A JavaScript DOM implementation used for unit tests, not a browser |
+| PWA | Progressive web app |
+| SW | Service worker |
+| WBS | Work breakdown structure |
+| WASM | WebAssembly |
 
-Figures: 5.1 architecture; 7.1 gate convergence; 7.2 gate sensitivity.
+# Acknowledgements
 
-Tables: 4.1 as-is vs to-be; 4.2 functional requirements; 4.3 alternatives against the deciding
-criteria; 5.1 layers; 5.2 object stores; 5.3 the eleven patches; 7.1 verification layers;
-7.2 gate domains; 7.3 seven poisons; 7.4 jsdom blind spots; 7.5 the nine defects; 7.6 measured
-performance; 8.1 requirement coverage.
+I sincerely thank my project sponsor at MCC Central Research Institute of Building and
+Construction (Shenzhen) Co., Ltd. for the opportunity to conduct this applied project, and for
+supplying the element that made it possible: the institute's actual delivered inspection report,
+rather than a description of it.
+
+I thank my course professor for the Applied Technical Project course and for the mentoring that
+shaped this work, and the instructors of the NYU SPS Master's programme in Management and
+Systems, from whom I learned how to ask whether a system is *right*, not merely whether it runs.
+
+I also thank the inspection engineers who walked me through their field process and answered
+questions about details that no requirements document would have contained.
+
+# Declaration
+
+I grant powers of discretion to the Department, SPS, and NYU to allow this paper to be copied in
+part or in whole without further reference to me. This permission covers only copies made for
+study purposes or for inclusion in Department, SPS, and NYU research publications, subject to
+normal conditions of acknowledgement.
+
+Zeyu Jin
+New York, November 2026
 
 ---
 
@@ -338,7 +368,7 @@ Three mechanisms carried the project, and each is transferable.
 deciding that the client's Word file *is* the requirement, and that any difference is a defect
 until proven otherwise. That decision converted a vague acceptance conversation into a
 diff list, and the diff list into a to-do list, converging 201 → 33 → 2 → 0 differences over
-four rounds (Figure 7.1). It also produced the eleven patches, each of which is a named,
+four rounds (Figure 7.2). It also produced the eleven patches, each of which is a named,
 tested fact about the template rather than a folk remedy.
 
 **Gates with disjoint domains.** Three comparisons were maintained instead of one, and the
