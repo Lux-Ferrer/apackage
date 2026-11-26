@@ -63,23 +63,6 @@ testing; field data collection; mobile web
 
 <!--LOT-->
 
-# Abbreviations
-
-| Abbreviation | Expansion |
-| --- | --- |
-| ADR | Architecture decision record |
-| API | Application programming interface |
-| CDP | Chrome DevTools Protocol |
-| CI | Continuous integration |
-| DOCX / OOXML | Office Open XML (WordprocessingML) document format |
-| E2E | End-to-end (test) |
-| EXIF | Exchangeable image file format (camera metadata) |
-| IndexedDB | Browser-native transactional object database (W3C) |
-| jsdom | A JavaScript DOM implementation used for unit tests, not a browser |
-| PWA | Progressive web app |
-| SW | Service worker |
-| WBS | Work breakdown structure |
-| WASM | WebAssembly |
 
 # Acknowledgements
 
@@ -106,6 +89,24 @@ Zeyu Jin
 New York, November 2026
 
 ---
+
+# Abbreviations
+
+| Abbreviation | Expansion |
+| --- | --- |
+| ADR | Architecture decision record |
+| API | Application programming interface |
+| CDP | Chrome DevTools Protocol |
+| CI | Continuous integration |
+| DOCX / OOXML | Office Open XML (WordprocessingML) document format |
+| E2E | End-to-end (test) |
+| EXIF | Exchangeable image file format (camera metadata) |
+| IndexedDB | Browser-native transactional object database (W3C) |
+| jsdom | A JavaScript DOM implementation used for unit tests, not a browser |
+| PWA | Progressive web app |
+| SW | Service worker |
+| WBS | Work breakdown structure |
+| WASM | WebAssembly |
 
 # §2 Introduction
 
@@ -411,9 +412,9 @@ with an agreed adaptation (the report person is taken from a local profile inste
 session; the profile page carries no department code), and one optional item (single-report JSON
 export) not built because no consumer existed — 46 = 43 + 2 + 1. A further two rows, plus three
 modules (accounts, quick notes, statistics), were removed from scope in writing and are not part
-of the forty-six. Table 8.1 summarises.
+of the forty-six. Table 8-1 summarises.
 
-**Table 8.1 — Requirement coverage at acceptance**
+**Table 8-1 — Requirement coverage at acceptance**
 
 | Category | Count | Note |
 | --- | --- | --- |
@@ -431,7 +432,7 @@ Three mechanisms carried the project, and each is transferable.
 deciding that the client's Word file *is* the requirement, and that any difference is a defect
 until proven otherwise. That decision converted a vague acceptance conversation into a
 diff list, and the diff list into a to-do list, converging 201 → 33 → 2 → 0 differences over
-four rounds (Figure 7.2). It also produced the eleven patches, each of which is a named,
+four rounds (Fig. 7-2). It also produced the eleven patches, each of which is a named,
 tested fact about the template rather than a folk remedy.
 
 **Gates with disjoint domains.** Three comparisons were maintained instead of one, and the
@@ -440,7 +441,7 @@ comparison disagreed about a merge encoding (§5.3), and once when the JavaScrip
 disagreed with both Python comparators over a property neither had normalised. A single gate
 would have reported green in both cases.
 
-**Moving the environment rather than widening the suite.** The nine defects in Table 7.5 were
+**Moving the environment rather than widening the suite.** The nine defects in Table 7-5 were
 not found by writing more unit tests; they were found by executing the same product in a
 browser and then on a phone. In hindsight this is the cheapest defect-detection investment in
 the project: two days of environment work produced three priority-0 fixes that a thousand
@@ -775,7 +776,7 @@ by the sponsor, and the four pages reproduce the originals without retouching.
 
 ## Appendix B — The eleven post-processing patches
 
-Appendix B reproduces Table 5.3 with the exact OOXML attribute each patch rewrites, so that the
+Appendix B reproduces Table 5-3 with the exact OOXML attribute each patch rewrites, so that the
 patch chain can be re-derived from the specification alone: document grid line pitch; table
 look attributes and their boolean normalisation; row-height rule attribute; table cell margins;
 continuation cells of merged rows (vertical alignment, paragraph justification and header line

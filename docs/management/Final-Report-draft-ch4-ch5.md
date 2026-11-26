@@ -86,9 +86,9 @@ readings is recomputed by hand at step three and again at step four; photographs
 chat application and are re-selected by filename at step four; the table layout is rebuilt
 per project because the template is edited rather than instantiated.
 
-Table 4.1 contrasts this with the to-be process.
+Table 4-1 contrasts this with the to-be process.
 
-**Table 4.1 — As-is vs. to-be**
+**Table 4-1 — As-is vs. to-be**
 
 | Dimension | As-is | To-be |
 | --- | --- | --- |
@@ -105,13 +105,13 @@ Table 4.1 contrasts this with the to-be process.
 Requirements were elicited from the client's existing report and from two formal online
 working sessions with the inspection group, then frozen in a traceability matrix. That matrix
 holds **forty-six in-scope requirement rows** — forty-three implemented as specified, two
-implemented with an agreed adaptation, one optional item not built (Table 8.1) — which is more
-granular than a reader needs. Table 4.2 therefore groups those rows into the **fourteen
+implemented with an agreed adaptation, one optional item not built (Table 8-1) — which is more
+granular than a reader needs. Table 4-2 therefore groups those rows into the **fourteen
 capabilities** that the rest of the paper refers to; each R-number below stands for one to four
 matrix rows of the same capability. "Evidence" names the artifact that demonstrates the
 requirement rather than asserting it.
 
-**Table 4.2 — Functional requirements (core)**
+**Table 4-2 — Functional requirements (core)**
 
 | ID | Requirement | Acceptance evidence |
 | --- | --- | --- |
@@ -192,7 +192,7 @@ keyboard and back key included; (8) the delivery package deploys on a plain stat
 
 Five architectures were considered before the design in §5 was fixed. They are compared against
 the criteria that actually decide this project — not against generic criteria such as "modern"
-or "scalable", but against the six properties a delivery to this client depends on (Table 4.3).
+or "scalable", but against the six properties a delivery to this client depends on (Table 4-3).
 
 **A1 — Native Android application (Kotlin, Room, system camera).** The strongest option on
 device integration: the camera, the file system and background behavior are all first-class,
@@ -237,7 +237,7 @@ rejected in ADR-2: it adds roughly a megabyte of payload, requires a second pers
 (origin-private file system for durability), and buys SQL semantics that this data model — four
 tables and a blob store — does not need.
 
-**Table 4.3 — Alternatives against the deciding criteria**
+**Table 4-3 — Alternatives against the deciding criteria**
 
 | Criterion | A1 Native | A2 Server web | A3 Desktop | A4 Low-code | A5 PWA + IndexedDB |
 | --- | --- | --- | --- | --- | --- |
@@ -310,7 +310,7 @@ to a shared folder is a permission-sensitive operation whose rules changed with 
 The mitigation was adopted during implementation rather than planned: use the media store,
 with a share-sheet fallback and a toast that names the path.
 
-**Table 4.4 — Risk register with outcomes**
+**Table 4-4 — Risk register with outcomes**
 
 | # | Risk | Mitigation as planned | What happened |
 | --- | --- | --- | --- |
@@ -359,7 +359,7 @@ library serialises them to OOXML, and a deterministic post-processor rewrites el
 attribute families so the output matches the approved template exactly. The **cache layer**
 is a service worker keyed by a content fingerprint.
 
-**Table 5.1 — Layers, responsibilities and failure modes**
+**Table 5-1 — Layers, responsibilities and failure modes**
 
 | Layer | Responsibility | Depends on | Characteristic failure |
 | --- | --- | --- | --- |
@@ -380,11 +380,11 @@ the fidelity work in §5.3 is architectural rather than cosmetic.
 
 The database has six object stores: four business tables (`projects`, `records`,
 `readings`, `defects`), the binary table `images`, and `meta` for schema version and the
-inspector profile (Table 5.2). Business keys are auto-increment integers; `images` is keyed
+inspector profile (Table 5-2). Business keys are auto-increment integers; `images` is keyed
 by content-derived id; `meta` is keyed by name. `DB_VERSION` is 1, and the profile was
 placed in `meta` specifically so that adding it did not require a schema migration.
 
-**Table 5.2 — Object stores**
+**Table 5-2 — Object stores**
 
 | Store | Key | Indexes | Referential behavior |
 | --- | --- | --- | --- |
@@ -422,10 +422,10 @@ decomposes into three artifacts:
    detection face, vertical merge for the member columns, and a second merge pass that
    groups consecutive rows sharing the same requirement clause — so one clause is written
    once and centered across its block, while a change of clause starts a new cell.
-3. **Eleven deterministic patches** applied to the serialised OOXML (Table 5.3). They exist
+3. **Eleven deterministic patches** applied to the serialised OOXML (Table 5-3). They exist
    because a general-purpose DOCX library emits *valid* markup, not *identical* markup.
 
-**Table 5.3 — The eleven post-processing patches**
+**Table 5-3 — The eleven post-processing patches**
 
 | # | Attribute family | Library output vs. approved template | Patch |
 | --- | --- | --- | --- |

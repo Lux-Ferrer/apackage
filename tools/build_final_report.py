@@ -52,17 +52,17 @@ SEMESTER = "Fall, 2026"
 FIGURES = {
     "architecture": (
         ROOT / "deliverables/prp/architecture.png",
-        "Figure 5.1 — System architecture. Left: the frozen Flask reference implementation that "
+        "Fig. 5-1 — System architecture. Left: the frozen Flask reference implementation that "
         "produced the accepted report. Right: the offline client that had to reproduce it. Both write "
         "the same Word document from the same layout specification; the difference is where the work "
         "and the data live."),
     "sensitivity": (
         ROOT / "deliverables/prp/gate-sensitivity.png",
-        "Figure 7.1 — Gate sensitivity. Each of the poisoned documents is injected into a known-good "
+        "Fig. 7-1 — Gate sensitivity. Each of the poisoned documents is injected into a known-good "
         "report and must be caught at a specific comparison path, not merely rejected."),
     "convergence": (
         ROOT / "deliverables/prp/gate-convergence.png",
-        "Figure 7.2 — Fidelity gate A convergence: 201 → 33 → 2 → 0 differences over four rounds, "
+        "Fig. 7-2 — Fidelity gate A convergence: 201 → 33 → 2 → 0 differences over four rounds, "
         "closed by eleven attribute-level patches without loosening the comparison."),
 }
 
@@ -91,25 +91,25 @@ PAGES_JSON = ROOT / "_work" / "report-pages.json"
 
 LIST_ITEMS = {
     "LOF": [
-        ("Figure 5.1", "System architecture: the frozen reference implementation and the offline client"),
-        ("Figure 7.1", "Gate sensitivity: seven poisoned documents, each caught at a specific comparison path"),
-        ("Figure 7.2", "Fidelity gate A convergence: 201 → 33 → 2 → 0 differences over four rounds"),
+        ("Fig. 5-1", "System architecture: the frozen reference implementation and the offline client"),
+        ("Fig. 7-1", "Gate sensitivity: seven poisoned documents, each caught at a specific comparison path"),
+        ("Fig. 7-2", "Fidelity gate A convergence: 201 → 33 → 2 → 0 differences over four rounds"),
     ],
     "LOT": [
-        ("Table 4.1", "As-is versus to-be process"),
-        ("Table 4.2", "Functional requirements (core)"),
-        ("Table 4.3", "Alternatives against the deciding criteria"),
-        ("Table 4.4", "Risk register with outcomes"),
-        ("Table 5.1", "Layers, responsibilities and failure modes"),
-        ("Table 5.2", "Object stores"),
-        ("Table 5.3", "The eleven post-processing patches"),
-        ("Table 7.1", "The verification layers"),
-        ("Table 7.2", "What each gate compares, and what it cannot see"),
-        ("Table 7.3", "The seven poisons"),
-        ("Table 7.4", "What jsdom cannot see"),
-        ("Table 7.5", "The nine defects"),
-        ("Table 7.6", "Measured performance"),
-        ("Table 8.1", "Requirement coverage at acceptance"),
+        ("Table 4-1", "As-is versus to-be process"),
+        ("Table 4-2", "Functional requirements (core)"),
+        ("Table 4-3", "Alternatives against the deciding criteria"),
+        ("Table 4-4", "Risk register with outcomes"),
+        ("Table 5-1", "Layers, responsibilities and failure modes"),
+        ("Table 5-2", "Object stores"),
+        ("Table 5-3", "The eleven post-processing patches"),
+        ("Table 7-1", "The verification layers"),
+        ("Table 7-2", "What each gate compares, and what it cannot see"),
+        ("Table 7-3", "The seven poisons"),
+        ("Table 7-4", "What jsdom cannot see"),
+        ("Table 7-5", "The nine defects"),
+        ("Table 7-6", "Measured performance"),
+        ("Table 8-1", "Requirement coverage at acceptance"),
     ],
 }
 
@@ -220,7 +220,7 @@ def set_base_styles(document: Document) -> None:
     # 中文字体（正文里偶有中文术语）
     normal.element.rPr.rFonts.set(qn("w:eastAsia"), "SimSun")
 
-    for level, size in ((1, 18), (2, 14), (3, 12.5)):
+    for level, size in ((1, 16), (2, 14), (3, 12)):
         style = document.styles[f"Heading {level}"]
         style.font.name = "Calibri"
         style.font.size = Pt(size)
@@ -397,8 +397,8 @@ def convert(markdown: str) -> Document:
     section = document.sections[0]
     section.left_margin = Inches(1.5)
     section.right_margin = Inches(1.0)
-    section.top_margin = Inches(1.0)
-    section.bottom_margin = Inches(1.0)
+    section.top_margin = Inches(1.5)
+    section.bottom_margin = Inches(1.5)
     set_base_styles(document)
 
     # 规范 41：封面不编号、也不带页脚；前置页用罗马数字；正文从阿拉伯数字 1 开始
@@ -408,8 +408,8 @@ def convert(markdown: str) -> Document:
     front = document.add_section(WD_SECTION.NEW_PAGE)
     front.left_margin = Inches(1.5)
     front.right_margin = Inches(1.0)
-    front.top_margin = Inches(1.0)
-    front.bottom_margin = Inches(1.0)
+    front.top_margin = Inches(1.5)
+    front.bottom_margin = Inches(1.5)
     set_page_numbering(front, fmt="lowerRoman", start=1)
     add_page_number_footer(front)
 
@@ -428,6 +428,7 @@ def convert(markdown: str) -> Document:
     lines = markdown.split("\n")
     index = 0
     first_heading = True
+    in_abstract = False
     while index < len(lines):
         line = lines[index]
 
@@ -460,8 +461,8 @@ def convert(markdown: str) -> Document:
                     body = document.add_section(WD_SECTION.NEW_PAGE)
                     body.left_margin = Inches(1.5)
                     body.right_margin = Inches(1.0)
-                    body.top_margin = Inches(1.0)
-                    body.bottom_margin = Inches(1.0)
+                    body.top_margin = Inches(1.5)
+                    body.bottom_margin = Inches(1.5)
                     set_page_numbering(body, fmt="decimal", start=1)
                     add_page_number_footer(body)
                     first_heading = False
@@ -470,6 +471,7 @@ def convert(markdown: str) -> Document:
                 first_heading = False
                 if text.startswith("#"):
                     text = text.lstrip("# ").strip()
+            in_abstract = level == 1 and text.strip().lower() == "abstract"
             paragraph = document.add_heading(level=level)
             add_runs(paragraph, text)
             index += 1
@@ -507,6 +509,9 @@ def convert(markdown: str) -> Document:
             block.append(lines[index].strip())
             index += 1
         paragraph = document.add_paragraph()
+        if in_abstract:
+            # 指南 [33]：摘要约 300 词、单倍行距
+            paragraph.paragraph_format.line_spacing_rule = WD_LINE_SPACING.SINGLE
         add_runs(paragraph, " ".join(block))
 
     return document

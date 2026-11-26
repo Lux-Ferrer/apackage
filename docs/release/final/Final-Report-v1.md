@@ -35,46 +35,29 @@ testing; field data collection; mobile web
 
 | Number | Title | Page |
 | --- | --- | --- |
-| Figure 5.1 | System architecture: the frozen reference implementation and the offline client | 26 |
-| Figure 7.1 | Gate sensitivity: seven poisoned documents, each caught at a specific comparison path | 45 |
-| Figure 7.2 | Fidelity gate A convergence: 201 → 33 → 2 → 0 differences over four rounds | 46 |
+| Fig. 5-1 | System architecture: the frozen reference implementation and the offline client | 30 |
+| Fig. 7-1 | Gate sensitivity: seven poisoned documents, each caught at a specific comparison path | 53 |
+| Fig. 7-2 | Fidelity gate A convergence: 201 → 33 → 2 → 0 differences over four rounds | 54 |
 
 # List of tables
 
 | Number | Title | Page |
 | --- | --- | --- |
-| Table 4.1 | As-is versus to-be process | 15 |
-| Table 4.2 | Functional requirements (core) | 16 |
-| Table 4.3 | Alternatives against the deciding criteria | 21 |
-| Table 4.4 | Risk register with outcomes | 24 |
-| Table 5.1 | Layers, responsibilities and failure modes | 25 |
-| Table 5.2 | Object stores | 26 |
-| Table 5.3 | The eleven post-processing patches | 28 |
-| Table 7.1 | The verification layers | 42 |
-| Table 7.2 | What each gate compares, and what it cannot see | 44 |
-| Table 7.3 | The seven poisons | 45 |
-| Table 7.4 | What jsdom cannot see | 47 |
-| Table 7.5 | The nine defects | 50 |
-| Table 7.6 | Measured performance | 51 |
-| Table 8.1 | Requirement coverage at acceptance | 54 |
+| Table 4-1 | As-is versus to-be process | 17 |
+| Table 4-2 | Functional requirements (core) | 18 |
+| Table 4-3 | Alternatives against the deciding criteria | 24 |
+| Table 4-4 | Risk register with outcomes | 27 |
+| Table 5-1 | Layers, responsibilities and failure modes | 29 |
+| Table 5-2 | Object stores | 31 |
+| Table 5-3 | The eleven post-processing patches | 33 |
+| Table 7-1 | The verification layers | 49 |
+| Table 7-2 | What each gate compares, and what it cannot see | 51 |
+| Table 7-3 | The seven poisons | 52 |
+| Table 7-4 | What jsdom cannot see | 55 |
+| Table 7-5 | The nine defects | 58 |
+| Table 7-6 | Measured performance | 60 |
+| Table 8-1 | Requirement coverage at acceptance | 62 |
 
-# Abbreviations
-
-| Abbreviation | Expansion |
-| --- | --- |
-| ADR | Architecture decision record |
-| API | Application programming interface |
-| CDP | Chrome DevTools Protocol |
-| CI | Continuous integration |
-| DOCX / OOXML | Office Open XML (WordprocessingML) document format |
-| E2E | End-to-end (test) |
-| EXIF | Exchangeable image file format (camera metadata) |
-| IndexedDB | Browser-native transactional object database (W3C) |
-| jsdom | A JavaScript DOM implementation used for unit tests, not a browser |
-| PWA | Progressive web app |
-| SW | Service worker |
-| WBS | Work breakdown structure |
-| WASM | WebAssembly |
 
 # Acknowledgements
 
@@ -101,6 +84,24 @@ Zeyu Jin
 New York, November 2026
 
 ---
+
+# Abbreviations
+
+| Abbreviation | Expansion |
+| --- | --- |
+| ADR | Architecture decision record |
+| API | Application programming interface |
+| CDP | Chrome DevTools Protocol |
+| CI | Continuous integration |
+| DOCX / OOXML | Office Open XML (WordprocessingML) document format |
+| E2E | End-to-end (test) |
+| EXIF | Exchangeable image file format (camera metadata) |
+| IndexedDB | Browser-native transactional object database (W3C) |
+| jsdom | A JavaScript DOM implementation used for unit tests, not a browser |
+| PWA | Progressive web app |
+| SW | Service worker |
+| WBS | Work breakdown structure |
+| WASM | WebAssembly |
 
 # §2 Introduction
 
@@ -435,9 +436,9 @@ readings is recomputed by hand at step three and again at step four; photographs
 chat application and are re-selected by filename at step four; the table layout is rebuilt
 per project because the template is edited rather than instantiated.
 
-Table 4.1 contrasts this with the to-be process.
+Table 4-1 contrasts this with the to-be process.
 
-**Table 4.1 — As-is vs. to-be**
+**Table 4-1 — As-is vs. to-be**
 
 | Dimension | As-is | To-be |
 | --- | --- | --- |
@@ -454,13 +455,13 @@ Table 4.1 contrasts this with the to-be process.
 Requirements were elicited from the client's existing report and from two formal online
 working sessions with the inspection group, then frozen in a traceability matrix. That matrix
 holds **forty-six in-scope requirement rows** — forty-three implemented as specified, two
-implemented with an agreed adaptation, one optional item not built (Table 8.1) — which is more
-granular than a reader needs. Table 4.2 therefore groups those rows into the **fourteen
+implemented with an agreed adaptation, one optional item not built (Table 8-1) — which is more
+granular than a reader needs. Table 4-2 therefore groups those rows into the **fourteen
 capabilities** that the rest of the paper refers to; each R-number below stands for one to four
 matrix rows of the same capability. "Evidence" names the artifact that demonstrates the
 requirement rather than asserting it.
 
-**Table 4.2 — Functional requirements (core)**
+**Table 4-2 — Functional requirements (core)**
 
 | ID | Requirement | Acceptance evidence |
 | --- | --- | --- |
@@ -541,7 +542,7 @@ keyboard and back key included; (8) the delivery package deploys on a plain stat
 
 Five architectures were considered before the design in §5 was fixed. They are compared against
 the criteria that actually decide this project — not against generic criteria such as "modern"
-or "scalable", but against the six properties a delivery to this client depends on (Table 4.3).
+or "scalable", but against the six properties a delivery to this client depends on (Table 4-3).
 
 **A1 — Native Android application (Kotlin, Room, system camera).** The strongest option on
 device integration: the camera, the file system and background behavior are all first-class,
@@ -586,7 +587,7 @@ rejected in ADR-2: it adds roughly a megabyte of payload, requires a second pers
 (origin-private file system for durability), and buys SQL semantics that this data model — four
 tables and a blob store — does not need.
 
-**Table 4.3 — Alternatives against the deciding criteria**
+**Table 4-3 — Alternatives against the deciding criteria**
 
 | Criterion | A1 Native | A2 Server web | A3 Desktop | A4 Low-code | A5 PWA + IndexedDB |
 | --- | --- | --- | --- | --- | --- |
@@ -659,7 +660,7 @@ to a shared folder is a permission-sensitive operation whose rules changed with 
 The mitigation was adopted during implementation rather than planned: use the media store,
 with a share-sheet fallback and a toast that names the path.
 
-**Table 4.4 — Risk register with outcomes**
+**Table 4-4 — Risk register with outcomes**
 
 | # | Risk | Mitigation as planned | What happened |
 | --- | --- | --- | --- |
@@ -689,7 +690,7 @@ library serialises them to OOXML, and a deterministic post-processor rewrites el
 attribute families so the output matches the approved template exactly. The **cache layer**
 is a service worker keyed by a content fingerprint.
 
-**Table 5.1 — Layers, responsibilities and failure modes**
+**Table 5-1 — Layers, responsibilities and failure modes**
 
 | Layer | Responsibility | Depends on | Characteristic failure |
 | --- | --- | --- | --- |
@@ -706,17 +707,17 @@ the OS. Third, **there is no server-side rendering escape hatch**: everything th
 needs — fonts, styles, theme — must be shipped inside the document. This is precisely why
 the fidelity work in §5.3 is architectural rather than cosmetic.
 
-![Figure 5.1 — System architecture. Left: the frozen Flask reference implementation that produced the accepted report. Right: the offline client that had to reproduce it. Both write the same Word document from the same layout specification; the difference is where the work and the data live.](deliverables/prp/architecture.png)
+![Fig. 5-1 — System architecture. Left: the frozen Flask reference implementation that produced the accepted report. Right: the offline client that had to reproduce it. Both write the same Word document from the same layout specification; the difference is where the work and the data live.](deliverables/prp/architecture.png)
 
 ## 5.2 Data model
 
 The database has six object stores: four business tables (`projects`, `records`,
 `readings`, `defects`), the binary table `images`, and `meta` for schema version and the
-inspector profile (Table 5.2). Business keys are auto-increment integers; `images` is keyed
+inspector profile (Table 5-2). Business keys are auto-increment integers; `images` is keyed
 by content-derived id; `meta` is keyed by name. `DB_VERSION` is 1, and the profile was
 placed in `meta` specifically so that adding it did not require a schema migration.
 
-**Table 5.2 — Object stores**
+**Table 5-2 — Object stores**
 
 | Store | Key | Indexes | Referential behavior |
 | --- | --- | --- | --- |
@@ -754,10 +755,10 @@ decomposes into three artifacts:
    detection face, vertical merge for the member columns, and a second merge pass that
    groups consecutive rows sharing the same requirement clause — so one clause is written
    once and centered across its block, while a change of clause starts a new cell.
-3. **Eleven deterministic patches** applied to the serialised OOXML (Table 5.3). They exist
+3. **Eleven deterministic patches** applied to the serialised OOXML (Table 5-3). They exist
    because a general-purpose DOCX library emits *valid* markup, not *identical* markup.
 
-**Table 5.3 — The eleven post-processing patches**
+**Table 5-3 — The eleven post-processing patches**
 
 | # | Attribute family | Library output vs. approved template | Patch |
 | --- | --- | --- | --- |
@@ -928,7 +929,7 @@ iteration order, which is what makes the output comparable byte for byte:
    merged group header), body rows, and the merged cells the flattening pass described.
 3. **Serialise.** `docx` converts the declarative tree into OOXML.
 4. **Patch.** Eleven deterministic transformations rewrite the attribute families that
-   differ from the approved template (Table 5.3).
+   differ from the approved template (Table 5-3).
 5. **Assemble.** Attachment pages are appended, the package is zipped, and the result is
    handed to the download layer.
 
@@ -1092,9 +1093,9 @@ practice is what distinguishes a fix from a hope.
 ## 7.1 Strategy: five layers, ordered by cost
 
 Verification is layered deliberately, cheapest first, so that a mistake is caught by the
-cheapest layer that can see it (Table 7.1). The numbers below are the state at delivery.
+cheapest layer that can see it (Table 7-1). The numbers below are the state at delivery.
 
-**Table 7.1 — The verification layers**
+**Table 7-1 — The verification layers**
 
 | Layer | What it can see | Count | Cost per run |
 | --- | --- | --- | --- |
@@ -1117,7 +1118,7 @@ on the claim the paper makes.
 ## 7.2 The three fidelity gates
 
 A single comparison can be self-consistent and still blind, so fidelity is asserted by three
-gates whose domains differ (Table 7.2). All three run in the 16-gate suite.
+gates whose domains differ (Table 7-2). All three run in the 16-gate suite.
 
 **Gate A — frozen baseline, in two halves.** The expected document is a `.docx` generated
 once by the Python reference implementation and then frozen in the repository. The gate
@@ -1144,7 +1145,7 @@ comparators used by Gates A and B, both of which are Python. Its purpose is to b
 correlated failure: if the Python comparator has a bug, Gates A and B can agree with each
 other and both be wrong, while Gate C is looking through a different lens.
 
-**Table 7.2 — What each gate compares, and what it cannot see**
+**Table 7-2 — What each gate compares, and what it cannot see**
 
 | Gate | Oracle | Compares | Blind spot |
 | --- | --- | --- | --- |
@@ -1162,9 +1163,9 @@ stated as a limitation in §8.4.
 A gate that reports zero differences is only as meaningful as its sensitivity, so the suite
 includes a poisoning harness: seven deliberate mutations are applied to a known-good
 document, and each must be caught **at a specific point in the comparison** — the gate must
-fail, and it must fail on the right attribute (Table 7.3).
+fail, and it must fail on the right attribute (Table 7-3).
 
-**Table 7.3 — The seven poisons**
+**Table 7-3 — The seven poisons**
 
 | Poison | Mutation | Expected failure point | Result |
 | --- | --- | --- | --- |
@@ -1176,7 +1177,7 @@ fail, and it must fail on the right attribute (Table 7.3).
 | `bold_label` | Remove bold from an attachment label run | `run_props` | caught |
 | `image_media` | Replace the embedded image bytes | `images[…]` | caught |
 
-![Figure 7.1 — Gate sensitivity. Each of the poisoned documents is injected into a known-good report and must be caught at a specific comparison path, not merely rejected.](deliverables/prp/gate-sensitivity.png)
+![Fig. 7-1 — Gate sensitivity. Each of the poisoned documents is injected into a known-good report and must be caught at a specific comparison path, not merely rejected.](deliverables/prp/gate-sensitivity.png)
 
 Asserting the *path* of the failure, not merely that the run turned red, is what makes this
 useful: it distinguishes "the gate noticed something" from "the gate noticed the right
@@ -1191,7 +1192,7 @@ zero differences. The eleven residual discrepancies that were closed along the w
 attribute-level; none required a semantic deviation, which is why no "declared deviation"
 mechanism exists.
 
-![Figure 7.2 — Fidelity gate A convergence: 201 → 33 → 2 → 0 differences over four rounds, closed by eleven attribute-level patches without loosening the comparison.](deliverables/prp/gate-convergence.png)
+![Fig. 7-2 — Fidelity gate A convergence: 201 → 33 → 2 → 0 differences over four rounds, closed by eleven attribute-level patches without loosening the comparison.](deliverables/prp/gate-convergence.png)
 
 Zero differences in our own comparator is still a self-referential claim, so the artifacts
 were re-verified with tools that share no code with the comparison: `python-docx` and Pillow
@@ -1210,10 +1211,10 @@ facing environment was found by the layer above the one that was green.**
 ### 7.5.1 The jsdom layer, and what "green" does not mean
 
 The front-end suite runs under `node --test` with a DOM implementation that is deliberately
-not a browser. It is fast, it is deterministic, and it cannot see (Table 7.4) exactly the
+not a browser. It is fast, it is deterministic, and it cannot see (Table 7-4) exactly the
 things this product depends on.
 
-**Table 7.4 — What jsdom cannot see (measured, not assumed)**
+**Table 7-4 — What jsdom cannot see (measured, not assumed)**
 
 | Capability | jsdom / Node | Real browser | What it first exposed |
 | --- | --- | --- | --- |
@@ -1270,11 +1271,11 @@ restores the old line, and the new tests fail with exactly the production error 
 
 ### 7.5.3 The remaining six, and the ladder's arithmetic
 
-The other six defects are less dramatic but follow the same pattern (Table 7.5): each was
+The other six defects are less dramatic but follow the same pattern (Table 7-5): each was
 found by the first environment that could execute the code path, and each is now guarded by a
 test that runs in that environment or a cheaper one that can see the same signal.
 
-**Table 7.5 — The nine defects**
+**Table 7-5 — The nine defects**
 
 | # | Sev. | Symptom | Root cause | Guard now |
 | --- | --- | --- | --- | --- |
@@ -1301,7 +1302,7 @@ The conclusion we now apply to any green run is two questions, asked in this ord
 
 > **Was this attribute actually compared? And is this environment the same as the user's?**
 
-Every defect in Table 7.5 fails the first question or the second, never "the developer was
+Every defect in Table 7-5 fails the first question or the second, never "the developer was
 careless". The import path failed the first (never compared, because never executed); the
 `nodebuffer` and `boot()` defects failed the second (the environment provided what the
 browser would not); the tab bar, the SVG icons, the tap target and the keyboard all failed
@@ -1312,7 +1313,7 @@ the second in the rendering sense — the environment computed a layout the user
 Load was measured in the browser, on the delivery package, with a realistic dataset (40
 records, 20 reports with full-size photographs), not extrapolated from unit timings.
 
-**Table 7.6 — Measured performance**
+**Table 7-6 — Measured performance**
 
 | Measurement | Result |
 | --- | --- |
@@ -1363,9 +1364,9 @@ with an agreed adaptation (the report person is taken from a local profile inste
 session; the profile page carries no department code), and one optional item (single-report JSON
 export) not built because no consumer existed — 46 = 43 + 2 + 1. A further two rows, plus three
 modules (accounts, quick notes, statistics), were removed from scope in writing and are not part
-of the forty-six. Table 8.1 summarises.
+of the forty-six. Table 8-1 summarises.
 
-**Table 8.1 — Requirement coverage at acceptance**
+**Table 8-1 — Requirement coverage at acceptance**
 
 | Category | Count | Note |
 | --- | --- | --- |
@@ -1383,7 +1384,7 @@ Three mechanisms carried the project, and each is transferable.
 deciding that the client's Word file *is* the requirement, and that any difference is a defect
 until proven otherwise. That decision converted a vague acceptance conversation into a
 diff list, and the diff list into a to-do list, converging 201 → 33 → 2 → 0 differences over
-four rounds (Figure 7.2). It also produced the eleven patches, each of which is a named,
+four rounds (Fig. 7-2). It also produced the eleven patches, each of which is a named,
 tested fact about the template rather than a folk remedy.
 
 **Gates with disjoint domains.** Three comparisons were maintained instead of one, and the
@@ -1392,7 +1393,7 @@ comparison disagreed about a merge encoding (§5.3), and once when the JavaScrip
 disagreed with both Python comparators over a property neither had normalised. A single gate
 would have reported green in both cases.
 
-**Moving the environment rather than widening the suite.** The nine defects in Table 7.5 were
+**Moving the environment rather than widening the suite.** The nine defects in Table 7-5 were
 not found by writing more unit tests; they were found by executing the same product in a
 browser and then on a phone. In hindsight this is the cheapest defect-detection investment in
 the project: two days of environment work produced three priority-0 fixes that a thousand
@@ -1727,7 +1728,7 @@ by the sponsor, and the four pages reproduce the originals without retouching.
 
 ## Appendix B — The eleven post-processing patches
 
-Appendix B reproduces Table 5.3 with the exact OOXML attribute each patch rewrites, so that the
+Appendix B reproduces Table 5-3 with the exact OOXML attribute each patch rewrites, so that the
 patch chain can be re-derived from the specification alone: document grid line pitch; table
 look attributes and their boolean normalisation; row-height rule attribute; table cell margins;
 continuation cells of merged rows (vertical alignment, paragraph justification and header line

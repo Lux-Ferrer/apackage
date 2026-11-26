@@ -73,7 +73,7 @@ iteration order, which is what makes the output comparable byte for byte:
    merged group header), body rows, and the merged cells the flattening pass described.
 3. **Serialise.** `docx` converts the declarative tree into OOXML.
 4. **Patch.** Eleven deterministic transformations rewrite the attribute families that
-   differ from the approved template (Table 5.3).
+   differ from the approved template (Table 5-3).
 5. **Assemble.** Attachment pages are appended, the package is zipped, and the result is
    handed to the download layer.
 
@@ -237,9 +237,9 @@ practice is what distinguishes a fix from a hope.
 ## 7.1 Strategy: five layers, ordered by cost
 
 Verification is layered deliberately, cheapest first, so that a mistake is caught by the
-cheapest layer that can see it (Table 7.1). The numbers below are the state at delivery.
+cheapest layer that can see it (Table 7-1). The numbers below are the state at delivery.
 
-**Table 7.1 — The verification layers**
+**Table 7-1 — The verification layers**
 
 | Layer | What it can see | Count | Cost per run |
 | --- | --- | --- | --- |
@@ -262,7 +262,7 @@ on the claim the paper makes.
 ## 7.2 The three fidelity gates
 
 A single comparison can be self-consistent and still blind, so fidelity is asserted by three
-gates whose domains differ (Table 7.2). All three run in the 16-gate suite.
+gates whose domains differ (Table 7-2). All three run in the 16-gate suite.
 
 **Gate A — frozen baseline, in two halves.** The expected document is a `.docx` generated
 once by the Python reference implementation and then frozen in the repository. The gate
@@ -289,7 +289,7 @@ comparators used by Gates A and B, both of which are Python. Its purpose is to b
 correlated failure: if the Python comparator has a bug, Gates A and B can agree with each
 other and both be wrong, while Gate C is looking through a different lens.
 
-**Table 7.2 — What each gate compares, and what it cannot see**
+**Table 7-2 — What each gate compares, and what it cannot see**
 
 | Gate | Oracle | Compares | Blind spot |
 | --- | --- | --- | --- |
@@ -307,9 +307,9 @@ stated as a limitation in §8.4.
 A gate that reports zero differences is only as meaningful as its sensitivity, so the suite
 includes a poisoning harness: seven deliberate mutations are applied to a known-good
 document, and each must be caught **at a specific point in the comparison** — the gate must
-fail, and it must fail on the right attribute (Table 7.3).
+fail, and it must fail on the right attribute (Table 7-3).
 
-**Table 7.3 — The seven poisons**
+**Table 7-3 — The seven poisons**
 
 | Poison | Mutation | Expected failure point | Result |
 | --- | --- | --- | --- |
@@ -351,10 +351,10 @@ facing environment was found by the layer above the one that was green.**
 ### 7.5.1 The jsdom layer, and what "green" does not mean
 
 The front-end suite runs under `node --test` with a DOM implementation that is deliberately
-not a browser. It is fast, it is deterministic, and it cannot see (Table 7.4) exactly the
+not a browser. It is fast, it is deterministic, and it cannot see (Table 7-4) exactly the
 things this product depends on.
 
-**Table 7.4 — What jsdom cannot see (measured, not assumed)**
+**Table 7-4 — What jsdom cannot see (measured, not assumed)**
 
 | Capability | jsdom / Node | Real browser | What it first exposed |
 | --- | --- | --- | --- |
@@ -411,11 +411,11 @@ restores the old line, and the new tests fail with exactly the production error 
 
 ### 7.5.3 The remaining six, and the ladder's arithmetic
 
-The other six defects are less dramatic but follow the same pattern (Table 7.5): each was
+The other six defects are less dramatic but follow the same pattern (Table 7-5): each was
 found by the first environment that could execute the code path, and each is now guarded by a
 test that runs in that environment or a cheaper one that can see the same signal.
 
-**Table 7.5 — The nine defects**
+**Table 7-5 — The nine defects**
 
 | # | Sev. | Symptom | Root cause | Guard now |
 | --- | --- | --- | --- | --- |
@@ -442,7 +442,7 @@ The conclusion we now apply to any green run is two questions, asked in this ord
 
 > **Was this attribute actually compared? And is this environment the same as the user's?**
 
-Every defect in Table 7.5 fails the first question or the second, never "the developer was
+Every defect in Table 7-5 fails the first question or the second, never "the developer was
 careless". The import path failed the first (never compared, because never executed); the
 `nodebuffer` and `boot()` defects failed the second (the environment provided what the
 browser would not); the tab bar, the SVG icons, the tap target and the keyboard all failed
@@ -453,7 +453,7 @@ the second in the rendering sense — the environment computed a layout the user
 Load was measured in the browser, on the delivery package, with a realistic dataset (40
 records, 20 reports with full-size photographs), not extrapolated from unit timings.
 
-**Table 7.6 — Measured performance**
+**Table 7-6 — Measured performance**
 
 | Measurement | Result |
 | --- | --- |
