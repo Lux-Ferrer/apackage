@@ -39,3 +39,8 @@ docs/management/signed/
 # 交付包（含 APK，10 MB 级；用 python tools/make_delivery_bundle.py 一键重建）
 dist/delivery/
 
+
+# PDF 逐页图片与总览图（几十 MB，按需生成：python tools/pdf_to_images.py --zip --contact-sheet）
+dist/*_pages/
+dist/*_pages.zip
+
