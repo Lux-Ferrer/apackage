@@ -45,6 +45,10 @@ SOURCES = {
 TITLE = ("Faithful by Construction: An Offline-First Field Tool that Reproduces\n"
          "Corporate Inspection Reports Attribute by Attribute")
 
+STUDENT = "Zeyu Jin"
+NETID = "ZJ663"
+SEMESTER = "Fall, 2026"
+
 FIGURES = {
     "architecture": (
         ROOT / "deliverables/prp/architecture.png",
@@ -301,17 +305,22 @@ def add_title_page(document: Document) -> None:
         run.font.size = Pt(size)
         run.bold = bold
 
-    center("", 12, space_after=60)
-    center(TITLE, 20, bold=True, space_after=40)
+    # 封面版式照 06 Guidelines 的 Sample Cover Page（文本框里的字段顺序）：
+    #   标题 / Applied Technical Project / Final Report / by / 姓名 / NETID / 学期年份 / 学位与院校段
+    center("", 12, space_after=48)
+    center(TITLE, 20, bold=True, space_after=18)
+    center("Applied Technical Project", 13, space_after=2)
+    center("Final Report", 13, space_after=24)
     center("by", 12, space_after=6)
-    center("Zeyu Jin", 14, bold=True, space_after=48)
+    center(STUDENT, 14, bold=True, space_after=4)
+    center(NETID, 12, space_after=4)
+    center(SEMESTER, 12, space_after=30)
     center("A paper submitted in partial fulfillment of the requirements for the degree of", 12, space_after=6)
-    center("Master of Science", 14, bold=True, space_after=24)
+    center("Master of Science", 14, bold=True, space_after=20)
     center("at the", 12, space_after=6)
     center("Division of Programs in Business", 12, space_after=2)
     center("School of Professional Studies", 12, space_after=2)
-    center("New York University", 12, bold=True, space_after=48)
-    center("Fall, 2026", 12, space_after=6)
+    center("New York University", 12, bold=True, space_after=24)
     center("Sponsoring organization: MCC Central Research Institute of Building and Construction (Shenzhen) Co., Ltd.",
            10, space_after=0)
     document.add_page_break()

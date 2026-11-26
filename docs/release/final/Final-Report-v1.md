@@ -1712,9 +1712,18 @@ https://web.dev/articles/offline-cookbook
 
 ## Appendix A — Sponsor's acceptance documents
 
-The signed Project Plan (document 07, Part 1) and Project Acceptance (document 07, Part 2) are
-included in this paper as scanned PDF pages, as required. Both were completed by the sponsor
-and the student at delivery.
+The signed Project Plan (document 07, Part 1) and Project Acceptance (document 07, Part 2)
+follow as scanned pages, in the order the guideline requires: the plan that was agreed at
+project start, then the results and acceptance recorded at delivery. Both documents were signed
+by the sponsor, and the four pages reproduce the originals without retouching.
+
+![Appendix A-1 — Project Plan (Part 1), page 1: project title, sponsor details, the project goal and the first two objectives with their metrics.](docs/release/final/signed-pages/part1-p1.jpg)
+
+![Appendix A-2 — Project Plan (Part 1), page 2: Objectives 3 to 5, the sponsor's statement of agreement, signature, date and printed name.](docs/release/final/signed-pages/part1-p2.jpg)
+
+![Appendix A-3 — Project Acceptance (Part 2), page 1: planned and actual dates, the goal recorded as achieved, and Objectives 1 to 3 recorded as met with the sponsor's initials against each.](docs/release/final/signed-pages/part2-p1.jpg)
+
+![Appendix A-4 — Project Acceptance (Part 2), page 2: Objectives 4 and 5, the sponsor's evaluation and comments, the acceptance statement, and the sponsor's signature and date.](docs/release/final/signed-pages/part2-p2.jpg)
 
 ## Appendix B — The eleven post-processing patches
 
