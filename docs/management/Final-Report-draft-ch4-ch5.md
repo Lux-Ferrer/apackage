@@ -25,7 +25,7 @@ and page numbers".
 | 4 | Inspection data capture | Sacks, R., Eastman, C., Lee, G., & Teicholz, P. (2018). *BIM Handbook: A guide to building information modeling* (3rd ed.). Wiley. | Reference for information-deliverable quality and exchange requirements; supports the claim that the *deliverable format* is part of the requirement, not an afterthought. | high |
 | 5 | PWA / offline | Majchrzak, T. A., Biørn-Hansen, A., & Grønli, T.-M. (2018). Progressive Web Apps: The definite approach to cross-platform development? *Proceedings of the 51st Hawaii International Conference on System Sciences (HICSS)*. | The main peer-reviewed evaluation of PWA trade-offs; use it for both the case *for* PWAs and their acknowledged limits (iOS, storage eviction). | medium-high |
 | 6 | PWA / offline | Biørn-Hansen, A., Majchrzak, T. A., & Grønli, T.-M. (2017). Progressive Web Apps: The possible web-native unifier for mobile development. *Proceedings of WEBIST 2017*, 344–351. | Earlier, more architectural treatment (service worker, app shell, offline); pairs with #5. | medium-high |
-| 7 | PWA / offline | W3C. (2018). *Indexed Database API 2.0* (W3C Recommendation). World Wide Web Consortium. | The normative source for the storage layer we build on (transactions, key ranges, indexes). Cite it whenever we claim "transaction-scoped" behaviour. | high |
+| 7 | PWA / offline | W3C. (2018). *Indexed Database API 2.0* (W3C Recommendation). World Wide Web Consortium. | The normative source for the storage layer we build on (transactions, key ranges, indexes). Cite it whenever we claim "transaction-scoped" behavior. | high |
 | 8 | Testing | McKeeman, W. M. (1998). Differential testing for software. *Digital Technical Journal, 10*(1), 100–107. | The origin of the idea our gates instantiate: run two implementations on the same input and compare. Gate B (our engine vs the client's real report) *is* differential testing with a human-authored oracle. | high |
 | 9 | Testing | Chen, T. Y., Cheung, S. C., & Yiu, S. M. (1998). *Metamorphic testing: A new approach for generating next test cases* (Technical Report HKUST-CS98-01). Hong Kong University of Science and Technology. | Gives the vocabulary for our sensitivity test: we do not know the "correct" output for a poisoned document, but we know the *relation* (gate must turn red), so we assert the relation. | high |
 | 10 | Testing | Feathers, M. (2004). *Working effectively with legacy code*. Prentice Hall. | Source of "characterization test" / golden-master thinking: freeze today's output, then defend it. Explains why Gate A compares against a *frozen* baseline rather than a written spec. | high |
@@ -102,10 +102,14 @@ Table 4.1 contrasts this with the to-be process.
 
 ## 4.2 Functional requirements
 
-Requirements were elicited from the client's existing report and from two working sessions
-with the inspection group, then frozen in a traceability matrix. Table 4.2 lists the
-functional core; "evidence" names the artefact that demonstrates the requirement rather
-than asserting it.
+Requirements were elicited from the client's existing report and from two formal online
+working sessions with the inspection group, then frozen in a traceability matrix. That matrix
+holds **forty-six in-scope requirement rows** — forty-three implemented as specified, two
+implemented with an agreed adaptation, one optional item not built (Table 8.1) — which is more
+granular than a reader needs. Table 4.2 therefore groups those rows into the **fourteen
+capabilities** that the rest of the paper refers to; each R-number below stands for one to four
+matrix rows of the same capability. "Evidence" names the artifact that demonstrates the
+requirement rather than asserting it.
 
 **Table 4.2 — Functional requirements (core)**
 
@@ -123,7 +127,7 @@ than asserting it.
 | R10 | Project-level Word export: project block, column/beam sections, note paragraph, deliverable filename; optional attachment pages, one per report, each starting on a new page | Gates A/B/C (zero differences) |
 | R11 | Whole-database backup to a single `.zip` (including originals) and restore by import | Front-end tests + on-device round trip |
 | R12 | Inspector profile (name, department) captured once and snapshotted into each report | Front-end tests; profile page E2E |
-| R13 | About page exposing product name, version, offline-cache fingerprint and issuing organisation | E2E |
+| R13 | About page exposing product name, version, offline-cache fingerprint and issuing organization | E2E |
 | R14 | "Clear all reports" guarded by an explicit confirmation that states the blast radius | E2E |
 
 ## 4.3 Non-functional requirements and constraints
@@ -191,7 +195,7 @@ the criteria that actually decide this project — not against generic criteria 
 or "scalable", but against the six properties a delivery to this client depends on (Table 4.3).
 
 **A1 — Native Android application (Kotlin, Room, system camera).** The strongest option on
-device integration: the camera, the file system and background behaviour are all first-class,
+device integration: the camera, the file system and background behavior are all first-class,
 and a native app can write to the Downloads folder without a plugin. It fails on two criteria.
 Distribution is the first: the client's IT function has no store channel, so an APK would have
 to be handed out and updated by hand anyway — exactly what the eventual solution also does, but
@@ -226,7 +230,7 @@ no server; and — critically — the document engine runs in the same JavaScrip
 of the application, so the layout specification and the gate harness could be carried over intact
 from the Python reference. The costs are real and were accepted: storage belongs to the browser
 (hence the backup feature), there is no server-side rendering escape hatch (hence §5.3), and iOS
-behaviour is unproven (stated as a limitation).
+behavior is unproven (stated as a limitation).
 
 **A6 — PWA with SQLite compiled to WebAssembly, instead of IndexedDB.** Considered inside A5, and
 rejected in ADR-2: it adds roughly a megabyte of payload, requires a second persistence model
@@ -301,7 +305,7 @@ and the package rebuilds from a script. The risk remains for maintenance after h
 that generated a fresh debug keystore on every run, making each build un-upgradable over the
 last one. The lesson is recorded as Lesson 5 in §8.7.
 
-**R8 — file-system and permission behaviour on Android 10+ (not logged).** Writing an export
+**R8 — file-system and permission behavior on Android 10+ (not logged).** Writing an export
 to a shared folder is a permission-sensitive operation whose rules changed with scoped storage.
 The mitigation was adopted during implementation rather than planned: use the media store,
 with a share-sheet fallback and a toast that names the path.
@@ -345,7 +349,7 @@ with a share-sheet fallback and a toast that names the path.
 
 ## 5.1 Architecture overview
 
-The system is a single static artefact with four internal layers and no server process
+The system is a single static artifact with four internal layers and no server process
 (Fig. 5.1). The **shell** is plain HTML, CSS and native ES modules loaded through an import
 map, with no bundler: `index.html` declares the module graph, and the browser fetches the
 same files a developer edits. The **data layer** wraps IndexedDB and is the only module
@@ -382,7 +386,7 @@ placed in `meta` specifically so that adding it did not require a schema migrati
 
 **Table 5.2 — Object stores**
 
-| Store | Key | Indexes | Referential behaviour |
+| Store | Key | Indexes | Referential behavior |
 | --- | --- | --- | --- |
 | `projects` | `id` (auto) | `project_no` (unique) | Deleting a project deletes its records, readings, and unlinks (not deletes) defect reports |
 | `records` | `id` (auto) | `project_id`; compound (`project_id`, `template_type`, `sort_order`) | Deleting a record deletes its readings |
@@ -405,19 +409,19 @@ values at write time** instead of trusting what the form displayed.
 ## 5.3 Report-fidelity design
 
 The client's report is treated as an executable specification, not as a style guide. It
-decomposes into three artefacts:
+decomposes into three artifacts:
 
 1. **A layout specification in JSON** (`report_layout.json`), language-neutral so that the
    Python reference implementation and the JavaScript production engine read the same
    numbers: page 11 907 × 16 839 twips with margins 1 440/1 843/907 and a document grid
-   line pitch of 312; a fixed-layout table 10 833 twips wide, centred, with outer borders
+   line pitch of 312; a fixed-layout table 10 833 twips wide, centered, with outer borders
    12 and inner borders 6 eighths of a point and a cell margin of 57 twips per side; eleven
    column widths measured from the client's column table, with an override set for the beam
    table; and the per-cell line spacing used in the header's continuation cells.
 2. **A declarative builder** that maps domain records onto the table: one row group per
    detection face, vertical merge for the member columns, and a second merge pass that
    groups consecutive rows sharing the same requirement clause — so one clause is written
-   once and centred across its block, while a change of clause starts a new cell.
+   once and centered across its block, while a change of clause starts a new cell.
 3. **Eleven deterministic patches** applied to the serialised OOXML (Table 5.3). They exist
    because a general-purpose DOCX library emits *valid* markup, not *identical* markup.
 
@@ -429,7 +433,7 @@ decomposes into three artefacts:
 | ② | `w:tblLook` | no `w:val`, booleans spelled `true`/`false` | insert `w:val`, normalise to `1`/`0` |
 | ③ | `w:trHeight` | carries `w:hRule` | drop the attribute |
 | ④ | `w:tblCellMar` | declares edges the template does not | keep only declared edges |
-| ⑤ | Continuation cells of merged rows | bare `<w:p/>`, no vertical alignment | add `vAlign=center`, centred paragraph, header line spacing |
+| ⑤ | Continuation cells of merged rows | bare `<w:p/>`, no vertical alignment | add `vAlign=center`, centered paragraph, header line spacing |
 | ⑥ | `word/styles.xml`, `word/theme/theme1.xml` | library defaults | replace with the base template's parts |
 | ⑦ | `w:sectPr` | no `<w:cols>` | insert `<w:cols w:space="720"/>` in schema order |
 | ⑧ | `w:pgSz` | writes `w:orient="portrait"` | drop the attribute |

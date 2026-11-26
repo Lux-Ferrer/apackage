@@ -35,28 +35,28 @@ testing; field data collection; mobile web
 
 | Number | Title | Page |
 | --- | --- | --- |
-| Figure 5.1 | System architecture: the frozen reference implementation and the offline client | 24 |
-| Figure 7.1 | Gate sensitivity: seven poisoned documents, each caught at a specific comparison path | 43 |
-| Figure 7.2 | Fidelity gate A convergence: 201 → 33 → 2 → 0 differences over four rounds | 44 |
+| Figure 5.1 | System architecture: the frozen reference implementation and the offline client | 26 |
+| Figure 7.1 | Gate sensitivity: seven poisoned documents, each caught at a specific comparison path | 45 |
+| Figure 7.2 | Fidelity gate A convergence: 201 → 33 → 2 → 0 differences over four rounds | 46 |
 
 # List of tables
 
 | Number | Title | Page |
 | --- | --- | --- |
-| Table 4.1 | As-is versus to-be process | 13 |
-| Table 4.2 | Functional requirements (core) | 14 |
-| Table 4.3 | Alternatives against the deciding criteria | 19 |
-| Table 4.4 | Risk register with outcomes | 22 |
-| Table 5.1 | Layers, responsibilities and failure modes | 23 |
-| Table 5.2 | Object stores | 24 |
-| Table 5.3 | The eleven post-processing patches | 26 |
-| Table 7.1 | The verification layers | 40 |
-| Table 7.2 | What each gate compares, and what it cannot see | 41 |
-| Table 7.3 | The seven poisons | 42 |
-| Table 7.4 | What jsdom cannot see | 45 |
-| Table 7.5 | The nine defects | 47 |
-| Table 7.6 | Measured performance | 49 |
-| Table 8.1 | Requirement coverage at acceptance | 51 |
+| Table 4.1 | As-is versus to-be process | 15 |
+| Table 4.2 | Functional requirements (core) | 16 |
+| Table 4.3 | Alternatives against the deciding criteria | 21 |
+| Table 4.4 | Risk register with outcomes | 24 |
+| Table 5.1 | Layers, responsibilities and failure modes | 25 |
+| Table 5.2 | Object stores | 26 |
+| Table 5.3 | The eleven post-processing patches | 28 |
+| Table 7.1 | The verification layers | 42 |
+| Table 7.2 | What each gate compares, and what it cannot see | 44 |
+| Table 7.3 | The seven poisons | 45 |
+| Table 7.4 | What jsdom cannot see | 47 |
+| Table 7.5 | The nine defects | 50 |
+| Table 7.6 | Measured performance | 51 |
+| Table 8.1 | Requirement coverage at acceptance | 54 |
 
 # Abbreviations
 
@@ -84,7 +84,7 @@ supplying the element that made it possible: the institute's actual delivered in
 rather than a description of it.
 
 I thank my course professor for the Applied Technical Project course and for the mentoring that
-shaped this work, and the instructors of the NYU SPS Master's programme in Management and
+shaped this work, and the instructors of the NYU SPS Master's program in Management and
 Systems, from whom I learned how to ask whether a system is *right*, not merely whether it runs.
 
 I also thank the inspection engineers who walked me through their field process and answered
@@ -116,12 +116,24 @@ institute signs and hands to the building owner, and that is subsequently used a
 evidence when a defect is disputed.
 
 The client for this project is the Shenzhen branch of MCC Central Research Institute of
-Building and Construction, a materials-testing institute operating under a central
-state-owned enterprise. Its curtain-wall group inspects façades for owners and main
-contractors, and the report it issues is standardised: a fixed table layout, prescribed
-requirement clauses quoted verbatim from the technical code, and — when defects were found —
-attachment pages, one per defect report, each carrying a nine-row information block and a
-photograph.
+Building and Construction, a core research and testing institute of MCC (Metallurgical
+Corporation of China), part of the China Minmetals group — a Fortune Global 500 enterprise. The
+institute holds national and provincial qualifications for building-safety and curtain-wall
+testing and carries a substantial share of such commissions in its region; its curtain-wall group
+inspects façades for owners and main contractors. The report it issues is standardised: a fixed
+table layout, prescribed requirement clauses quoted verbatim from the technical code, and — when
+defects were found — attachment pages, one per defect report, each carrying a nine-row
+information block and a photograph. That the deliverable is issued under a qualification, and not
+merely under a letterhead, is why its form is not negotiable.
+
+The project was also delivered across twelve to thirteen hours of time difference: the author
+worked from New York, the client is in Shenzhen, and the two formal working sessions were held
+online and supplemented by continuous day-to-day communication in a chat group. A former colleague
+at the institute supplied the de-identified baseline used throughout this paper — the report
+template and one delivered report with its attachment pages — which is the only way a remote
+student could work against the real artifact rather than against a description of it. Charter,
+work-breakdown structure, planning, design, implementation, verification and acceptance were
+carried out by one person acting as both project manager and implementer.
 
 ## 2.2 Problem
 
@@ -139,7 +151,37 @@ phones, so a hosted application is out. And the deliverable is not merely "a rep
 layout is contractually fixed, so any tool that produces a *nearly* identical report has made
 the problem worse, not better, by adding a second house style to reconcile.
 
-## 2.3 Objectives
+## 2.3 Importance of the project to the organization
+
+The importance is easiest to state in the terms the institute uses internally: the report is what
+gets invoiced and what gets audited.
+
+*Commercially*, an inspection engagement closes when the report is accepted, and a returned report
+costs the institute twice — once to re-open the record, once to re-sign the document. The
+transcription chain described above is where those returns originate: a digit re-typed, a minimum
+recomputed by hand, a photograph attached to the wrong record. The tool removes three of the five
+hand-offs and both manual minimum computations, and it removes the *reason* for the remaining two,
+because the report is generated from the same data that was captured. No controlled time study was
+conducted (stated as a limitation in §8.4), so no percentage is claimed here — but the mechanism by
+which rework arises is removed rather than reduced.
+
+*Reputationally*, the institute issues reports under national and provincial qualifications, and a
+report is a document that other parties rely on. A tool that produced a *second* house style would
+be a liability that no efficiency gain could offset; the acceptance criterion of this project is
+therefore attribute-level equality, not resemblance.
+
+*Institutionally*, the layout specification turns a piece of institutional knowledge — the form of
+the report — into a versioned artifact that can be reviewed, changed deliberately, and reused by
+other groups. That is a different kind of value from a faster form: it makes the deliverable's form
+governable.
+
+Finally, the delivery context itself is evidence for the organization. A remote, single-person
+engagement across a twelve-hour time difference that meets the same acceptance bar as a co-located
+team engagement says something about how the institute might commission digital work in future: the
+constraints that made this project hard — no server, no app store, no colleagues in the same room —
+are the constraints under which distributed delivery happens at all.
+
+## 2.4 Objectives
 
 Three objectives follow directly, and they are the ones against which the project was
 accepted:
@@ -154,7 +196,7 @@ accepted:
    Fidelity and usability claims must be backed by comparisons that could fail, in a browser
    rather than a DOM emulator, and on a phone rather than a desktop.
 
-## 2.4 Contributions
+## 2.5 Contributions
 
 The project offers three contributions, ordered by how transferable they are.
 
@@ -177,7 +219,20 @@ upgrading all become the client's problem, and the project answers each concrete
 whole-database backup that includes originals, an Android channel that writes to the public
 Downloads folder, and a content-fingerprinted cache that never mixes generations.
 
-## 2.5 Structure of the paper
+**A documented, single-person delivery of a full project lifecycle.** The same person acted as
+project manager and implementer, remotely, against a client twelve hours away: charter and
+work-breakdown structure (Appendix E), baseline against actual schedule, requirements
+traceability, monthly status reporting, architecture, implementation, verification, the
+end-user manual and the acceptance documents. The artifacts are included as appendices, not
+asserted, and §8.6 critiques the order in which they were produced.
+
+The novelty claim of this paper is deliberately narrow, because the components are not new:
+service workers, IndexedDB and JavaScript document generation are each mature. What we did not
+find in the literature, and what this project contributes, is their combination under an
+*equality* requirement — **we are not aware of a published inspection tool that reproduces a
+corporate Word report attribute by attribute, offline, in the browser.**
+
+## 2.6 Structure of the paper
 
 §3 reviews the literature on field data capture, offline-first delivery and document fidelity
 testing, and identifies the gap this project addresses. §4 derives stakeholders, requirements
@@ -194,7 +249,7 @@ requirements, discusses what worked, and states the limitations. §9 concludes.
 ## 3.1 Field data capture in construction
 
 Construction-informatics research has spent two decades moving site data from paper into
-information systems, and the dominant architecture is BIM-centred and server-mediated. Park
+information systems, and the dominant architecture is BIM-centered and server-mediated. Park
 et al. (2013) frame defect management as a problem of *data-collection templates* linked to a
 BIM model, arguing that the ontology of a defect record determines what can later be
 reasoned about; Ma et al. (2018) combine BIM with indoor positioning so that a captured record
@@ -211,7 +266,7 @@ information specification, not an afterthought to it.
 This project sits inside that literature but inverts its priorities. There is no BIM model to
 link to and no server to link through; the deliverable's *format* is the specification that
 matters, because a report in the wrong format is rejected regardless of the quality of the data
-inside it. That inversion is what makes the fidelity problem (§3.3) the centre of the work
+inside it. That inversion is what makes the fidelity problem (§3.3) the center of the work
 rather than an output-formatting detail.
 
 ## 3.2 Offline-first delivery and progressive web apps
@@ -220,7 +275,7 @@ The case for progressive web apps as a cross-platform delivery mechanism is well
 Biørn-Hansen et al. (2017) describe the architectural ingredients — app shell, service worker,
 cache — and Majchrzak et al. (2018) evaluate the approach against native development, noting
 both the reduced distribution cost and the platform-specific limits, storage eviction and iOS
-behaviour among them. The normative foundations are equally clear: the Indexed Database API
+behavior among them. The normative foundations are equally clear: the Indexed Database API
 (W3C, 2018) defines the transactional storage model used here, and practitioner catalogues
 such as Archibald's (2019) offline cookbook enumerate the caching strategies that a service
 worker can implement.
@@ -240,7 +295,7 @@ The testing literature supplies the vocabulary for what this project had to do. 
 (1998) introduced differential testing: run two implementations on the same input and compare
 their outputs, using one as an oracle for the other. Gate B (§7.2) is differential testing with
 a human-authored oracle — the client's actual delivered report. Feathers (2004) names the
-complementary technique: when no specification exists, freeze the current behaviour as a
+complementary technique: when no specification exists, freeze the current behavior as a
 characterization test and defend it. Gate A is exactly that, applied to a document. Chen et
 al. (1998) contribute the third idea, metamorphic testing: when the correct output for a
 mutated input is unknown, assert a *relation* instead. The poisoning harness (§7.3) is
@@ -267,14 +322,15 @@ prove that the assertion is sensitive.
 
 The literature says what is possible; the situation says what is worth doing. This section is a
 qualitative analysis of the position the product occupies, conducted from the project's own
-fieldwork (four working sessions with the client's inspection group) rather than from market
+fieldwork (two formal online working sessions plus continuous day-to-day communication with the
+client's inspection group) rather than from market
 data. No market-sizing study was commissioned, and no figure in this section is a market
 estimate; the analysis is structural, and it is reported as such.
 
 **Buyers and the shape of demand.** The demand for curtain-wall inspection reports comes from
 building owners, main contractors and property managers, and it is *regulatory in origin*: a
 façade must be evidenced as compliant before hand-over and again before major works. The
-institute is paid per engagement, and the report is the artefact that closes it. That has a
+institute is paid per engagement, and the report is the artifact that closes it. That has a
 sharp consequence for a tool: the report is not a record of work, it is the deliverable that
 gets invoiced and, later, litigated over. Anything that changes its appearance is a commercial
 risk, which is why "fidelity" appears in this paper so often and "features" so rarely.
@@ -283,10 +339,10 @@ risk, which is why "fidelity" appears in this paper so often and "features" so r
 closer than it looks: the incumbent is a Word template plus manual typing, which costs nothing
 to keep and is already trusted. A tool competes with a habit, not with a product. *Bargaining
 power of buyers* is high: a single institute decides, its inspectors adopt or quietly do not,
-and the switching cost of a rejected tool is a lost project rather than a lost licence.
+and the switching cost of a rejected tool is a lost project rather than a lost license.
 *Bargaining power of suppliers* is low in components — the stack is open source and replaceable
 — but high in platforms: the rendering of the Word document is ultimately controlled by
-Microsoft's implementation, and offline behaviour by the WebView version shipped on the
+Microsoft's implementation, and offline behavior by the WebView version shipped on the
 inspector's phone. Those two suppliers cannot be negotiated with, only measured against.
 *Threat of new entrants* is high at the feature level: a form with photographs is a
 weeks-long build for any competent team. The defensible part is not the form, it is the
@@ -301,7 +357,7 @@ claim is backed by three gates; the tool needs no infrastructure, so procurement
 an APK; the layout specification is data, so a second client's template is a configuration
 exercise rather than a rewrite. *Weaknesses:* the data is device-local, so there is no
 collaboration and no central audit trail; the product is Android-first with untested iOS
-behaviour; the team is one person, which bounds both the feature set and the bus factor.
+behavior; the team is one person, which bounds both the feature set and the bus factor.
 *Opportunities:* other institutes in the same group issue structurally similar reports, so the
 same engine with a different layout specification is a plausible product; the inspection
 workflow is regulated and therefore stable, which rewards durable tooling over novelty; and the
@@ -331,6 +387,12 @@ emulation, staging); it says little about the specific case where the *runtime* 
 emulator versus a browser, a desktop browser versus a phone — and where each step of realism
 has a measurable defect yield. §7.5 reports that yield for this project: nine defects, three of
 them blocking, all found in the step above the green one.
+
+A second, narrower gap bounds the claim of this paper. **We are not aware of a published
+inspection tool that reproduces a corporate Word report attribute by attribute, offline, in the
+browser.** The ingredients — a service worker, IndexedDB, an in-browser document generator — are
+each documented individually; what is absent is their combination under an equality requirement,
+and the verification method that makes such a claim testable rather than rhetorical.
 
 ---
 
@@ -389,10 +451,14 @@ Table 4.1 contrasts this with the to-be process.
 
 ## 4.2 Functional requirements
 
-Requirements were elicited from the client's existing report and from two working sessions
-with the inspection group, then frozen in a traceability matrix. Table 4.2 lists the
-functional core; "evidence" names the artefact that demonstrates the requirement rather
-than asserting it.
+Requirements were elicited from the client's existing report and from two formal online
+working sessions with the inspection group, then frozen in a traceability matrix. That matrix
+holds **forty-six in-scope requirement rows** — forty-three implemented as specified, two
+implemented with an agreed adaptation, one optional item not built (Table 8.1) — which is more
+granular than a reader needs. Table 4.2 therefore groups those rows into the **fourteen
+capabilities** that the rest of the paper refers to; each R-number below stands for one to four
+matrix rows of the same capability. "Evidence" names the artifact that demonstrates the
+requirement rather than asserting it.
 
 **Table 4.2 — Functional requirements (core)**
 
@@ -410,7 +476,7 @@ than asserting it.
 | R10 | Project-level Word export: project block, column/beam sections, note paragraph, deliverable filename; optional attachment pages, one per report, each starting on a new page | Gates A/B/C (zero differences) |
 | R11 | Whole-database backup to a single `.zip` (including originals) and restore by import | Front-end tests + on-device round trip |
 | R12 | Inspector profile (name, department) captured once and snapshotted into each report | Front-end tests; profile page E2E |
-| R13 | About page exposing product name, version, offline-cache fingerprint and issuing organisation | E2E |
+| R13 | About page exposing product name, version, offline-cache fingerprint and issuing organization | E2E |
 | R14 | "Clear all reports" guarded by an explicit confirmation that states the blast radius | E2E |
 
 ## 4.3 Non-functional requirements and constraints
@@ -478,7 +544,7 @@ the criteria that actually decide this project — not against generic criteria 
 or "scalable", but against the six properties a delivery to this client depends on (Table 4.3).
 
 **A1 — Native Android application (Kotlin, Room, system camera).** The strongest option on
-device integration: the camera, the file system and background behaviour are all first-class,
+device integration: the camera, the file system and background behavior are all first-class,
 and a native app can write to the Downloads folder without a plugin. It fails on two criteria.
 Distribution is the first: the client's IT function has no store channel, so an APK would have
 to be handed out and updated by hand anyway — exactly what the eventual solution also does, but
@@ -513,7 +579,7 @@ no server; and — critically — the document engine runs in the same JavaScrip
 of the application, so the layout specification and the gate harness could be carried over intact
 from the Python reference. The costs are real and were accepted: storage belongs to the browser
 (hence the backup feature), there is no server-side rendering escape hatch (hence §5.3), and iOS
-behaviour is unproven (stated as a limitation).
+behavior is unproven (stated as a limitation).
 
 **A6 — PWA with SQLite compiled to WebAssembly, instead of IndexedDB.** Considered inside A5, and
 rejected in ADR-2: it adds roughly a megabyte of payload, requires a second persistence model
@@ -588,7 +654,7 @@ and the package rebuilds from a script. The risk remains for maintenance after h
 that generated a fresh debug keystore on every run, making each build un-upgradable over the
 last one. The lesson is recorded as Lesson 5 in §8.7.
 
-**R8 — file-system and permission behaviour on Android 10+ (not logged).** Writing an export
+**R8 — file-system and permission behavior on Android 10+ (not logged).** Writing an export
 to a shared folder is a permission-sensitive operation whose rules changed with scoped storage.
 The mitigation was adopted during implementation rather than planned: use the media store,
 with a share-sheet fallback and a toast that names the path.
@@ -613,7 +679,7 @@ with a share-sheet fallback and a toast that names the path.
 
 ## 5.1 Architecture overview
 
-The system is a single static artefact with four internal layers and no server process
+The system is a single static artifact with four internal layers and no server process
 (Fig. 5.1). The **shell** is plain HTML, CSS and native ES modules loaded through an import
 map, with no bundler: `index.html` declares the module graph, and the browser fetches the
 same files a developer edits. The **data layer** wraps IndexedDB and is the only module
@@ -652,7 +718,7 @@ placed in `meta` specifically so that adding it did not require a schema migrati
 
 **Table 5.2 — Object stores**
 
-| Store | Key | Indexes | Referential behaviour |
+| Store | Key | Indexes | Referential behavior |
 | --- | --- | --- | --- |
 | `projects` | `id` (auto) | `project_no` (unique) | Deleting a project deletes its records, readings, and unlinks (not deletes) defect reports |
 | `records` | `id` (auto) | `project_id`; compound (`project_id`, `template_type`, `sort_order`) | Deleting a record deletes its readings |
@@ -675,19 +741,19 @@ values at write time** instead of trusting what the form displayed.
 ## 5.3 Report-fidelity design
 
 The client's report is treated as an executable specification, not as a style guide. It
-decomposes into three artefacts:
+decomposes into three artifacts:
 
 1. **A layout specification in JSON** (`report_layout.json`), language-neutral so that the
    Python reference implementation and the JavaScript production engine read the same
    numbers: page 11 907 × 16 839 twips with margins 1 440/1 843/907 and a document grid
-   line pitch of 312; a fixed-layout table 10 833 twips wide, centred, with outer borders
+   line pitch of 312; a fixed-layout table 10 833 twips wide, centered, with outer borders
    12 and inner borders 6 eighths of a point and a cell margin of 57 twips per side; eleven
    column widths measured from the client's column table, with an override set for the beam
    table; and the per-cell line spacing used in the header's continuation cells.
 2. **A declarative builder** that maps domain records onto the table: one row group per
    detection face, vertical merge for the member columns, and a second merge pass that
    groups consecutive rows sharing the same requirement clause — so one clause is written
-   once and centred across its block, while a change of clause starts a new cell.
+   once and centered across its block, while a change of clause starts a new cell.
 3. **Eleven deterministic patches** applied to the serialised OOXML (Table 5.3). They exist
    because a general-purpose DOCX library emits *valid* markup, not *identical* markup.
 
@@ -699,7 +765,7 @@ decomposes into three artefacts:
 | ② | `w:tblLook` | no `w:val`, booleans spelled `true`/`false` | insert `w:val`, normalise to `1`/`0` |
 | ③ | `w:trHeight` | carries `w:hRule` | drop the attribute |
 | ④ | `w:tblCellMar` | declares edges the template does not | keep only declared edges |
-| ⑤ | Continuation cells of merged rows | bare `<w:p/>`, no vertical alignment | add `vAlign=center`, centred paragraph, header line spacing |
+| ⑤ | Continuation cells of merged rows | bare `<w:p/>`, no vertical alignment | add `vAlign=center`, centered paragraph, header line spacing |
 | ⑥ | `word/styles.xml`, `word/theme/theme1.xml` | library defaults | replace with the base template's parts |
 | ⑦ | `w:sectPr` | no `<w:cols>` | insert `<w:cols w:space="720"/>` in schema order |
 | ⑧ | `w:pgSz` | writes `w:orient="portrait"` | drop the attribute |
@@ -809,7 +875,7 @@ stack trace in a phone's remote inspector that points at the file the developer 
 cost is that the module graph must be explicit and that nothing minifies the payload — both
 acceptable for a ~50-file, ~470 KB application.
 
-Generated artefacts are the one exception to "the browser fetches what you edit". Some
+Generated artifacts are the one exception to "the browser fetches what you edit". Some
 values must not be maintained twice: the layout numbers, the defect vocabulary, the
 requirement clauses, and the CSS that both the Python reference implementation and the web
 client share. These are generated from the Python source of truth by
@@ -868,7 +934,7 @@ iteration order, which is what makes the output comparable byte for byte:
 
 Two findings from this stage are worth recording because they contradict a natural instinct.
 First, the engine was brought to zero differences by *using the diff list as a to-do list*,
-converging 201 → 33 → 2 → 0 differences over three rounds; each round was committed
+converging 201 → 33 → 2 → 0 differences over four rounds; each round was committed
 separately so a regression could be attributed to a round. Second, we considered building a
 "declared deviation" mechanism — a manifest of intentional differences, so the gate could
 ignore them — and rejected it after measuring: all eleven discrepancies turned out to be
@@ -944,7 +1010,7 @@ un-upgradable over the previous one (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`, recov
 by uninstalling, which deletes the inspector's data).
 
 The Android channel is a thin shell rather than a second product: the same web bundle is
-packaged by Capacitor, and exactly three behaviours diverge — exports are written to the
+packaged by Capacitor, and exactly three behaviors diverge — exports are written to the
 public Downloads folder through a small native plugin (with a share-sheet fallback and a
 toast when no viewer is installed), the hardware back key navigates within the app and exits
 only at a root screen, and the service worker is not registered because the assets already
@@ -952,7 +1018,7 @@ come from the package.
 
 ## 6.7 Code-level lessons
 
-Three practices earned their place. **Generated artefacts are checked in and diffed in CI**,
+Three practices earned their place. **Generated artifacts are checked in and diffed in CI**,
 so a stale copy cannot ship. **Assertions that inspect source code must strip comments
 first** — our "the service worker must not call `skipWaiting()`" check failed on its own
 documentation comment that said "this is where we do not call `skipWaiting()`". And **a test
@@ -1041,6 +1107,13 @@ cheapest layer that can see it (Table 7.1). The numbers below are the state at d
 The layering is not a formality. Each layer was added because the layer below it was
 demonstrably unable to see something, and §7.5 tells that story in order.
 
+The sixteen gates divide as follows: **five fidelity procedures** — Gate A run twice (report and
+attachment pages), Gate B, Gate C and the sensitivity harness, which are the ones described in
+§7.2–§7.3 — plus five Python-side baseline checks that guard the reference implementation, four
+synchronisation and unit-test steps, and two generator steps. Appendix C lists all sixteen with
+their re-run commands; only the fidelity five are argued in this chapter, because only they bear
+on the claim the paper makes.
+
 ## 7.2 The three fidelity gates
 
 A single comparison can be self-consistent and still blind, so fidelity is asserted by three
@@ -1056,8 +1129,9 @@ oracle is the *old implementation*, which makes it excellent at detecting regres
 useless at detecting a mistake the reference implementation shares.
 
 **Gate B — differential testing against the client's real report.** The expected document is
-a cropped excerpt of the client's actual delivered report (`检测表_真实裁剪.docx`), reduced to
-the tables so that no client-identifying content is compared. The actual document is
+a cropped excerpt of the client's actual delivered report (`检测表_真实裁剪.docx`), obtained in
+de-identified form through a former colleague at the institute because the project was executed
+remotely, and reduced to the tables so that no client-identifying content is compared. The actual document is
 generated from the same fixture data the crop was taken from. This is differential testing in
 McKeeman's sense with a human-authored oracle: it is the only gate that can say "the output
 differs from what the client actually accepts", and it is what anchors Gate A — without B, A
@@ -1119,7 +1193,7 @@ mechanism exists.
 
 ![Figure 7.2 — Fidelity gate A convergence: 201 → 33 → 2 → 0 differences over four rounds, closed by eleven attribute-level patches without loosening the comparison.](deliverables/prp/gate-convergence.png)
 
-Zero differences in our own comparator is still a self-referential claim, so the artefacts
+Zero differences in our own comparator is still a self-referential claim, so the artifacts
 were re-verified with tools that share no code with the comparison: `python-docx` and Pillow
 were used to open the exported file and read back its structure and media. For a
 one-attachment export this confirmed two tables (3 and 9 rows), one attachment page, the
@@ -1283,13 +1357,13 @@ the deliverable and says nothing about sections the project does not generate.
 
 ## 8.1 Requirements coverage
 
-The requirement set was frozen before implementation and audited at delivery. Of the
-forty-three in-scope requirement rows, forty-three are implemented as specified, two are
-implemented with an agreed adaptation (the report person is taken from a local profile instead
-of a login session; the profile page carries no department code), one optional item
-(single-report JSON export) was not built because no consumer existed, and two rows plus three
-modules — accounts, quick notes, statistics — were removed from scope in writing. Table 8.1
-summarises.
+The requirement set was frozen before implementation and audited at delivery. It contains
+**forty-six in-scope requirement rows**: forty-three implemented as specified, two implemented
+with an agreed adaptation (the report person is taken from a local profile instead of a login
+session; the profile page carries no department code), and one optional item (single-report JSON
+export) not built because no consumer existed — 46 = 43 + 2 + 1. A further two rows, plus three
+modules (accounts, quick notes, statistics), were removed from scope in writing and are not part
+of the forty-six. Table 8.1 summarises.
 
 **Table 8.1 — Requirement coverage at acceptance**
 
@@ -1298,7 +1372,8 @@ summarises.
 | Implemented as specified | 43 | Verified by automated tests, gates or on-device checks |
 | Implemented with agreed adaptation | 2 | Documented in the confirmed requirement set |
 | Not built (optional) | 1 | Single-report JSON export; no consumer identified |
-| Out of scope by agreement | 2 rows + 3 modules | Accounts/login, quick notes, statistics |
+| **In-scope total** | **46** | 43 + 2 + 1 — the traceability matrix §4.2 groups into 14 capabilities |
+| Out of scope by agreement | 2 rows + 3 modules | Accounts/login, quick notes, statistics; not counted above |
 
 ## 8.2 What worked, and why
 
@@ -1377,9 +1452,9 @@ claimed here. That measurement is the first item of future work.
 ## 8.5 Discussion
 
 The project's generalisable claim is about where verification effort belongs. In a system whose
-value depends on fidelity to an external artefact, the expensive part is not building the
+value depends on fidelity to an external artifact, the expensive part is not building the
 generator — it is establishing, continuously and cheaply, that the generator's output equals
-the artefact that already has the client's trust. And in a system whose users are mobile
+the artifact that already has the client's trust. And in a system whose users are mobile
 workers, the expensive part is not the feature list — it is the gap between the environment in
 which the features were written and the environment in which they will be used. Both are
 questions of *comparison against reality*, and both are answerable with gates, harnesses and
@@ -1388,8 +1463,16 @@ an honest ladder of environments.
 ## 8.6 Detailed project chronology and critique
 
 The project ran from 10 September to 24 November 2026, eleven days inside its planned end of
-5 December. The chronology is worth setting out because the *order* of the work, more than any
-single technique, explains both what went well and what was expensive.
+5 December, and it ran on two clocks: the author in New York, the client in Shenzhen, twelve to
+thirteen hours apart. One person held both roles. As project manager, that meant a charter, a
+work-breakdown structure and baseline, monthly status reports, and the two acceptance documents;
+as implementer, it meant the architecture, the engine, the verification gates, the delivery
+package and the end-user manual. Remote delivery of that shape has a specific cost that a
+co-located team never pays: every question costs a day of latency, so the requirements had to be
+settled in writing early — which is, in retrospect, why treating the client's report as the
+specification worked as well as it did. The chronology is worth setting out because the *order*
+of the work, more than any single technique, explains both what went well and what was
+expensive.
 
 **Phase 1 — proof of concept (September).** The first task was not to build a form but to answer
 one question: could the client's report be reproduced mechanically at all? A Flask reference
@@ -1441,7 +1524,7 @@ amount of additional unit testing would have found, and they should have been th
 of the port, not the last. Third, the eleven patches were written partly *before* the measurement
 that justified them — several were speculative and were later reshaped, a detour that a
 measure-first order would have avoided entirely. Fourth, the Android release path was
-underestimated: the debug-signature instability and the Downloads-folder behaviour were treated
+underestimated: the debug-signature instability and the Downloads-folder behavior were treated
 as packaging details and cost roughly two days of rework, including one failed upgrade that could
 only be recovered by uninstalling. Finally, documentation was written at the end; the manual and
 the deployment guide exist, but they would have taken hours instead of a day if they had been
@@ -1498,7 +1581,7 @@ the device the user has, before believing anything.
 ## 9.1 Conclusions
 
 **Fidelity can be engineered as an equality property.** By treating the client's report as an
-executable specification, describing its geometry in a language-neutral artefact, and applying
+executable specification, describing its geometry in a language-neutral artifact, and applying
 eleven named post-processing patches, the generated document reaches zero differences against
 the approved template across three independent comparisons — and a seven-case poisoning harness
 demonstrates that those comparisons are sensitive to the attributes that matter.
@@ -1534,6 +1617,38 @@ turning a bespoke tool into a product.
 **Signed reports.** The report is contractual evidence; an integrity signature over the
 generated document (and a verifiable hash on the attachment pages) would close the last mile
 between "generated faithfully" and "provably unaltered".
+
+## 9.3 Recommendations for the institute
+
+Five recommendations follow from what this project measured and from what it could not.
+
+**Measure the saving before scaling the tool.** The mechanism that produces rework has been
+removed, but its cost has not been quantified (§8.4). A four-week baseline-and-after study on one
+inspection group — time per report, and the number of returned reports — would give the institute
+the number it needs to decide whether to extend the tool to other groups, and this project has
+deliberately not guessed it.
+
+**Treat the layout specification as a controlled artifact.** The form of the report is now data
+(`report_layout.json`) with a named set of eleven patches behind it. It should be versioned and
+changed through a review, exactly like the Word template it replaces; if it is edited casually,
+the guarantee that the report is unchanged disappears silently, which is the one failure mode the
+client cannot afford.
+
+**Put the backup in the procedure, not in the tool's documentation.** The tool can export a
+whole-database backup and can import it, but it cannot make an inspector remember to do so. A
+daily export at the end of a site visit, and a quarterly restore drill on a spare phone, convert a
+capability into a control; the restore path is precisely where this project found its most serious
+defect (§7.5.2).
+
+**Configure HTTPS on the intranet if offline use matters.** Offline operation and installation as
+a standalone application require a secure context; over plain HTTP the business functions work but
+the application cannot cache or install (§8.4). If inspectors are expected to work without signal,
+the deployment should be HTTPS, and that is an infrastructure decision rather than a product one.
+
+**Reuse the engine before rebuilding the form.** The layout specification and the patch chain are
+not specific to curtain walls: they encode *a report's geometry*, and the institute issues other
+reports with the same discipline. The cheapest next project is the one where a second template is
+described as data and the same three gates are pointed at it.
 
 ---
 
@@ -1612,7 +1727,7 @@ row-level justification; border spacing; and vertical-merge value encoding.
 
 ## Appendix C — Verification inventory and re-run commands
 
-| Artefact | What it proves | Re-run |
+| Artifact | What it proves | Re-run |
 | --- | --- | --- |
 | Python suite (348 tests) | Data rules, layout extraction, export assembly, defect semantics | `python -m pytest -q` |
 | Front-end suite (250 tests) | Data layer, engine, attachments, image pipeline, real-markup UI | `npm test` |

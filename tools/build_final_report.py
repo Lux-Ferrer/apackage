@@ -292,7 +292,7 @@ def add_toc_field(document: Document) -> None:
 
 
 def add_title_page(document: Document) -> None:
-    def centre(text: str, size: float, bold: bool = False, space_after: float = 12) -> None:
+    def center(text: str, size: float, bold: bool = False, space_after: float = 12) -> None:
         paragraph = document.add_paragraph()
         paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
         paragraph.paragraph_format.line_spacing_rule = WD_LINE_SPACING.SINGLE
@@ -301,18 +301,18 @@ def add_title_page(document: Document) -> None:
         run.font.size = Pt(size)
         run.bold = bold
 
-    centre("", 12, space_after=60)
-    centre(TITLE, 20, bold=True, space_after=40)
-    centre("by", 12, space_after=6)
-    centre("Zeyu Jin", 14, bold=True, space_after=48)
-    centre("A paper submitted in partial fulfillment of the requirements for the degree of", 12, space_after=6)
-    centre("Master of Science", 14, bold=True, space_after=24)
-    centre("at the", 12, space_after=6)
-    centre("Division of Programs in Business", 12, space_after=2)
-    centre("School of Professional Studies", 12, space_after=2)
-    centre("New York University", 12, bold=True, space_after=48)
-    centre("Fall, 2026", 12, space_after=6)
-    centre("Sponsoring organisation: MCC Central Research Institute of Building and Construction (Shenzhen) Co., Ltd.",
+    center("", 12, space_after=60)
+    center(TITLE, 20, bold=True, space_after=40)
+    center("by", 12, space_after=6)
+    center("Zeyu Jin", 14, bold=True, space_after=48)
+    center("A paper submitted in partial fulfillment of the requirements for the degree of", 12, space_after=6)
+    center("Master of Science", 14, bold=True, space_after=24)
+    center("at the", 12, space_after=6)
+    center("Division of Programs in Business", 12, space_after=2)
+    center("School of Professional Studies", 12, space_after=2)
+    center("New York University", 12, bold=True, space_after=48)
+    center("Fall, 2026", 12, space_after=6)
+    center("Sponsoring organization: MCC Central Research Institute of Building and Construction (Shenzhen) Co., Ltd.",
            10, space_after=0)
     document.add_page_break()
 

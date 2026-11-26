@@ -20,7 +20,7 @@ stack trace in a phone's remote inspector that points at the file the developer 
 cost is that the module graph must be explicit and that nothing minifies the payload — both
 acceptable for a ~50-file, ~470 KB application.
 
-Generated artefacts are the one exception to "the browser fetches what you edit". Some
+Generated artifacts are the one exception to "the browser fetches what you edit". Some
 values must not be maintained twice: the layout numbers, the defect vocabulary, the
 requirement clauses, and the CSS that both the Python reference implementation and the web
 client share. These are generated from the Python source of truth by
@@ -79,7 +79,7 @@ iteration order, which is what makes the output comparable byte for byte:
 
 Two findings from this stage are worth recording because they contradict a natural instinct.
 First, the engine was brought to zero differences by *using the diff list as a to-do list*,
-converging 201 → 33 → 2 → 0 differences over three rounds; each round was committed
+converging 201 → 33 → 2 → 0 differences over four rounds; each round was committed
 separately so a regression could be attributed to a round. Second, we considered building a
 "declared deviation" mechanism — a manifest of intentional differences, so the gate could
 ignore them — and rejected it after measuring: all eleven discrepancies turned out to be
@@ -155,7 +155,7 @@ un-upgradable over the previous one (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`, recov
 by uninstalling, which deletes the inspector's data).
 
 The Android channel is a thin shell rather than a second product: the same web bundle is
-packaged by Capacitor, and exactly three behaviours diverge — exports are written to the
+packaged by Capacitor, and exactly three behaviors diverge — exports are written to the
 public Downloads folder through a small native plugin (with a share-sheet fallback and a
 toast when no viewer is installed), the hardware back key navigates within the app and exits
 only at a root screen, and the service worker is not registered because the assets already
@@ -163,7 +163,7 @@ come from the package.
 
 ## 6.7 Code-level lessons
 
-Three practices earned their place. **Generated artefacts are checked in and diffed in CI**,
+Three practices earned their place. **Generated artifacts are checked in and diffed in CI**,
 so a stale copy cannot ship. **Assertions that inspect source code must strip comments
 first** — our "the service worker must not call `skipWaiting()`" check failed on its own
 documentation comment that said "this is where we do not call `skipWaiting()`". And **a test
@@ -252,6 +252,13 @@ cheapest layer that can see it (Table 7.1). The numbers below are the state at d
 The layering is not a formality. Each layer was added because the layer below it was
 demonstrably unable to see something, and §7.5 tells that story in order.
 
+The sixteen gates divide as follows: **five fidelity procedures** — Gate A run twice (report and
+attachment pages), Gate B, Gate C and the sensitivity harness, which are the ones described in
+§7.2–§7.3 — plus five Python-side baseline checks that guard the reference implementation, four
+synchronisation and unit-test steps, and two generator steps. Appendix C lists all sixteen with
+their re-run commands; only the fidelity five are argued in this chapter, because only they bear
+on the claim the paper makes.
+
 ## 7.2 The three fidelity gates
 
 A single comparison can be self-consistent and still blind, so fidelity is asserted by three
@@ -267,8 +274,9 @@ oracle is the *old implementation*, which makes it excellent at detecting regres
 useless at detecting a mistake the reference implementation shares.
 
 **Gate B — differential testing against the client's real report.** The expected document is
-a cropped excerpt of the client's actual delivered report (`检测表_真实裁剪.docx`), reduced to
-the tables so that no client-identifying content is compared. The actual document is
+a cropped excerpt of the client's actual delivered report (`检测表_真实裁剪.docx`), obtained in
+de-identified form through a former colleague at the institute because the project was executed
+remotely, and reduced to the tables so that no client-identifying content is compared. The actual document is
 generated from the same fixture data the crop was taken from. This is differential testing in
 McKeeman's sense with a human-authored oracle: it is the only gate that can say "the output
 differs from what the client actually accepts", and it is what anchors Gate A — without B, A
@@ -326,7 +334,7 @@ zero differences. The eleven residual discrepancies that were closed along the w
 attribute-level; none required a semantic deviation, which is why no "declared deviation"
 mechanism exists.
 
-Zero differences in our own comparator is still a self-referential claim, so the artefacts
+Zero differences in our own comparator is still a self-referential claim, so the artifacts
 were re-verified with tools that share no code with the comparison: `python-docx` and Pillow
 were used to open the exported file and read back its structure and media. For a
 one-attachment export this confirmed two tables (3 and 9 rows), one attachment page, the
