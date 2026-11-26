@@ -771,7 +771,7 @@ by the sponsor, and the four pages reproduce the originals without retouching.
 
 ![Appendix A-3 — Project Acceptance (Part 2), page 1: planned and actual dates, the goal recorded as achieved, and Objectives 1 to 3 recorded as met with the sponsor's initials against each.](docs/release/final/signed-pages/part2-p1.jpg)
 
-![Appendix A-4 — Project Acceptance (Part 2), page 2: Objectives 4 and 5, the sponsor's evaluation and comments, the acceptance statement, and the sponsor's signature and date.](docs/release/final/signed-pages/part2-p2.jpg)
+![Appendix A-4 — Project Acceptance (Part 2), page 2: Objectives 4 and 5, the sponsor's evaluation, comments and acceptance statement, and both signatures — the sponsor's and the student's — with their dates.](docs/release/final/signed-pages/part2-p2.jpg)
 
 ## Appendix B — The eleven post-processing patches
 
